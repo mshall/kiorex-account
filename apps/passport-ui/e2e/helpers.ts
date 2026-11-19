@@ -40,8 +40,11 @@ export async function useEnglish(target: Page | BrowserContext) {
 
 export const totpNow = (secret: string, offsetSeconds = 0) => generateSync({ secret, strategy: 'totp', epoch: Math.floor(Date.now() / 1000) + offsetSeconds });
 
+export const resetRateLimits = () => fetch(`${ISSUER}/dev/reset-rate-limits`, { method: 'POST' });
+
 /** Drives the real sign-in: Passport -> IdP phone page -> OTP (read from the mock dev inbox) -> [TOTP] -> back to /account. */
 export async function signIn(page: Page, phone: string, o: { name?: string; totpSecret?: string; passkeyLogin?: boolean; path?: string } = {}) {
+  await resetRateLimits(); // the whole suite signs in from one IP (20 sends/IP/h is a safety control in the real IdP)
   await page.goto(o.path ?? '/account');
   await page.getByRole('button', { name: /^(Sign in|تسجيل الدخول)$/ }).click();
   await page.waitForURL(/\/interaction\//);

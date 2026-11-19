@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { ISSUER, randomPhone, signIn, lastCode } from './helpers';
+import { ISSUER, randomPhone, signIn, lastCode, resetRateLimits } from './helpers';
 
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
@@ -91,6 +91,7 @@ test('mobile (Pixel-sized) Arabic: no horizontal overflow on any page, nav scrol
 });
 
 test('IdP sign-in pages (server-rendered): phone, code, passkey offer, TOTP: RTL/dark/axe', async ({ browser }) => {
+  await resetRateLimits();
   for (const [lang, scheme] of [['ar', 'light'], ['ar', 'dark'], ['en', 'dark']] as const) {
     const ctx = await browser.newContext({ colorScheme: scheme, locale: lang === 'ar' ? 'ar-EG' : 'en-GB' });
     await ctx.addInitScript((l) => { try { localStorage.setItem('kx-lang', l); } catch { /* ignore */ } }, lang);
