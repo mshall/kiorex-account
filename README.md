@@ -9,6 +9,7 @@ This repo holds IdP config-as-code, a **local-only** dev OIDC provider, the OTP 
 | `config/idp.json` | Clients, scopes, claim mapping, token lifetimes, passwordless + OTP policy, MFA policy (single source of truth) |
 | `config/seed-users.json` | Local seed users only (never read by the Cognito stack) |
 | `apps/dev-idp` | Dev/E2E OIDC provider on `oidc-provider`, port 4400, Postgres adapter. **Refuses to start if `NODE_ENV=production`** |
+| `apps/passport-ui` | **Kiorex Passport web UI** (React, AR/EN RTL, dark mode): served by the dev IdP at `http://localhost:4400/account` |
 | `packages/otp-sender` | Cognito custom-auth challenge triggers (define/create/verify) + channels (log, WhatsApp template, SMS, fallback) |
 | `packages/backchannel` | Build / verify / deliver OIDC back-channel logout tokens for products |
 | `Docs/` | `IDP_SCORECARD.md`, `KA_TRACE.md`, `NEEDS_HUMAN.md` |
@@ -49,3 +50,12 @@ All messaging is **mocked** (founder decision 19 Nov 2026): OTPs, invitations an
 - **Step-up (KA-10)**: login tokens carry `acr`/`amr`/`auth_time`; `GET /api/totp`, `POST /api/totp/{enroll,confirm}`, `GET /api/step-up/policy?action=`, `POST /api/step-up {method:'totp',code}` or `{method:'passkey',response}` (+ `POST /api/step-up/passkey/options`) -> fresh `acr=urn:kiorex:acr:mfa` token. Ops/privileged roles must pass TOTP at login (otplib; seeded ops secret in `config/seed-users.json`, dev only).
 - **Passkey login (KA-03)**: login page button; `POST /interaction/:uid/passkey/login/{options,verify,finish}` (flag `account.passkeys`).
 - **Federation (KA-11)**: flag `account.provider_sso`; second fake upstream IdP on port 4401 (`apps/dev-idp/src/fake-upstream.ts`); `GET /api/federation/identities`, `DELETE /api/federation/identities/:upstream/:sub`.
+
+## Passport web UI (`/account`)
+`npm run dev`, then open <http://localhost:4400/account> (sign in with a seed number and OTP `000000`, or read the code in `GET /dev/inbox`; ops `+201000000099` also needs the TOTP from `config/seed-users.json`).
+The React app in `apps/passport-ui/src` is bundled in memory by esbuild when the IdP serves it (no build step; it rebuilds when a source file changes). It signs in as the public client `kiorex-passport-web` (PKCE) and calls only the documented `/api` endpoints.
+Pages: account home, security (passkeys, authenticator app, sessions, sign-in activity), family and guardians, linked accounts, organisations, data and privacy (export / delete), connected apps, step-up, and the ops link-review queue. Wording that needs legal/clinical review is marked "Draft wording" in the UI and listed in `Docs/NEEDS_HUMAN.md` (#19-22).
+```bash
+npm test               # includes UI unit/component tests (jsdom, axe) and the dev-IdP API tests
+npm run test:e2e       # Playwright on the SYSTEM Chrome (no browser download); starts its own IdP on :4450 with a throwaway schema
+```
