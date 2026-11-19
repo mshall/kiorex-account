@@ -41,6 +41,14 @@ async function opsReviewer(d: ApiDeps, caller: Caller): Promise<Account> {
   return a;
 }
 
+/** Auth events a person may see about their own account (never other subjects, never raw phone numbers). */
+const SECURITY_EVENT_TYPES = ['login.success', 'passkey.login', 'passkey.login.failed', 'passkey.registered', 'passkey.removed', 'totp.enrolled', 'totp.disabled', 'totp.verified', 'totp.failed',
+  'step_up.success', 'step_up.failed', 'session.revoked', 'federation.login', 'account.link.requested', 'account.link.verified', 'account.link.merged', 'account.link.reversed', 'guardian.act_as', 'app.access.revoked', 'account.profile.updated'];
+const EVENT_DATA_KEYS = ['client', 'amr', 'acr', 'method', 'reason', 'upstream', 'uv'];
+function pickEventData(data: Record<string, unknown> | null): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(data ?? {}).filter(([k]) => EVENT_DATA_KEYS.includes(k)));
+}
+
 export function errorResponse(res: ServerResponse, e: unknown): void {
   if (e instanceof HttpError) {
     const headers: Record<string, string> = {};
@@ -58,6 +66,48 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
   const svc = d.svc;
   const ok = (status: number, body: unknown) => { send(res, status, body as object); return true; };
 
+  // ---------------- self-service profile + policy (Passport web UI) ----------------
+  if (p === '/api/account' && m === 'GET') {
+    const a = await account(d, caller);
+    return ok(200, {
+      sub: a.sub, name: a.name, phone: a.phone, phone_verified: a.phone_verified, locale: a.locale, roles: a.roles, kind: a.kind,
+      mfa_required: svc.totp.requiresMfa(a), totp_enrolled: await svc.totp.isEnrolled(a.sub), acr: caller.acr ?? null, amr: caller.amr ?? [], auth_time: caller.authTime ?? null,
+    });
+  }
+  if (p === '/api/account' && m === 'PATCH') {
+    const b = await json(req);
+    const patch: { name?: string | null; locale?: 'ar' | 'en' } = {};
+    if (b.name !== undefined) {
+      const n = typeof b.name === 'string' ? b.name.trim() : null;
+      if (n === null || n.length > 80) throw new HttpError(400, 'invalid_name');
+      patch.name = n || null;
+    }
+    if (b.locale !== undefined) {
+      if (b.locale !== 'ar' && b.locale !== 'en') throw new HttpError(400, 'invalid_locale', { allowed: ['ar', 'en'] });
+      patch.locale = b.locale;
+    }
+    if (!Object.keys(patch).length) throw new HttpError(400, 'nothing_to_update');
+    const a = await d.accounts.updateProfile(caller.sub, patch);
+    if (!a) throw new HttpError(404, 'not_found');
+    await d.audit.record('account.profile.updated', a.sub, { fields: Object.keys(patch) });
+    return ok(200, { sub: a.sub, name: a.name, locale: a.locale });
+  }
+  if (p === '/api/meta' && m === 'GET') {
+    const g = d.cfg.guardianship; const su = d.cfg.stepUp;
+    return ok(200, {
+      passkeys_enabled: d.passkeysEnabled,
+      guardian: { age_of_majority: g.ageOfMajority, default_market: g.defaultMarket, evidence_types: g.evidenceTypes, relationships: ['parent', 'legal_guardian', 'grandparent', 'other_relative'], act_scopes: g.actScopes, max_dependants: g.maxDependantsPerGuardian, act_as_ttl_seconds: g.scopedTokenSeconds },
+      orgs: { role_hints: d.cfg.orgs.roleHints, invitation_ttl_days: d.cfg.orgs.invitationTtlDays },
+      step_up: { freshness_seconds: su.freshnessSeconds, sensitive_actions: su.sensitiveActions, acr_mfa: su.acr.mfa },
+      mfa_required_roles: d.cfg.mfaPolicy.requiredForRoles,
+    });
+  }
+  if (p === '/api/security/events' && m === 'GET') {
+    const limit = Math.min(Math.max(Number(url.searchParams.get('limit') ?? 20) || 20, 1), 100);
+    const r = await d.pool.query(`SELECT seq, at, type, data FROM audit_events WHERE sub=$1 AND type = ANY($2) ORDER BY seq DESC LIMIT $3`, [caller.sub, SECURITY_EVENT_TYPES, limit]);
+    return ok(200, { events: r.rows.map((e) => ({ id: Number(e.seq), at: e.at, type: e.type, data: pickEventData(e.data) })) });
+  }
+
   // ---------------- KA-06 guardian links ----------------
   if (p === '/api/dependants' && m === 'GET') return ok(200, { dependants: await svc.guardian.list(caller.sub) });
   if (p === '/api/dependants' && m === 'POST') {
@@ -74,6 +124,10 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
   }
   if (s[0] === 'api' && s[1] === 'guardian-links' && s[2] && s[3] === 'accept' && m === 'POST') {
     const l = await svc.guardian.accept(await account(d, caller), s[2]);
+    return ok(200, { link_id: l.id, status: l.status });
+  }
+  if (s[0] === 'api' && s[1] === 'guardian-links' && s[2] && s[3] === 'decline' && m === 'POST') {
+    const l = await svc.guardian.decline(await account(d, caller), s[2]);
     return ok(200, { link_id: l.id, status: l.status });
   }
   if (p === '/api/guardian/act-as' && m === 'POST') {
@@ -111,6 +165,9 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
   // ---------------- KA-09 organisations & memberships ----------------
   if (p === '/api/orgs' && m === 'POST') return ok(201, await svc.orgs.create(await account(d, caller), await json(req)));
   if (p === '/api/orgs' && m === 'GET') return ok(200, { memberships: await svc.orgs.mine(caller.sub) });
+  if (p === '/api/invitations' && m === 'GET') return ok(200, { invitations: await svc.orgs.pendingFor(await account(d, caller)) });
+  if (s[0] === 'api' && s[1] === 'invitations' && s[2] && s[3] === 'accept' && m === 'POST') return ok(200, await svc.orgs.acceptById(await account(d, caller), s[2]));
+  if (s[0] === 'api' && s[1] === 'invitations' && s[2] && s[3] === 'decline' && m === 'POST') { await svc.orgs.decline(await account(d, caller), s[2]); return ok(200, { status: 'declined' }); }
   if (p === '/api/invitations/accept' && m === 'POST') return ok(200, await svc.orgs.accept(await account(d, caller), (await json(req)).token));
   if (s[0] === 'api' && s[1] === 'orgs' && s[2]) {
     if (s[3] === 'members' && s.length === 4 && m === 'GET') return ok(200, { members: await svc.orgs.members(s[2], caller.sub) });
@@ -132,6 +189,15 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
     if (!r.ok) throw new HttpError(r.reason === 'locked' ? 429 : 400, `totp_${r.reason}`);
     await d.audit.record('totp.enrolled', caller.sub);
     return ok(200, { enrolled: true });
+  }
+  if (p === '/api/totp' && m === 'DELETE') {
+    const a = await account(d, caller);
+    if (svc.totp.requiresMfa(a)) throw new HttpError(409, 'totp_required_for_role');
+    const ch = stepUpChallenge(d, caller);
+    if (ch) throw ch;
+    if (!(await svc.totp.disable(a.sub))) throw new HttpError(404, 'not_enrolled');
+    await d.audit.record('totp.disabled', a.sub);
+    return ok(200, { enrolled: false });
   }
   if (p === '/api/step-up/policy' && m === 'GET') {
     const action = url.searchParams.get('action') ?? '';

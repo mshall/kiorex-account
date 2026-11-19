@@ -162,6 +162,23 @@
       }
     },
     {
+      "clientId": "kiorex-passport-web",
+      "name": "Kiorex Passport (self-service web)",
+      "type": "public",
+      "grantTypes": ["authorization_code", "refresh_token"],
+      "scopes": ["openid", "profile", "phone", "kx", "kx_org", "offline_access"],
+      "pkce": "S256",
+      "$comment": "The Passport self-service SPA served at /account. First-party; calls the /api account endpoints with its own access token. The dev IdP rewrites the local redirect URIs to its own issuer origin so tests on other ports work.",
+      "environments": {
+        "local": {
+          "redirectUris": ["http://localhost:4400/account/callback"],
+          "postLogoutRedirectUris": ["http://localhost:4400/account"]
+        },
+        "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [] },
+        "production": { "redirectUris": ["https://account.kiorex.com/account/callback"], "postLogoutRedirectUris": ["https://account.kiorex.com/account"] }
+      }
+    },
+    {
       "clientId": "kiorly-clinic",
       "name": "Kiorly Clinic (provider SSO, KCV-201 seam)",
       "type": "confidential",

@@ -58,6 +58,12 @@ export class Accounts {
     await this.pool.query(`INSERT INTO accounts (sub, phone, phone_verified, name, locale, roles) VALUES ($1,$2,true,$3,$4,'["patient"]')`, [sub, phone, name || null, locale]);
     return (await this.findBySub(sub))!;
   }
+  /** Self-service profile edit (name, language). Phone changes go through account linking (KA-08), never a free edit. */
+  async updateProfile(sub: string, p: { name?: string | null; locale?: 'ar' | 'en' }): Promise<Account | undefined> {
+    if (p.name !== undefined) await this.pool.query(`UPDATE accounts SET name=$2 WHERE sub=$1 AND status='active'`, [sub, p.name]);
+    if (p.locale !== undefined) await this.pool.query(`UPDATE accounts SET locale=$2 WHERE sub=$1 AND status='active'`, [sub, p.locale]);
+    return this.findBySub(sub);
+  }
   async tombstone(sub: string): Promise<void> {
     await this.pool.query(`UPDATE accounts SET status='deleted', phone=NULL, name=NULL, phone_verified=false, deleted_at=now() WHERE sub=$1`, [sub]);
   }

@@ -126,6 +126,38 @@ export class Orgs {
     return { org_id: row.org_id, role_hint: row.role_hint, membership_id: membershipId };
   }
 
+  /** Pending, unexpired invitations addressed to one of this account's verified phone numbers (token never returned). */
+  async pendingFor(user: Account) {
+    const r = await this.c.pool.query(
+      `SELECT i.id AS invitation_id, i.org_id, o.legal_name, i.role_hint, i.expires_at, a.name AS invited_by_name
+         FROM invitations i JOIN organizations o ON o.org_id=i.org_id LEFT JOIN accounts a ON a.sub=i.invited_by
+        WHERE i.consumed_at IS NULL AND i.revoked_at IS NULL AND i.expires_at > $2
+          AND (i.invitee_phone=$3 OR i.invitee_phone IN (SELECT value FROM account_contacts WHERE sub=$1 AND type='phone'))
+        ORDER BY i.created_at DESC`, [user.sub, new Date(this.c.now() * 1000), user.phone]);
+    return r.rows;
+  }
+
+  /** Accept by invitation id: same phone-binding checks as the token flow, the caller must already be signed in as the invitee. */
+  async acceptById(user: Account, invitationId: string) {
+    const pending = (await this.pendingFor(user)).find((x) => x.invitation_id === invitationId);
+    if (!pending) throw new HttpError(404, 'invitation_not_found');
+    const now = new Date(this.c.now() * 1000);
+    const claim = await this.c.pool.query(`UPDATE invitations SET consumed_at=$2, consumed_by=$3 WHERE id=$1 AND consumed_at IS NULL AND revoked_at IS NULL AND expires_at > $2 RETURNING invited_by`, [invitationId, now, user.sub]);
+    if (!claim.rowCount) throw new HttpError(410, 'invitation_used');
+    let membershipId: string;
+    try { membershipId = await this.addMembership(pending.org_id, user.sub, pending.role_hint, claim.rows[0].invited_by); }
+    catch (e) { await this.c.pool.query(`UPDATE invitations SET consumed_at=NULL, consumed_by=NULL WHERE id=$1`, [invitationId]); throw e; }
+    await this.c.audit.record('org.invitation.accepted', user.sub, { org: pending.org_id, invitation: invitationId });
+    return { org_id: pending.org_id, role_hint: pending.role_hint, membership_id: membershipId };
+  }
+
+  async decline(user: Account, invitationId: string) {
+    const pending = (await this.pendingFor(user)).find((x) => x.invitation_id === invitationId);
+    if (!pending) throw new HttpError(404, 'invitation_not_found');
+    await this.c.pool.query(`UPDATE invitations SET revoked_at=now() WHERE id=$1 AND consumed_at IS NULL AND revoked_at IS NULL`, [invitationId]);
+    await this.c.audit.record('org.invitation.declined', user.sub, { org: pending.org_id, invitation: invitationId });
+  }
+
   async revokeInvitation(actor: Account, orgId: string, invitationId: string) {
     await this.requireManager(orgId, actor.sub);
     const r = await this.c.pool.query(`UPDATE invitations SET revoked_at=now() WHERE id=$1 AND org_id=$2 AND consumed_at IS NULL AND revoked_at IS NULL RETURNING id`, [invitationId, orgId]);

@@ -4,8 +4,13 @@
   "version": "0.1.0",
   "description": "Kiorex Account: IdP configuration-as-code, local dev OIDC provider, OTP sender, back-channel logout helpers",
   "type": "module",
-  "workspaces": ["apps/*", "packages/*"],
-  "engines": { "node": ">=20" },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "npm run dev -w @kiorex/dev-idp",
     "build": "npm run build --workspaces --if-present",
@@ -15,7 +20,15 @@
     "db:reset": "npm run db:reset -w @kiorex/dev-idp"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.65.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.13",
     "@types/node": "^22.10.0",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "axe-core": "^4.14.1",
+    "jsdom": "^31.0.1",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.8"

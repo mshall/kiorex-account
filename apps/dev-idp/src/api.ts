@@ -99,6 +99,39 @@ async function listSessions(d: ApiDeps, sub: string, current?: string) {
   }));
 }
 
+/** Apps (OIDC clients) that currently hold a grant for this account (Passport "Connected apps"). */
+export async function listConnectedApps(d: ApiDeps, sub: string) {
+  const r = await d.pool.query(`SELECT payload FROM oidc_payloads WHERE model='Grant' AND payload->>'accountId'=$1 AND (expires_at IS NULL OR expires_at > now())`, [sub]);
+  const byClient = new Map<string, { scopes: Set<string>; first: number; last: number }>();
+  for (const row of r.rows) {
+    const g = row.payload as { clientId: string; iat?: number; openid?: { scope?: string }; resources?: Record<string, string> };
+    const e = byClient.get(g.clientId) ?? { scopes: new Set<string>(), first: Infinity, last: 0 };
+    for (const sc of String(g.openid?.scope ?? '').split(' ')) if (sc) e.scopes.add(sc);
+    const iat = g.iat ?? 0; e.first = Math.min(e.first, iat); e.last = Math.max(e.last, iat);
+    byClient.set(g.clientId, e);
+  }
+  return [...byClient].map(([clientId, e]) => ({
+    client_id: clientId, name: d.cfg.clients.find((c) => c.clientId === clientId)?.name ?? clientId,
+    scopes: [...e.scopes], first_granted_at: e.first ? new Date(e.first * 1000).toISOString() : null, last_granted_at: e.last ? new Date(e.last * 1000).toISOString() : null,
+  }));
+}
+
+/** Withdraws an app's access: grants (refresh tokens) deleted, back-channel logout sent, the session's authorization for that client removed. */
+export async function revokeApp(d: ApiDeps, sub: string, clientId: string): Promise<LogoutDelivery[] | undefined> {
+  const grants = await d.pool.query(`SELECT id FROM oidc_payloads WHERE model='Grant' AND payload->>'accountId'=$1 AND payload->>'clientId'=$2`, [sub, clientId]);
+  const sessions = await d.pool.query(`SELECT uid, payload FROM oidc_payloads WHERE model='Session' AND payload->>'accountId'=$1 AND payload->'authorizations' ? $2`, [sub, clientId]);
+  if (!grants.rowCount && !sessions.rowCount) return undefined;
+  const deliveries: LogoutDelivery[] = [];
+  for (const g of grants.rows) await revokeGrant(d.pool, g.id as string);
+  for (const s of sessions.rows) {
+    const sid = s.payload.authorizations?.[clientId]?.sid as string | undefined;
+    if (sid) { const x = await d.dispatcher.send(clientId, 'session.revoked', sub, sid); if (x) deliveries.push(x); }
+    await d.pool.query(`UPDATE oidc_payloads SET payload = payload #- ARRAY['authorizations', $2::text] WHERE model='Session' AND uid=$1`, [s.uid, clientId]);
+  }
+  await d.audit.record('app.access.revoked', sub, { client: clientId, deliveries: deliveries.map((x) => ({ client: x.clientId, ok: x.ok })) });
+  return deliveries;
+}
+
 export async function deleteAccount(d: ApiDeps, sub: string): Promise<{ deliveries: LogoutDelivery[] }> {
   const sessions = await listSessions(d, sub);
   for (const s of sessions) {
@@ -157,6 +190,16 @@ export async function handleApi(d: ApiDeps, req: IncomingMessage, res: ServerRes
     return send(res, 200, { revoked: sm[1], deliveries: r });
   }
 
+  if (p === '/api/connected-apps' && method === 'GET') return send(res, 200, { apps: await listConnectedApps(d, caller.sub) });
+  const ca = p.match(/^\/api\/connected-apps\/([^/]+)$/);
+  if (ca && method === 'DELETE') {
+    const clientId = decodeURIComponent(ca[1]);
+    if (clientId === caller.clientId) return send(res, 409, { error: 'cannot_revoke_current_app', hint: 'sign out instead' });
+    const r = await revokeApp(d, caller.sub, clientId);
+    if (!r) return send(res, 404, { error: 'app_not_found' });
+    return send(res, 200, { revoked: clientId, deliveries: r });
+  }
+
   if (p === '/api/account/export' && method === 'GET') { // KA-07
     const a = await d.accounts.findBySub(caller.sub);
     if (!a) return send(res, 404, { error: 'not_found' });
@@ -182,6 +225,13 @@ export async function handleApi(d: ApiDeps, req: IncomingMessage, res: ServerRes
     const a = await d.accounts.findBySub(caller.sub);
     if (!a) return send(res, 404, { error: 'not_found' });
     if (p === '/api/passkeys' && method === 'GET') return send(res, 200, { passkeys: await d.passkeys.list(a.sub) });
+    const pk = p.match(/^\/api\/passkeys\/([^/]+)$/);
+    if (pk && method === 'DELETE') {
+      const gone = await d.passkeys.remove(a.sub, decodeURIComponent(pk[1]));
+      if (!gone) return send(res, 404, { error: 'passkey_not_found' });
+      await d.audit.record('passkey.removed', a.sub);
+      return send(res, 200, { removed: true });
+    }
     if (p === '/api/passkeys/register/options' && method === 'POST') return send(res, 200, await d.passkeys.options(a, `sub:${a.sub}`));
     if (p === '/api/passkeys/register/verify' && method === 'POST') {
       try {

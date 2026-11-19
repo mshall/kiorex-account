@@ -49,6 +49,11 @@ export class Passkeys {
     return r.rows;
   }
 
+  async remove(sub: string, credentialId: string): Promise<boolean> {
+    const r = await this.pool.query(`DELETE FROM passkeys WHERE sub=$1 AND credential_id=$2`, [sub, credentialId]);
+    return (r.rowCount ?? 0) > 0;
+  }
+
   /** WebAuthn assertion options. `sub` set = step-up for that user (allowCredentials); unset = discoverable-credential login. */
   async loginOptions(key: string, sub?: string): Promise<PublicKeyCredentialRequestOptionsJSON> {
     const allow = sub

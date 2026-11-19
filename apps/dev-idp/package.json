@@ -14,6 +14,7 @@
     "@kiorex/otp-sender": "*",
     "@simplewebauthn/browser": "^13.0.0",
     "@simplewebauthn/server": "^13.0.0",
+    "esbuild": "^0.28.2",
     "jose": "^5.9.6",
     "oidc-provider": "^9.0.0",
     "otplib": "^13.6.0",

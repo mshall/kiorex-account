@@ -137,6 +137,17 @@ export class Guardianship {
     return l;
   }
 
+  /** The invited co-guardian declines a pending link. Nothing is created for them; the inviting guardian is told. */
+  async decline(guardian: Account, linkId: string): Promise<GuardianLink> {
+    await this.expireDue();
+    const r = await this.c.pool.query(
+      `UPDATE guardian_links SET status='revoked', ended_at=now(), ended_reason='declined_by_invitee' WHERE id=$1 AND guardian_sub=$2 AND status='pending' RETURNING *`, [linkId, guardian.sub]);
+    const l = r.rows[0] as GuardianLink | undefined;
+    if (!l) throw new HttpError(404, 'link_not_found');
+    await this.c.audit.record('guardian.link.declined', guardian.sub, { link: l.id, dependant: l.dependant_sub });
+    return l;
+  }
+
   async activeLink(guardianSub: string, dependantSub: string): Promise<GuardianLink> {
     const r = await this.c.pool.query(
       `SELECT * FROM guardian_links WHERE guardian_sub=$1 AND dependant_sub=$2 AND status='active' AND expires_at > $3`, [guardianSub, dependantSub, new Date(this.c.now() * 1000)]);

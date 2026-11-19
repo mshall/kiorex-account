@@ -20,6 +20,13 @@ export class Totp {
     return !!r.rows[0];
   }
 
+  /** Removes the credential (optional-TOTP accounts only; the route refuses it for roles that require MFA). */
+  async disable(sub: string): Promise<boolean> {
+    const r = await this.pool.query(`DELETE FROM totp_credentials WHERE sub=$1`, [sub]);
+    await this.pool.query(`DELETE FROM totp_attempts WHERE key=$1`, [`sub:${sub}`]);
+    return (r.rowCount ?? 0) > 0;
+  }
+
   /** Starts (or resumes) enrolment. A confirmed credential is never replaced here. */
   async enrolStart(a: Pick<Account, 'sub' | 'phone'>): Promise<{ secret: string; uri: string } | undefined> {
     const existing = await this.pool.query(`SELECT secret, confirmed_at FROM totp_credentials WHERE sub=$1`, [a.sub]);

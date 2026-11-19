@@ -26,6 +26,7 @@ import type { Ctx } from './services.js';
 import { send, redirect } from './http.js';
 import { HttpError } from './services.js';
 import { purgeExpired } from './adapter.js';
+import { PASSPORT_CLIENT_ID, handleAccountUi } from './account-ui.js';
 
 export interface DevIdp {
   server: http.Server;
@@ -62,6 +63,12 @@ export interface CreateAppOptions {
 export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
   const rt = o.runtime;
   const cfg = o.cfg ?? loadIdpConfig();
+  // The Passport web UI is served by this process: its redirect URIs follow the issuer origin (tests/E2E run on other ports).
+  const passportClient = cfg.clients.find((c) => c.clientId === PASSPORT_CLIENT_ID);
+  if (passportClient) {
+    passportClient.environments.local.redirectUris = [`${rt.issuer}/account/callback`];
+    passportClient.environments.local.postLogoutRedirectUris = [`${rt.issuer}/account`];
+  }
   const seedUsers = o.seedUsers ?? loadSeedUsers();
   const testNumbers = seedUsers.map((u) => u.phone);
   const pool = createPool(rt.databaseUrl, rt.schema);
@@ -162,6 +169,7 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
         if (p === '/static/brand/kiorex-mark.svg') return send(res, 200, brandAsset('kiorex-mark.svg'), { 'content-type': 'image/svg+xml' });
         if (p === '/static/simplewebauthn-browser.js') return send(res, 200, swScript, { 'content-type': 'application/javascript' });
         if (p === '/dev/reset-rate-limits' && req.method === 'POST') { await otp.resetRateLimits(); return send(res, 200, { ok: true }); }
+        if (p === '/account' || p.startsWith('/account/')) return await handleAccountUi(rt.issuer, req, res, p);
         if (p.startsWith('/interaction/')) return await handleInteraction(iDeps, req, res, url);
         if (p.startsWith('/api/')) return await handleApi(apiDeps, req, res, url);
         return providerCb(req, res);
