@@ -1,0 +1,34 @@
+{
+  "$comment": "DEV ONLY demo data for the Passport dev IdP (see TEST_DATA.md). All people, phones (+20100000xxxx) and ids are synthetic. Applied idempotently by scripts/seed-demo.ts.",
+  "dependants": [
+    { "sub": "01HZKXD0000000000000003001", "name": "Yassin Samir Ali", "nameAr": "ياسين سمير علي", "dob": "-8y", "locale": "ar" },
+    { "sub": "01HZKXD0000000000000003002", "name": "Laila Samir Ali", "nameAr": "ليلى سمير علي", "dob": "-4y", "locale": "ar" },
+    { "sub": "01HZKXD0000000000000003003", "name": "Salma Karim Mostafa", "nameAr": "سلمى كريم مصطفى", "dob": "-15y", "locale": "en" },
+    { "sub": "01HZKXD0000000000000003004", "name": "Adam Mahmoud El-Sayed", "nameAr": "آدم محمود السيد", "dob": "-2y", "locale": "ar" }
+  ],
+  "guardianLinks": [
+    { "id": "demo_gl_01", "guardian": "01HZKXD0000000000000001001", "dependant": "01HZKXD0000000000000003001", "relationship": "parent", "evidence": "self_declared" },
+    { "id": "demo_gl_02", "guardian": "01HZKXD0000000000000001001", "dependant": "01HZKXD0000000000000003002", "relationship": "parent", "evidence": "birth_certificate_ref" },
+    { "id": "demo_gl_03", "guardian": "01HZKXD0000000000000001002", "dependant": "01HZKXD0000000000000003001", "relationship": "parent", "evidence": "self_declared" },
+    { "id": "demo_gl_04", "guardian": "01HZKXD0000000000000001003", "dependant": "01HZKXD0000000000000003003", "relationship": "legal_guardian", "evidence": "court_order_ref" },
+    { "id": "demo_gl_05", "guardian": "01HZKXD0000000000000001005", "dependant": "01HZKXD0000000000000003004", "relationship": "parent", "evidence": "self_declared" }
+  ],
+  "organizations": [
+    { "orgId": "org_demo_nile_care", "legalName": "Nile Care Medical Center (DEMO)", "country": "EG", "owner": "01HZKXD0000000000000002001",
+      "members": [
+        { "sub": "01HZKXD0000000000000002001", "role": "owner" },
+        { "sub": "01HZKXD0000000000000002002", "role": "receptionist" },
+        { "sub": "01HZKXD0000000000000002003", "role": "doctor" }
+      ] },
+    { "orgId": "org_demo_delta_pharma", "legalName": "Delta Pharmacy Group (DEMO)", "country": "EG", "owner": "01HZKXD0000000000000002004",
+      "members": [ { "sub": "01HZKXD0000000000000002004", "role": "pharmacist" } ] },
+    { "orgId": "org_demo_cairo_lab", "legalName": "Cairo Diagnostics Lab (DEMO)", "country": "EG", "owner": "01HZKXD0000000000000002005",
+      "members": [ { "sub": "01HZKXD0000000000000002005", "role": "lab_technician" } ] }
+  ],
+  "invitations": [
+    { "id": "demo_inv_01", "orgId": "org_demo_nile_care", "role": "nurse", "phone": "+201000001010", "tokenPlain": "demo-invite-nile-nurse" }
+  ],
+  "linkRequests": [
+    { "id": "demo_lr_01", "primary": "01HZKXD0000000000000001011", "secondary": "01HZKXD0000000000000001009", "phone": "+201000001009", "status": "pending_review" }
+  ]
+}

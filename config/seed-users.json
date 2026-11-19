@@ -1,8 +1,218 @@
 {
-  "$comment": "LOCAL DEV ONLY seed users (INTEGRATION.md). Never read by the Cognito/tofu stack. The 000000 OTP bypass is accepted only for these numbers and only when NODE_ENV != production. The ops user carries a fixed dev-only TOTP secret so E2E tests can compute codes (used only by the dev IdP).",
+  "$comment": "LOCAL DEV ONLY seed users (INTEGRATION.md). Never read by the Cognito/tofu stack. The 000000 OTP bypass is accepted only for these numbers and only when NODE_ENV != production. TOTP secrets are fixed DEV-ONLY values (E2E + demo). Demo personas (phones +20100000xxxx, 1xxx patients, 2xxx org members, 9xxx ops) are documented in TEST_DATA.md; dependants, guardian links, organisations and invitations live in seed-demo.json (loaded by scripts/seed-demo.ts).",
   "users": [
-    { "sub": "01HZKX00000000000000000001", "phone": "+201000000001", "name": "Amira", "locale": "ar", "roles": ["patient"] },
-    { "sub": "01HZKX00000000000000000002", "phone": "+201000000002", "name": "Hassan", "locale": "en", "roles": ["patient"] },
-    { "sub": "01HZKX00000000000000000099", "phone": "+201000000099", "name": "Ops Super Admin", "locale": "en", "roles": ["ops_admin", "super_admin"], "totpSecret": "REMOVED-OLD-DEMO-TOTP-SECRET" }
+    {
+      "sub": "01HZKX00000000000000000001",
+      "phone": "+201000000001",
+      "name": "Amira",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKX00000000000000000002",
+      "phone": "+201000000002",
+      "name": "Hassan",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKX00000000000000000099",
+      "phone": "+201000000099",
+      "name": "Ops Super Admin",
+      "locale": "en",
+      "roles": [
+        "ops_admin",
+        "super_admin"
+      ],
+      "totpSecret": "REMOVED-OLD-DEMO-TOTP-SECRET"
+    },
+    {
+      "sub": "01HZKXD0000000000000001001",
+      "phone": "+201000001001",
+      "name": "هدى محمود",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000001002",
+      "phone": "+201000001002",
+      "name": "سمير علي نصار",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000001003",
+      "phone": "+201000001003",
+      "name": "Karim Mostafa",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000001004",
+      "phone": "+201000001004",
+      "name": "نورهان فتحي",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000001005",
+      "phone": "+201000001005",
+      "name": "محمود السيد",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000001006",
+      "phone": "+201000001006",
+      "name": "Mariam Adel",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000001007",
+      "phone": "+201000001007",
+      "name": "Omar Hegazy",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000001008",
+      "phone": "+201000001008",
+      "name": "داليا إبراهيم",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000001009",
+      "phone": "+201000001009",
+      "name": "Tarek Zaki",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000001010",
+      "phone": "+201000001010",
+      "name": "هبة صلاح",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000001011",
+      "phone": "+201000001011",
+      "name": "Youssef Ramadan",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000001012",
+      "phone": "+201000001012",
+      "name": "رنا خالد",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000002001",
+      "phone": "+201000002001",
+      "name": "Ahmed Fawzy",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000002002",
+      "phone": "+201000002002",
+      "name": "سارة لطفي",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000002003",
+      "phone": "+201000002003",
+      "name": "Dr Amr Salem",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000002004",
+      "phone": "+201000002004",
+      "name": "Mostafa Reda",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000002005",
+      "phone": "+201000002005",
+      "name": "دينا وجدي",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000009001",
+      "phone": "+201000009001",
+      "name": "Ops Admin Demo",
+      "locale": "en",
+      "roles": [
+        "ops_admin"
+      ],
+      "totpSecret": "REMOVED-OLD-DEMO-TOTP-SECRET"
+    },
+    {
+      "sub": "01HZKXD0000000000000009002",
+      "phone": "+201000009002",
+      "name": "Ops Finance Demo",
+      "locale": "en",
+      "roles": [
+        "ops_admin",
+        "finance"
+      ],
+      "totpSecret": "REMOVED-OLD-DEMO-TOTP-SECRET"
+    },
+    {
+      "sub": "01HZKXD0000000000000009003",
+      "phone": "+201000009003",
+      "name": "Ops Support Demo",
+      "locale": "en",
+      "roles": [
+        "ops_admin",
+        "support"
+      ]
+    }
   ]
 }

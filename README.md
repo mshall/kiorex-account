@@ -1,5 +1,7 @@
 # kiorex-account - Kiorex Passport
 
+> **QA / demo data:** synthetic Egyptian dataset, logins, URLs and reset instructions in [Docs/TEST_DATA.md](Docs/TEST_DATA.md) (DEV ONLY).
+
 Identity for the Kiorex ecosystem (user-facing name **Kiorex Passport**, host `account.kiorex.com`; KX-04, ADR-012/013).
 Production uses a **managed IdP** (default Cognito, vendor decision open: see `Docs/IDP_SCORECARD.md`, marked NEEDS_HUMAN).
 This repo holds IdP config-as-code, a **local-only** dev OIDC provider, the OTP sender and back-channel logout helpers. No custom crypto in production.
