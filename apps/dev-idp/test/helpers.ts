@@ -45,7 +45,8 @@ export async function startHarness(opts: { passkeys?: boolean; providerSso?: boo
   const rport = (receiver.address() as { port: number }).port;
 
   const cfg = structuredClone(loadIdpConfig());
-  for (const c of cfg.clients) c.environments.local.backchannelLogoutUri = `http://127.0.0.1:${rport}/${c.clientId}`;
+  // the Passport SPA keeps its default (self-hosted, ignoring) back-channel endpoint so tests exercise the real sid-carrying setup
+  for (const c of cfg.clients) if (c.clientId !== 'kiorex-passport-web') c.environments.local.backchannelLogoutUri = `http://127.0.0.1:${rport}/${c.clientId}`;
   const runtime = {
     ...runtimeFromEnv(cfg, { PORT: String(port), ISSUER: issuer, KX_DB_SCHEMA: schema, KX_TRUST_PROXY: 'true', NODE_ENV: 'test', KX_FAKE_UPSTREAM_PORT: '0' }),
     passkeysEnabled: opts.passkeys ?? true,

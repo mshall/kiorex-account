@@ -66,24 +66,29 @@ export function errorText(lang: Lang, reason?: string, attemptsLeft?: number): s
 
 let cssCache: string | undefined;
 const css = () => (cssCache ??= `${brandAsset('tokens.css')}
+:root{--kx-err-bg:#FDECEA;--kx-err-fg:#8A1F11;--kx-err-bd:#F5C2BC;--kx-ok-bg:#E7F6EE;--kx-ok-fg:#14532D;--kx-field:#64748B}
+@media (prefers-color-scheme:dark){:root{--kx-err-bg:#3B1219;--kx-err-fg:#FCA5A5;--kx-err-bd:#7F1D1D;--kx-ok-bg:#0B2F1E;--kx-ok-fg:#86EFAC;--kx-field:#7C84B0}}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--kx-ground);color:var(--kx-text);font-family:var(--kx-font);padding:16px}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--kx-ground);color:var(--kx-text);font-family:var(--kx-font);padding:16px;line-height:1.6}
+html[lang=ar] body{font-family:"IBM Plex Sans Arabic",var(--kx-font);line-height:1.8}
 .card{width:100%;max-width:420px;background:var(--kx-surface);border:1px solid var(--kx-border);border-radius:var(--kx-radius);padding:28px 24px;box-shadow:0 10px 30px rgba(55,48,163,.08)}
-.brand{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.brand img{height:34px}.wordmark{letter-spacing:.28em;font-weight:600;color:var(--kx-ink)}.passport{font-size:.75rem;color:var(--kx-text-muted);letter-spacing:.12em;text-transform:uppercase;margin-inline-start:auto}.wordmark b{color:var(--kx-ink-2)}
-h1{font-size:1.35rem;margin:0 0 6px}p{color:var(--kx-text-muted);line-height:1.5;margin:0 0 16px}
-label{display:block;font-weight:500;margin:12px 0 6px}
-input{width:100%;padding:12px;border:1px solid var(--kx-border);border-radius:10px;font:inherit;background:var(--kx-surface);color:var(--kx-text)}
-input:focus,button:focus-visible,a:focus-visible{outline:3px solid var(--kx-pulse);outline-offset:1px}
-.hint{font-size:.85rem;color:var(--kx-text-muted)}
-button,.btn{display:block;width:100%;margin-top:16px;padding:12px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;background:var(--kx-gradient);color:#fff;text-align:center;text-decoration:none}
-button.secondary{background:transparent;color:var(--kx-ink-2);border:1px solid var(--kx-border)}
-.error{background:#FDECEA;color:#8A1F11;border:1px solid #F5C2BC;border-radius:10px;padding:10px 12px;margin-bottom:12px}
-.ok{background:#E7F6EE;color:#14532D;border-radius:10px;padding:10px 12px;margin-top:12px}
-.foot{display:flex;justify-content:space-between;margin-top:18px;font-size:.8rem;color:var(--kx-text-muted)}
+@media (prefers-color-scheme:dark){.card{box-shadow:none}}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.brand img{height:30px;width:auto;background:#fff;border-radius:8px;padding:2px 4px}.wordmark{letter-spacing:.28em;font-weight:600;color:var(--kx-ink);direction:ltr}.passport{font-size:.75rem;color:var(--kx-text-muted);letter-spacing:.12em;text-transform:uppercase;margin-inline-start:auto}.wordmark b{color:var(--kx-ink-2);font-weight:600}
+h1{font-size:1.35rem;margin:0 0 6px;line-height:1.3}p{color:var(--kx-text-muted);line-height:1.6;margin:0 0 16px}
+label{display:block;font-weight:600;margin:12px 0 6px}
+input{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--kx-field);border-radius:10px;font:inherit;background:var(--kx-surface);color:var(--kx-text)}
+input:focus,button:focus-visible,a:focus-visible{outline:3px solid var(--kx-pulse);outline-offset:2px}
+.hint{font-size:.875rem;color:var(--kx-text-muted)}
+button,.btn{display:block;width:100%;min-height:44px;margin-top:16px;padding:12px;border:1px solid transparent;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;background:var(--kx-gradient);color:#fff;text-align:center;text-decoration:none}
+button.secondary,.btn.secondary{background:transparent;color:var(--kx-ink-2);border-color:var(--kx-field)}
+.error{background:var(--kx-err-bg);color:var(--kx-err-fg);border:1px solid var(--kx-err-bd);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.ok{background:var(--kx-ok-bg);color:var(--kx-ok-fg);border-radius:10px;padding:10px 12px;margin-top:12px}
+.foot{display:flex;justify-content:space-between;gap:12px;margin-top:18px;font-size:.8rem;color:var(--kx-text-muted)}
 a{color:var(--kx-ink-2)}
 .code{letter-spacing:.5em;text-align:center;font-size:1.4rem;direction:ltr}
-.phone{direction:ltr;text-align:start}`);
+.phone{direction:ltr;text-align:start}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}`);
 
 export function page(lang: Lang, title: string, body: string, opts: { langSwitchHref?: string; script?: string } = {}): string {
   const tx = T[lang];
@@ -136,8 +141,8 @@ document.getElementById('pk-login').addEventListener('click',async()=>{
   return page(lang, x.title, `<h1>${x.title}</h1><p>${x.sub}</p>${o.fedLinkNotice ? `<div class="ok" role="status">${y.fedLink}</div>` : ''}${err(o.error ?? '')}
 <form method="post" action="/interaction/${esc(uid)}/phone">
 <input type="hidden" name="lang" value="${lang}">
-<label for="phone">${x.phone}</label><input id="phone" class="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required value="${esc(o.phone ?? '')}" placeholder="+201000000001">
-<div class="hint">${x.phoneHint}</div>
+<label for="phone">${x.phone}</label><input id="phone" class="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required dir="ltr" aria-describedby="phone-hint" value="${esc(o.phone ?? '')}" placeholder="+201000000001">
+<div class="hint" id="phone-hint">${x.phoneHint}</div>
 <label for="name">${x.name}</label><input id="name" name="name" autocomplete="name" value="${esc(o.name ?? '')}">
 <button type="submit">${x.send}</button></form>${pk}${fed}`,
   { langSwitchHref: `/interaction/${uid}?lang=${lang === 'ar' ? 'en' : 'ar'}`, script });
@@ -151,7 +156,7 @@ export function totpPage(lang: Lang, uid: string, o: { error?: string; enrol?: {
     : `<h1>${y.totpTitle}</h1><p>${y.totpSub}</p>`;
   return page(lang, y.totpTitle, `${head}${err(o.error ?? '')}
 <form method="post" action="/interaction/${esc(uid)}/totp"><input type="hidden" name="lang" value="${lang}">
-<label for="totp">${y.totpCode}</label><input id="totp" class="code" name="totp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required autofocus>
+<label for="totp">${y.totpCode}</label><input id="totp" class="code" name="totp" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="6" required autofocus>
 <button type="submit">${y.totpGo}</button></form>`, { langSwitchHref: `/interaction/${uid}?lang=${lang === 'ar' ? 'en' : 'ar'}` });
 }
 
@@ -159,7 +164,7 @@ export function codePage(lang: Lang, uid: string, maskedPhone: string, o: { erro
   const x = t(lang);
   return page(lang, x.codeTitle, `<h1>${x.codeTitle}</h1><p>${x.codeSub(`<bdi dir="ltr">${esc(maskedPhone)}</bdi>`)}</p>${err(o.error ?? '')}
 <form method="post" action="/interaction/${esc(uid)}/verify"><input type="hidden" name="lang" value="${lang}">
-<label for="code">${x.code}</label><input id="code" class="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" required autofocus>
+<label for="code">${x.code}</label><input id="code" class="code" name="code" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="10" required autofocus>
 <button type="submit">${x.verify}</button></form>
 <form method="post" action="/interaction/${esc(uid)}/resend"><input type="hidden" name="lang" value="${lang}"><button class="secondary" type="submit">${x.resend}</button></form>
 <form method="post" action="/interaction/${esc(uid)}/change"><input type="hidden" name="lang" value="${lang}"><button class="secondary" type="submit">${x.change}</button></form>`,
@@ -187,9 +192,9 @@ document.getElementById('pk-add').addEventListener('click',async()=>{
 
 export function logoutPage(lang: Lang, formHtml: string): string {
   const x = t(lang);
-  const inner = formHtml
-    .replace(/(<button[^>]*name="logout"[^>]*>)[^<]*(<\/button>)/, `$1${x.logoutYes}$2`)
-    .replace(/(<button(?![^>]*name="logout")[^>]*>)[^<]*(<\/button>)/, `$1${x.logoutNo}$2`);
-  return page(lang, x.logoutTitle, `<h1>${x.logoutTitle}</h1>${inner}`);
+  // oidc-provider renders only the <form id="op.logoutForm"> (with its CSRF input); the confirm / cancel buttons are ours.
+  return page(lang, x.logoutTitle, `<h1>${x.logoutTitle}</h1>${formHtml}
+<button autofocus type="submit" form="op.logoutForm" name="logout" value="yes">${x.logoutYes}</button>
+<button class="secondary" type="submit" form="op.logoutForm">${x.logoutNo}</button>`);
 }
-export const loggedOutPage = (lang: Lang) => page(lang, t(lang).loggedOut, `<h1>${t(lang).loggedOut}</h1>`);
+export const loggedOutPage = (lang: Lang) => page(lang, t(lang).loggedOut, `<h1>${t(lang).loggedOut}</h1><a class="btn secondary" href="/account">${lang === 'ar' ? 'العودة إلى كيوريكس باسبورت' : 'Back to Kiorex Passport'}</a>`);

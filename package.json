@@ -17,7 +17,8 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:unit": "vitest run packages",
-    "db:reset": "npm run db:reset -w @kiorex/dev-idp"
+    "db:reset": "npm run db:reset -w @kiorex/dev-idp",
+    "test:e2e": "playwright test -c apps/passport-ui/e2e/playwright.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

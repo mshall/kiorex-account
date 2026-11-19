@@ -68,6 +68,9 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
   if (passportClient) {
     passportClient.environments.local.redirectUris = [`${rt.issuer}/account/callback`];
     passportClient.environments.local.postLogoutRedirectUris = [`${rt.issuer}/account`];
+    // oidc-provider only puts `sid` in tokens for clients with a back-channel logout URI. The SPA has no server, so the IdP accepts
+    // (and ignores) the logout token itself; the SPA notices a revoked session through a 401 on its next API call.
+    passportClient.environments.local.backchannelLogoutUri ??= `${rt.issuer}/account/backchannel-logout`;
   }
   const seedUsers = o.seedUsers ?? loadSeedUsers();
   const testNumbers = seedUsers.map((u) => u.phone);
