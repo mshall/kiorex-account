@@ -1,0 +1,27 @@
+/* Kiorex brand tokens — "Indigo + Ocean · coral pulse" (founder concept, 19 Nov 2026).
+   Use these in every Kiorex surface (patient web, Expo app, ops console, account pages).
+   Kiorly products keep their own palette but may use Pulse as the shared accent. */
+:root {
+  --kx-ink: #3730A3;        /* Indigo — primary, wordmark K-I-O-R-E */
+  --kx-ink-2: #0369A1;      /* Ocean — secondary, final X, links */
+  --kx-pulse: #E8735E;      /* Coral pulse — accent, ECG line, CTAs highlights, focus ring */
+  --kx-ground: #F4F6FC;     /* Ground — app background */
+  --kx-surface: #FFFFFF;
+  --kx-text: #1E1B4B;       /* indigo-950 body text */
+  --kx-text-muted: #475569;
+  --kx-border: #E2E8F0;
+  --kx-gradient: linear-gradient(135deg, #3730A3 0%, #0369A1 100%); /* app icon */
+  --kx-font: "Jost", "IBM Plex Sans Arabic", system-ui, sans-serif;  /* geometric sans; Arabic fallback */
+  --kx-radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --kx-ground: #0F1024;
+    --kx-surface: #17183A;
+    --kx-text: #E8EAFB;
+    --kx-text-muted: #A5ACC8;
+    --kx-border: #2A2C55;
+    --kx-ink: #8B85F0;      /* lifted indigo for contrast on dark */
+    --kx-ink-2: #38BDF8;
+  }
+}

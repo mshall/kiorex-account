@@ -1,0 +1,27 @@
+{
+  "name": "@kiorex/dev-idp",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "db:reset": "tsx src/reset.ts"
+  },
+  "dependencies": {
+    "@kiorex/backchannel": "*",
+    "@kiorex/otp-sender": "*",
+    "@simplewebauthn/browser": "^13.0.0",
+    "@simplewebauthn/server": "^13.0.0",
+    "jose": "^5.9.6",
+    "oidc-provider": "^9.0.0",
+    "pg": "^8.13.0",
+    "ulid": "^2.3.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/oidc-provider": "^8.8.0",
+    "@types/pg": "^8.11.10"
+  }
+}
