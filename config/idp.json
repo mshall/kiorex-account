@@ -129,9 +129,9 @@
       "environments": {
         "local": {
           "clientSecret": "dev-kiorly-clinic-secret",
-          "redirectUris": ["http://localhost:5173/auth/kiorex/callback"],
-          "postLogoutRedirectUris": ["http://localhost:5173/"],
-          "backchannelLogoutUri": "http://localhost:3000/api/v1/auth/kiorex/backchannel-logout"
+          "redirectUris": ["http://localhost:5174/auth/kiorex/callback"],
+          "postLogoutRedirectUris": ["http://localhost:5174/"],
+          "backchannelLogoutUri": "http://localhost:3010/api/v1/auth/kiorex/backchannel-logout"
         },
         "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" },
         "production": { "redirectUris": ["https://app.kiorly.com/auth/kiorex/callback"], "postLogoutRedirectUris": ["https://app.kiorly.com/"], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" }
