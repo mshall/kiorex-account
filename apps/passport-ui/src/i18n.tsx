@@ -139,7 +139,7 @@ const en = {
   'sc.offline_access': 'Stay signed in without asking again',
 
   // step-up
-  'su.title': 'Extra verification', 'su.lead': 'This action needs a fresh two-step check, so we know it is really you.', 'su.totp': 'Authenticator code', 'su.verify': 'Verify', 'su.passkey': 'Use a passkey',
+  'su.title': 'Extra verification', 'su.card': 'Confirm it is you', 'su.lead': 'This action needs a fresh two-step check, so we know it is really you.', 'su.totp': 'Authenticator code', 'su.verify': 'Verify', 'su.passkey': 'Use a passkey',
   'su.or': 'or', 'su.done': 'Verified. You can continue.', 'su.noMethod': 'You have no second factor yet. Turn on the authenticator app in Security first.', 'su.setup': 'Go to Security',
   'su.fresh': 'Verification stays valid for {minutes} minutes.', 'su.waiting': 'Waiting for your device',
 
@@ -285,7 +285,7 @@ const ar: Record<Key, string> = {
   'sc.openid': 'أنك أنت (معرّف خاص)', 'sc.profile': 'اسمك ولغتك', 'sc.phone': 'رقم هاتفك المحمول', 'sc.kx': 'إشارات الأدوار على حسابك', 'sc.kx_org': 'عضويات مؤسساتك',
   'sc.offline_access': 'البقاء مسجّلًا دون سؤالك مجددًا',
 
-  'su.title': 'تحقق إضافي', 'su.lead': 'يحتاج هذا الإجراء إلى تحقق جديد بخطوتين لنتأكد أنك أنت.', 'su.totp': 'رمز المصادقة', 'su.verify': 'تحقق', 'su.passkey': 'استخدم مفتاح مرور',
+  'su.title': 'تحقق إضافي', 'su.card': 'تأكيد هويتك', 'su.lead': 'يحتاج هذا الإجراء إلى تحقق جديد بخطوتين لنتأكد أنك أنت.', 'su.totp': 'رمز المصادقة', 'su.verify': 'تحقق', 'su.passkey': 'استخدم مفتاح مرور',
   'su.or': 'أو', 'su.done': 'تم التحقق. يمكنك المتابعة.', 'su.noMethod': 'ليس لديك عامل ثانٍ بعد. فعّل تطبيق المصادقة من «الأمان» أولًا.', 'su.setup': 'اذهب إلى الأمان',
   'su.fresh': 'يبقى التحقق صالحًا لمدة {minutes} دقائق.', 'su.waiting': 'بانتظار جهازك',
 

@@ -58,7 +58,7 @@ export function StepUpPage() {
   return (
     <>
       <h1>{t('su.title')}</h1>
-      <Card title={t('su.title')}><StepUpPanel onDone={() => navigate(ret)} /></Card>
+      <Card title={t('su.card')}><StepUpPanel onDone={() => navigate(ret)} /></Card>
     </>
   );
 }

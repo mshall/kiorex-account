@@ -31,7 +31,7 @@ function Brand() {
   return (
     <span className="brand">
       <img src="/static/brand/kiorex-mark.svg" alt="" width="32" height="32" />
-      <span className="wordmark" aria-hidden="true" dir="ltr">KIORE<b>X</b></span>
+      <span className="wordmark" dir="ltr">KIORE<b>X</b></span>
       <span className="brand-sub">Passport</span>
     </span>
   );
@@ -66,7 +66,7 @@ function Shell({ children }: { children: ReactNode }) {
     <>
       <a className="skip" href="#main">{t('app.skip')}</a>
       <header className="topbar">
-        <Link to="/account" className="brand-link" aria-label={t('app.name')}><Brand /></Link>
+        <Link to="/account" className="brand-link"><Brand /></Link>
         <Toolbar />
         <Button variant="ghost" onClick={signOut}>{t('app.signOut')}</Button>
       </header>

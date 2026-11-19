@@ -10,8 +10,13 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const seed = JSON.parse(readFileSync(path.join(here, '../../../config/seed-users.json'), 'utf8')).users as Array<{ phone: string; totpSecret?: string; roles: string[] }>;
 export const OPS = seed.find((u) => u.roles.includes('super_admin'))!;
 
-let n = 0;
-export const randomPhone = () => `+2012${String((Date.now() % 90_000_000) + 10_000_000 + (n++ * 7919) % 9_000)}`.slice(0, 13);
+const used = new Set<string>();
+export const randomPhone = (): string => {
+  for (;;) {
+    const p = `+2012${String(Math.floor(Math.random() * 100_000_000)).padStart(8, '0')}`;
+    if (!used.has(p)) { used.add(p); return p; }
+  }
+};
 
 export async function lastMessage(phone: string, template?: string) {
   const r = await fetch(`${ISSUER}/dev/inbox?${new URLSearchParams({ to: phone, ...(template ? { template } : {}) })}`);
@@ -71,4 +76,4 @@ export async function addVirtualAuthenticator(page: Page) {
   return { cdp, authenticatorId, credentials: async () => (await cdp.send('WebAuthn.getCredentials', { authenticatorId })).credentials };
 }
 
-export const nav = (page: Page, name: string | RegExp) => page.getByRole('navigation').getByRole('link', { name });
+export const nav = (page: Page, name: string | RegExp) => page.getByRole('navigation', { name: /Account sections|أقسام الحساب/ }).getByRole('link', { name, exact: typeof name === 'string' });
