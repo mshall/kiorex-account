@@ -1,0 +1,5 @@
+# Identity is security-critical: every change needs owner review.
+*                    @mshall
+/config/             @mshall
+/packages/backchannel/ @mshall
+/packages/otp-sender/  @mshall
