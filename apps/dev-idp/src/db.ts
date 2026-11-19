@@ -98,6 +98,7 @@ export async function migrate(pool: Pool, schema: string): Promise<void> {
       org_id text PRIMARY KEY, legal_name text NOT NULL, country text NOT NULL, product_refs jsonb NOT NULL DEFAULT '{}',
       status text NOT NULL DEFAULT 'active', created_by text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
     );
+    ALTER TABLE organizations ADD COLUMN IF NOT EXISTS edition text NOT NULL DEFAULT 'CLINIC';
     CREATE TABLE IF NOT EXISTS memberships (
       id text PRIMARY KEY, org_id text NOT NULL REFERENCES organizations(org_id), sub text NOT NULL, role_hint text NOT NULL,
       invited_by text, status text NOT NULL DEFAULT 'active', effective_from timestamptz NOT NULL DEFAULT now(), expires_at timestamptz,

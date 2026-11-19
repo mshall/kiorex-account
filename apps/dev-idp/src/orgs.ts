@@ -20,6 +20,11 @@ export class Orgs {
     if (typeof v !== 'string' || !this.c.cfg.orgs.roleHints.includes(v)) throw new HttpError(400, 'invalid_role_hint', { allowed: this.c.cfg.orgs.roleHints });
     return v;
   }
+  private edition(v: unknown): string {
+    if (v === undefined || v === null || v === '') return this.c.cfg.orgs.defaultEdition;
+    if (typeof v !== 'string' || !this.c.cfg.orgs.editions.includes(v.toUpperCase())) throw new HttpError(400, 'invalid_edition', { allowed: this.c.cfg.orgs.editions });
+    return v.toUpperCase();
+  }
   private tokenHash = (t: string) => createHash('sha256').update(t).digest('hex');
 
   async create(owner: Account, body: Record<string, unknown>) {
@@ -33,11 +38,12 @@ export class Orgs {
       if (!this.c.cfg.orgs.productRefKeys.includes(k) || typeof v !== 'string' || v.length > 64) throw new HttpError(400, 'invalid_product_ref', { allowed: this.c.cfg.orgs.productRefKeys });
       refs[k] = v;
     }
+    const edition = this.edition(body.edition); // KA-14: display hint only (ADR-031); never a token claim
     const orgId = ulid();
-    await this.c.pool.query(`INSERT INTO organizations (org_id, legal_name, country, product_refs, created_by) VALUES ($1,$2,$3,$4,$5)`, [orgId, legal, country, JSON.stringify(refs), owner.sub]);
+    await this.c.pool.query(`INSERT INTO organizations (org_id, legal_name, country, product_refs, edition, created_by) VALUES ($1,$2,$3,$4,$5,$6)`, [orgId, legal, country, JSON.stringify(refs), edition, owner.sub]);
     const m = await this.addMembership(orgId, owner.sub, 'owner', null);
-    await this.c.audit.record('org.created', owner.sub, { org: orgId });
-    return { org_id: orgId, legal_name: legal, country, product_refs: refs, membership_id: m };
+    await this.c.audit.record('org.created', owner.sub, { org: orgId, edition });
+    return { org_id: orgId, legal_name: legal, country, edition, product_refs: refs, membership_id: m };
   }
 
   private async addMembership(orgId: string, sub: string, role: string, invitedBy: string | null): Promise<string> {
@@ -64,7 +70,7 @@ export class Orgs {
 
   async mine(sub: string) {
     const r = await this.c.pool.query(
-      `SELECT o.org_id, o.legal_name, o.country, o.product_refs, m.id AS membership_id, m.role_hint, m.status, m.effective_from, m.expires_at
+      `SELECT o.org_id, o.legal_name, o.country, o.edition, o.product_refs, m.id AS membership_id, m.role_hint, m.status, m.effective_from, m.expires_at
          FROM memberships m JOIN organizations o ON o.org_id=m.org_id WHERE m.sub=$1 ORDER BY m.created_at`, [sub]);
     return r.rows;
   }

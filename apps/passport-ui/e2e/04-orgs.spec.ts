@@ -53,3 +53,32 @@ test('organisations: create, invite by phone, invitee accepts (list and link), o
   await expect(owner.getByRole('status').filter({ hasText: 'Role updated.' })).toBeVisible();
   await ownerCtx.close(); await docCtx.close(); await nurseCtx.close();
 });
+
+test('KA-14 editions: one person holds a Nurse practice and a Clinic membership; edition and new role hints shown in EN and AR', async ({ browser }) => {
+  const ctx = await browser.newContext(); await useEnglish(ctx);
+  const page = await ctx.newPage();
+  await signIn(page, randomPhone(), { name: 'Nurse Omar' });
+  await nav(page, 'Organisations').click();
+  await page.getByLabel('Legal name').fill('Omar Home Nursing');
+  await page.getByLabel('Edition').selectOption('NURSE');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  const solo = page.getByRole('listitem', { name: 'Omar Home Nursing' });
+  await expect(solo).toContainText('Kiorly Nurse');
+  await page.getByLabel('Legal name').fill('Nile Family Clinic');
+  await page.getByLabel('Edition').selectOption('CLINIC');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  await expect(page.getByRole('listitem', { name: 'Nile Family Clinic' })).toContainText('Kiorly Clinic');
+  await expect(page.getByText('Your profession, licence and what you may practise are kept and checked inside Kiorly, never in Kiorex Passport.')).toBeVisible();
+  // new role hints are offered to managers
+  await solo.getByRole('button', { name: 'Manage members' }).click();
+  const options = await solo.getByLabel('Role hint').locator('option').allTextContents();
+  for (const r of ['Physiotherapist', 'Dispatcher', 'Assistant', 'Front desk']) expect(options).toContain(r);
+  // Arabic
+  const ar = await browser.newContext(); const arPage = await ar.newPage();
+  await signIn(arPage, randomPhone(), { name: 'Nurse Layla' });
+  await arPage.goto('/account/orgs');
+  await expect(arPage.locator('html')).toHaveAttribute('dir', 'rtl');
+  await expect(arPage.getByLabel('الإصدار')).toBeVisible();
+  await expect(arPage.getByLabel('الإصدار').locator('option')).toHaveText(['كيورلي كلينك', 'كيورلي نيرس']);
+  await ar.close();
+});

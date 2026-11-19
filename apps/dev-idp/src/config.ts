@@ -70,7 +70,7 @@ const idpSchema = z.object({
     evidenceTypes: z.array(z.string()),
     maxDependantsPerGuardian: z.number(),
   }),
-  orgs: z.object({ roleHints: z.array(z.string()), invitationTtlDays: z.number(), productRefKeys: z.array(z.string()) }),
+  orgs: z.object({ roleHints: z.array(z.string()), editions: z.array(z.string()).min(1), defaultEdition: z.string(), invitationTtlDays: z.number(), productRefKeys: z.array(z.string()) }),
   federation: z.object({
     flag: z.string(),
     upstreams: z.array(z.object({

@@ -32,7 +32,8 @@
     "acr": { "source": "session.assurance", "note": "KA-10. urn:kiorex:acr:basic (phone OTP / federation) or urn:kiorex:acr:mfa (second factor or user-verifying passkey)." },
     "amr": { "source": "session.methods", "note": "KA-10. RFC 8176 values (otp, swk, hwk, user, mfa) plus Kiorex extensions 'totp' and 'fed'." }
   },
-  "forbiddenClaims": ["diagnosis", "medications", "allergies", "conditions", "national_id", "patient_id", "chart", "encounter", "prescription", "result", "email_verified_clinical"],
+  "forbiddenClaims": ["diagnosis", "medications", "allergies", "conditions", "national_id", "patient_id", "chart", "encounter", "prescription", "result", "email_verified_clinical", "address", "addresses", "home_address", "visit_address", "location", "district", "profession", "specialty", "licence", "license", "licence_number", "registration", "scope_of_practice", "edition"],
+  "$forbiddenClaimsNote": "KA-13 / KX-04 Rev 2.3: patient addresses live in the Kiorex patient profile; professions, licences and verification evidence live in Kiorly (ADR-013, ADR-029). None may appear in any token, userinfo, event or org entry. Edition is a display hint held by Passport and shown by the product; the token carries org_id + role_hint only (KA-14).",
   "tokenLifetimes": {
     "$comment": "KA-04: access <= 15 min; refresh 30 days with rotation + reuse detection; audience-specific tokens.",
     "accessTokenSeconds": 900,
@@ -85,7 +86,11 @@
   },
   "orgs": {
     "$comment": "KA-09. Membership = hint only; products decide permissions. No clinical data in orgs, memberships or claims (ADR-013).",
-    "roleHints": ["owner", "admin", "doctor", "nurse", "receptionist", "finance", "pharmacist", "lab_technician", "staff"],
+    "roleHints": ["owner", "admin", "finance", "doctor", "physiotherapist", "nurse", "dispatcher", "assistant", "front_desk", "receptionist", "pharmacist", "lab_technician", "staff"],
+    "roleHintsNote": "KX-04 Rev 2.3 KA09: owner, admin, finance, doctor, physiotherapist, nurse, dispatcher, assistant, front_desk. receptionist/pharmacist/lab_technician/staff are kept for existing memberships and Pharmacy/Lab. Strings only: profession, licence and scope of practice stay in Kiorly (ADR-029); a nursing agency owner/admin is owner/admin of an org whose edition is NURSE.",
+    "editions": ["CLINIC", "NURSE"],
+    "defaultEdition": "CLINIC",
+    "editionsNote": "KA-14: edition (CLINIC|NURSE) is a DISPLAY HINT on the organisation (KX-04 section 03, ADR-031). One subject may hold memberships in orgs of different editions (solo nurse + agency). The token kx_orgs carries org_id + role_hint only; the product shows the edition.",
     "invitationTtlDays": 7,
     "productRefKeys": ["kiorly_clinic_tenant_id", "kiorly_pharmacy_tenant_id", "kiorly_lab_tenant_id"]
   },
@@ -180,7 +185,8 @@
     },
     {
       "clientId": "kiorly-clinic",
-      "name": "Kiorly Clinic (provider SSO, KCV-201 seam)",
+      "name": "Kiorly Clinic + Kiorly Nurse (provider SSO, KCV-201 seam; ONE client, edition-aware, aud=kiorly-clinic for both editions, KX-04 Rev 2.3)",
+      "$comment": "Kiorly Nurse is an edition of Kiorly Clinic (ADR-031): same OIDC client, same audience. Local dev: the Nurse edition runs on the same Kiorly web, http://localhost:5174 (CLAUDE.md), so no extra local redirect URI is needed. Production nurse.kiorly.com URIs are TODO_NEEDS_HUMAN (KX-19 domain confirmation).",
       "type": "confidential",
       "grantTypes": ["authorization_code", "refresh_token"],
       "scopes": ["openid", "profile", "phone", "kx", "kx_org", "offline_access"],
@@ -195,7 +201,7 @@
           "backchannelLogoutUri": "http://localhost:3010/api/v1/auth/kiorex/backchannel-logout"
         },
         "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" },
-        "production": { "redirectUris": ["https://app.kiorly.com/auth/kiorex/callback"], "postLogoutRedirectUris": ["https://app.kiorly.com/"], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" }
+        "production": { "redirectUris": ["https://app.kiorly.com/auth/kiorex/callback", "TODO_NEEDS_HUMAN: https://nurse.kiorly.com/auth/kiorex/callback (confirm host + path, KX-04 Rev 2.3, KX-23 KNED01)"], "postLogoutRedirectUris": ["https://app.kiorly.com/", "TODO_NEEDS_HUMAN: https://nurse.kiorly.com/"], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" }
       }
     }
   ],

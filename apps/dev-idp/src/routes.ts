@@ -97,7 +97,7 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
     return ok(200, {
       passkeys_enabled: d.passkeysEnabled,
       guardian: { age_of_majority: g.ageOfMajority, default_market: g.defaultMarket, evidence_types: g.evidenceTypes, relationships: ['parent', 'legal_guardian', 'grandparent', 'other_relative'], act_scopes: g.actScopes, max_dependants: g.maxDependantsPerGuardian, act_as_ttl_seconds: g.scopedTokenSeconds },
-      orgs: { role_hints: d.cfg.orgs.roleHints, invitation_ttl_days: d.cfg.orgs.invitationTtlDays },
+      orgs: { role_hints: d.cfg.orgs.roleHints, editions: d.cfg.orgs.editions, default_edition: d.cfg.orgs.defaultEdition, invitation_ttl_days: d.cfg.orgs.invitationTtlDays },
       step_up: { freshness_seconds: su.freshnessSeconds, sensitive_actions: su.sensitiveActions, acr_mfa: su.acr.mfa },
       mfa_required_roles: d.cfg.mfaPolicy.requiredForRoles,
     });

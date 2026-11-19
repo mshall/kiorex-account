@@ -15,7 +15,7 @@ export const ACCOUNT: Account = { sub: 'S1', name: 'Mona', phone: '+201000000001
 export const META: Meta = {
   passkeys_enabled: true,
   guardian: { age_of_majority: { EG: 18, default: 18 }, default_market: 'EG', evidence_types: ['self_declared', 'birth_certificate_ref', 'court_order_ref', 'provider_attested'], relationships: ['parent', 'legal_guardian', 'grandparent', 'other_relative'], act_scopes: ['dependant:profile', 'dependant:booking', 'dependant:consent'], max_dependants: 20, act_as_ttl_seconds: 600 },
-  orgs: { role_hints: ['owner', 'admin', 'doctor', 'nurse', 'receptionist', 'finance', 'pharmacist', 'lab_technician', 'staff'], invitation_ttl_days: 7 },
+  orgs: { role_hints: ['owner', 'admin', 'finance', 'doctor', 'physiotherapist', 'nurse', 'dispatcher', 'assistant', 'front_desk', 'receptionist', 'pharmacist', 'lab_technician', 'staff'], editions: ['CLINIC', 'NURSE'], default_edition: 'CLINIC', invitation_ttl_days: 7 },
   step_up: { freshness_seconds: 300, sensitive_actions: ['money'], acr_mfa: 'urn:kiorex:acr:mfa' },
   mfa_required_roles: ['ops_admin', 'super_admin'],
 };

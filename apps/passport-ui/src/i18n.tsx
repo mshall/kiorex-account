@@ -109,14 +109,15 @@ const en = {
   'ops.mainAccount': 'Main account', 'ops.otherAccount': 'Other account', 'ops.reviewedBy': 'Reviewed {date}',
 
   // orgs
-  'org.title': 'Organisations', 'org.lead': 'Clinics, pharmacies and labs you belong to. A role here is only a hint; each product decides what you can do.',
+  'org.title': 'Organisations', 'org.lead': 'Clinics, nursing practices and agencies, pharmacies and labs you belong to. You can belong to more than one, for example your own nursing practice and an agency. A role here is only a hint; each product decides what you can do.',
+  'org.edition': 'Product edition', 'org.edition.CLINIC': 'Kiorly Clinic', 'org.edition.NURSE': 'Kiorly Nurse', 'org.edition.note': 'A display label only. Your profession, licence and what you may practise are kept and checked inside Kiorly, never in Kiorex Passport.', 'org.edition.create': 'Edition',
   'org.empty': 'You are not a member of an organisation.', 'org.role': 'Role', 'org.since': 'Member since {date}', 'org.invites': 'Invitations', 'org.invitedAs': '{by} invited you to join {org} as {role}.',
   'org.invitedAsAnon': 'You were invited to join {org} as {role}.', 'org.expires': 'Expires {date}', 'org.accepted': 'You joined {org}.', 'org.joined': 'You joined the organisation.', 'org.declined': 'Invitation declined.',
   'org.token': 'Have an invitation code?', 'org.tokenField': 'Invitation code', 'org.tokenGo': 'Accept invitation', 'org.members': 'Members', 'org.manage': 'Manage members',
   'org.invite': 'Invite someone', 'org.invite.phone': 'Their mobile number', 'org.invite.role': 'Role hint', 'org.invite.send': 'Send invitation', 'org.invite.sent': 'Invitation sent by mock WhatsApp.',
   'org.removeMember': 'Remove', 'org.removeTitle': 'Remove this member?', 'org.removed': 'Member removed.', 'org.leave': 'Leave organisation', 'org.leaveTitle': 'Leave {org}?', 'org.left': 'You left the organisation.',
   'org.roleChanged': 'Role updated.', 'org.create': 'Create an organisation', 'org.create.name': 'Legal name', 'org.create.country': 'Country (2 letters)', 'org.create.submit': 'Create', 'org.created': 'Organisation created.',
-  'org.hint.owner': 'Owner: can invite and remove anyone.', 'org.hint.admin': 'Admin: can invite and manage members.', 'org.hint.doctor': 'Doctor', 'org.hint.nurse': 'Nurse', 'org.hint.receptionist': 'Receptionist',
+  'org.hint.owner': 'Owner: can invite and remove anyone.', 'org.hint.admin': 'Admin: can invite and manage members.', 'org.hint.doctor': 'Doctor', 'org.hint.physiotherapist': 'Physiotherapist', 'org.hint.nurse': 'Nurse', 'org.hint.dispatcher': 'Dispatcher', 'org.hint.assistant': 'Assistant', 'org.hint.front_desk': 'Front desk', 'org.hint.receptionist': 'Receptionist',
   'org.hint.finance': 'Finance', 'org.hint.pharmacist': 'Pharmacist', 'org.hint.lab_technician': 'Lab technician', 'org.hint.staff': 'Staff', 'org.hintNote': 'A role hint does not grant clinical access.',
   'org.status.active': 'Active', 'org.status.revoked': 'Ended', 'org.status.merged': 'Merged',
 
@@ -160,7 +161,7 @@ const en = {
   'err.totp_required_for_role': 'Your role requires two-step verification.', 'err.already_enrolled': 'The authenticator app is already on.', 'err.passkey_not_found': 'That passkey no longer exists.', 'err.passkey_invalid': 'The passkey could not be verified.',
   'err.invitation_not_found': 'That invitation was not found.', 'err.invitation_used': 'That invitation was already used.', 'err.invitation_expired': 'That invitation expired.', 'err.invitation_revoked': 'That invitation was withdrawn.',
   'err.invitation_not_for_this_account': 'That invitation was sent to a different number.', 'err.invalid_token': 'Enter the invitation code.', 'err.already_member': 'You are already a member.', 'err.insufficient_membership': 'You need to be an owner or admin for that.',
-  'err.last_owner': 'An organisation needs at least one owner.', 'err.invalid_legal_name': 'Enter the legal name (up to 120 characters).', 'err.invalid_country': 'Enter a 2-letter country code, for example EG.', 'err.invalid_role_hint': 'Choose a role.',
+  'err.last_owner': 'An organisation needs at least one owner.', 'err.invalid_edition': 'Choose Kiorly Clinic or Kiorly Nurse.', 'err.invalid_legal_name': 'Enter the legal name (up to 120 characters).', 'err.invalid_country': 'Enter a 2-letter country code, for example EG.', 'err.invalid_role_hint': 'Choose a role.',
   'err.only_owner_can_invite_owner': 'Only an owner can invite an owner.', 'err.only_owner_can_change_owner': 'Only an owner can change an owner.', 'err.only_owner_can_remove_owner': 'Only an owner can remove an owner.',
   'err.cannot_revoke_current_app': 'This is the app you are using. Sign out instead.', 'err.app_not_found': 'That app no longer has access.', 'err.not_found': 'We could not find that.', 'err.membership_not_found': 'That member was not found.', 'err.not_enrolled': 'The authenticator app is not on.', 'err.invalid_product_ref': 'That product reference is not allowed.', 'err.org_not_found': 'We could not find that organisation.',
 } as const;
@@ -258,14 +259,15 @@ const ar: Record<Key, string> = {
   'ops.confirmReverse': 'التراجع عن هذا الدمج؟', 'ops.confirmReverseBody': 'يُستعاد الحساب الآخر كما كان قبل الدمج.', 'ops.confirmReject': 'رفض هذا الطلب؟',
   'ops.mainAccount': 'الحساب الرئيسي', 'ops.otherAccount': 'الحساب الآخر', 'ops.reviewedBy': 'روجع {date}',
 
-  'org.title': 'المؤسسات', 'org.lead': 'العيادات والصيدليات والمعامل التي تنتمي إليها. الدور هنا إشارة فقط؛ كل منتج يحدد ما يمكنك فعله.',
+  'org.title': 'المؤسسات', 'org.lead': 'العيادات ومراكز وشركات التمريض والصيدليات والمعامل التي تنتمي إليها. يمكنك الانتماء لأكثر من مؤسسة، مثل ممارستك التمريضية الخاصة ووكالة تمريض. الدور هنا إشارة فقط؛ كل منتج يحدد ما يمكنك فعله.',
+  'org.edition': 'إصدار المنتج', 'org.edition.CLINIC': 'كيورلي كلينك', 'org.edition.NURSE': 'كيورلي نيرس', 'org.edition.note': 'تسمية للعرض فقط. مهنتك وترخيصك وما يحق لك ممارسته تُحفظ وتُراجع داخل كيورلي، وليس في جواز كيوريكس.', 'org.edition.create': 'الإصدار',
   'org.empty': 'لست عضوًا في أي مؤسسة.', 'org.role': 'الدور', 'org.since': 'عضو منذ {date}', 'org.invites': 'الدعوات', 'org.invitedAs': 'دعاك {by} للانضمام إلى {org} بدور {role}.',
   'org.invitedAsAnon': 'دُعيت للانضمام إلى {org} بدور {role}.', 'org.expires': 'تنتهي {date}', 'org.accepted': 'انضممت إلى {org}.', 'org.joined': 'انضممت إلى المؤسسة.', 'org.declined': 'تم رفض الدعوة.',
   'org.token': 'لديك رمز دعوة؟', 'org.tokenField': 'رمز الدعوة', 'org.tokenGo': 'قبول الدعوة', 'org.members': 'الأعضاء', 'org.manage': 'إدارة الأعضاء',
   'org.invite': 'دعوة شخص', 'org.invite.phone': 'رقم هاتفه المحمول', 'org.invite.role': 'إشارة الدور', 'org.invite.send': 'إرسال الدعوة', 'org.invite.sent': 'تم إرسال الدعوة عبر واتساب التجريبي.',
   'org.removeMember': 'إزالة', 'org.removeTitle': 'إزالة هذا العضو؟', 'org.removed': 'تمت إزالة العضو.', 'org.leave': 'مغادرة المؤسسة', 'org.leaveTitle': 'مغادرة {org}؟', 'org.left': 'غادرت المؤسسة.',
   'org.roleChanged': 'تم تحديث الدور.', 'org.create': 'إنشاء مؤسسة', 'org.create.name': 'الاسم القانوني', 'org.create.country': 'الدولة (حرفان)', 'org.create.submit': 'إنشاء', 'org.created': 'تم إنشاء المؤسسة.',
-  'org.hint.owner': 'مالك: يمكنه دعوة أي شخص وإزالته.', 'org.hint.admin': 'مدير: يمكنه دعوة الأعضاء وإدارتهم.', 'org.hint.doctor': 'طبيب', 'org.hint.nurse': 'ممرض', 'org.hint.receptionist': 'موظف استقبال',
+  'org.hint.owner': 'مالك: يمكنه دعوة أي شخص وإزالته.', 'org.hint.admin': 'مدير: يمكنه دعوة الأعضاء وإدارتهم.', 'org.hint.doctor': 'طبيب', 'org.hint.physiotherapist': 'أخصائي علاج طبيعي', 'org.hint.nurse': 'ممرض', 'org.hint.dispatcher': 'منسّق زيارات', 'org.hint.assistant': 'مساعد', 'org.hint.front_desk': 'مكتب الاستقبال', 'org.hint.receptionist': 'موظف استقبال',
   'org.hint.finance': 'مالية', 'org.hint.pharmacist': 'صيدلي', 'org.hint.lab_technician': 'فني معمل', 'org.hint.staff': 'موظف', 'org.hintNote': 'إشارة الدور لا تمنح صلاحية الاطلاع على البيانات الطبية.',
   'org.status.active': 'نشط', 'org.status.revoked': 'منتهٍ', 'org.status.merged': 'مدمج',
 
@@ -305,7 +307,7 @@ const ar: Record<Key, string> = {
   'err.totp_required_for_role': 'دورك يتطلب التحقق بخطوتين.', 'err.already_enrolled': 'تطبيق المصادقة مفعّل بالفعل.', 'err.passkey_not_found': 'مفتاح المرور هذا لم يعد موجودًا.', 'err.passkey_invalid': 'تعذّر التحقق من مفتاح المرور.',
   'err.invitation_not_found': 'لم نجد هذه الدعوة.', 'err.invitation_used': 'استُخدمت هذه الدعوة بالفعل.', 'err.invitation_expired': 'انتهت صلاحية هذه الدعوة.', 'err.invitation_revoked': 'سُحبت هذه الدعوة.',
   'err.invitation_not_for_this_account': 'أُرسلت هذه الدعوة إلى رقم آخر.', 'err.invalid_token': 'أدخل رمز الدعوة.', 'err.already_member': 'أنت عضو بالفعل.', 'err.insufficient_membership': 'يجب أن تكون مالكًا أو مديرًا لفعل ذلك.',
-  'err.last_owner': 'تحتاج المؤسسة إلى مالك واحد على الأقل.', 'err.invalid_legal_name': 'أدخل الاسم القانوني (حتى 120 حرفًا).', 'err.invalid_country': 'أدخل رمز دولة من حرفين، مثال: EG.', 'err.invalid_role_hint': 'اختر دورًا.',
+  'err.last_owner': 'تحتاج المؤسسة إلى مالك واحد على الأقل.', 'err.invalid_edition': 'اختر كيورلي كلينك أو كيورلي نيرس.', 'err.invalid_legal_name': 'أدخل الاسم القانوني (حتى 120 حرفًا).', 'err.invalid_country': 'أدخل رمز دولة من حرفين، مثال: EG.', 'err.invalid_role_hint': 'اختر دورًا.',
   'err.only_owner_can_invite_owner': 'المالك وحده يمكنه دعوة مالك.', 'err.only_owner_can_change_owner': 'المالك وحده يمكنه تغيير مالك.', 'err.only_owner_can_remove_owner': 'المالك وحده يمكنه إزالة مالك.',
   'err.cannot_revoke_current_app': 'هذا هو التطبيق الذي تستخدمه. سجّل الخروج بدلًا من ذلك.', 'err.app_not_found': 'هذا التطبيق لم تعد له صلاحية.', 'err.not_found': 'لم نجد ما طلبته.', 'err.membership_not_found': 'لم نجد هذا العضو.', 'err.not_enrolled': 'تطبيق المصادقة غير مفعّل.', 'err.invalid_product_ref': 'مرجع المنتج هذا غير مسموح.', 'err.org_not_found': 'لم نجد هذه المؤسسة.',
 };

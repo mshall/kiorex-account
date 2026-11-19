@@ -201,6 +201,18 @@ describe('Organisations page', () => {
     expect(within(c2).queryByRole('button', { name: 'Manage members' })).toBeNull();
     expect(within(c2).getByRole('button', { name: 'Leave organisation' })).toBeInTheDocument();
   });
+  it('shows each membership with its edition (Clinic and Nurse side by side), AR and EN; create form offers the edition', async () => {
+    const mm = (id: string, name: string, edition: string, role: string) => ({ ...m(role), org_id: id, membership_id: `M-${id}`, legal_name: name, edition });
+    const a = fakeApi({ orgs: async () => [mm('O1', 'Nile Clinic', 'CLINIC', 'nurse'), mm('O2', 'Omar Home Nursing', 'NURSE', 'owner'), mm('O3', 'Giza Agency', 'NURSE', 'physiotherapist')], createOrg: vi.fn(async () => ({ org_id: 'O9' })) });
+    renderApp(<OrgsPage />, { api: a });
+    expect(await screen.findByRole('listitem', { name: 'Nile Clinic' })).toHaveTextContent('Kiorly Clinic');
+    expect(screen.getByRole('listitem', { name: 'Omar Home Nursing' })).toHaveTextContent('Kiorly Nurse');
+    expect(screen.getByRole('listitem', { name: 'Giza Agency' })).toHaveTextContent('Physiotherapist');
+    await userEvent.type(screen.getByLabelText('Legal name'), 'New Agency');
+    await userEvent.selectOptions(screen.getByLabelText('Edition'), 'NURSE');
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+    await waitFor(() => expect(a.createOrg).toHaveBeenCalledWith({ legal_name: 'New Agency', country: 'EG', edition: 'NURSE' }));
+  });
   it('accepts an invitation code from the link (?invite=) and shows API errors in words', async () => {
     const token = 'x'.repeat(32);
     const a = fakeApi({ orgs: async () => [], acceptInvitationToken: async () => { throw new ApiError(410, 'invitation_used'); } });

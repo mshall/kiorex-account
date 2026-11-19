@@ -9,6 +9,7 @@ import { useRoute } from '../router';
 const hint = (t: (k: TKey) => string, r: string) => { const k = `org.hint.${r}` as TKey; const v = t(k); return v === k ? r : v; };
 const roleName = (t: (k: TKey) => string, r: string) => hint(t, r).split(':')[0];
 const MANAGERS = ['owner', 'admin'];
+const editionName = (t: (k: TKey) => string, e?: string) => { const k = `org.edition.${e ?? 'CLINIC'}` as TKey; const v = t(k); return v === k ? (e ?? '') : v; };
 
 function Invitations({ onJoined }: { onJoined: () => void }) {
   const { api } = useApp();
@@ -104,7 +105,7 @@ function MembershipCard({ m, onChanged }: { m: Membership; onChanged: () => void
   return (
     <li className="card inner" aria-label={m.legal_name}>
       <div className="row">
-        <div><h3>{m.legal_name} <span className="hint"><Ltr>{m.country}</Ltr></span></h3>
+        <div><h3>{m.legal_name} <span className="hint"><Ltr>{m.country}</Ltr></span> <Badge kind="neutral">{editionName(t, m.edition)}</Badge></h3>
           <p className="hint">{t('org.since', { date: fmtDate(m.effective_from, lang) })}</p></div>
         <div><span className="hint">{t('org.role')}: </span><Badge kind="info">{roleName(t, m.role_hint)}</Badge> <Badge kind={m.status === 'active' ? 'success' : 'neutral'}>{t(`org.status.${m.status}` as TKey)}</Badge></div>
       </div>
@@ -122,14 +123,16 @@ function MembershipCard({ m, onChanged }: { m: Membership; onChanged: () => void
 }
 
 function CreateOrg({ onCreated }: { onCreated: () => void }) {
-  const { api } = useApp();
+  const { api, meta } = useApp();
   const { t, err } = useI18n();
   const toast = useToast();
   const { busy, run } = useAction();
   const [name, setName] = useState(''); const [country, setCountry] = useState('EG'); const [msg, setMsg] = useState('');
+  const editions = meta?.orgs.editions ?? ['CLINIC', 'NURSE'];
+  const [edition, setEdition] = useState(meta?.orgs.default_edition ?? 'CLINIC');
   const submit = () => {
     setMsg('');
-    void run(async () => { try { await api.createOrg({ legal_name: name.trim(), country: country.trim() }); } catch (x) { const a = x as ApiError; setMsg(err(a.code, a.status)); throw new ApiError(0, 'cancelled'); } }, () => { toast.ok(t('org.created')); setName(''); onCreated(); });
+    void run(async () => { try { await api.createOrg({ legal_name: name.trim(), country: country.trim(), edition }); } catch (x) { const a = x as ApiError; setMsg(err(a.code, a.status)); throw new ApiError(0, 'cancelled'); } }, () => { toast.ok(t('org.created')); setName(''); onCreated(); });
   };
   return (
     <Card title={t('org.create')} id="org-create">
@@ -137,6 +140,7 @@ function CreateOrg({ onCreated }: { onCreated: () => void }) {
       <form onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
         <Field label={t('org.create.name')}>{(p) => <input {...p} name="org-name" maxLength={120} autoComplete="organization" value={name} onChange={(e) => setName(e.target.value)} />}</Field>
         <Field label={t('org.create.country')}>{(p) => <input {...p} name="org-country" maxLength={2} dir="ltr" autoComplete="country" value={country} onChange={(e) => setCountry(e.target.value.toUpperCase())} />}</Field>
+        <Field label={t('org.edition.create')} hint={t('org.edition.note')}>{(p) => <select {...p} name="org-edition" value={edition} onChange={(e) => setEdition(e.target.value)}>{editions.map((e) => <option key={e} value={e}>{editionName(t, e)}</option>)}</select>}</Field>
         <Button type="submit" busy={busy} disabled={!name.trim()}>{t('org.create.submit')}</Button>
       </form>
     </Card>

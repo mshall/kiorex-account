@@ -8,7 +8,7 @@ export interface Account { sub: string; name: string | null; phone: string | nul
 export interface Meta {
   passkeys_enabled: boolean;
   guardian: { age_of_majority: Record<string, number>; default_market: string; evidence_types: string[]; relationships: string[]; act_scopes: string[]; max_dependants: number; act_as_ttl_seconds: number };
-  orgs: { role_hints: string[]; invitation_ttl_days: number };
+  orgs: { role_hints: string[]; editions?: string[]; default_edition?: string; invitation_ttl_days: number };
   step_up: { freshness_seconds: number; sensitive_actions: string[]; acr_mfa: string };
   mfa_required_roles: string[];
 }
@@ -21,7 +21,7 @@ export interface ActAsResult { access_token: string; expires_in: number; scope: 
 export interface Conflict { code: string; severity: 'blocking' | 'info'; detail: Record<string, unknown> }
 export interface LinkView { link_id: string; status: string; primary_sub: string; secondary_sub: string; conflicts: Conflict[]; resolution: unknown; requested_at: string; verified_at: string | null; reviewed_by: string | null; reviewed_at: string | null; review_note: string | null }
 export interface Resolution { name?: 'primary' | 'secondary'; membership_roles?: Record<string, string> }
-export interface Membership { org_id: string; legal_name: string; country: string; membership_id: string; role_hint: string; status: string; effective_from: string }
+export interface Membership { org_id: string; legal_name: string; country: string; edition?: string; membership_id: string; role_hint: string; status: string; effective_from: string }
 export interface OrgMember { membership_id: string; sub: string; name: string | null; role_hint: string; status: string; effective_from: string }
 export interface PendingInvitation { invitation_id: string; org_id: string; legal_name: string; role_hint: string; expires_at: string; invited_by_name: string | null }
 export interface ConnectedApp { client_id: string; name: string; scopes: string[]; first_granted_at: string | null; last_granted_at: string | null }
@@ -59,7 +59,7 @@ export interface Api {
   federationIdentities(): Promise<FederatedIdentity[]>;
   federationUnlink(upstream: string, sub: string): Promise<void>;
   orgs(): Promise<Membership[]>;
-  createOrg(b: { legal_name: string; country: string }): Promise<{ org_id: string }>;
+  createOrg(b: { legal_name: string; country: string; edition?: string }): Promise<{ org_id: string }>;
   orgMembers(orgId: string): Promise<OrgMember[]>;
   inviteMember(orgId: string, b: { phone: string; role_hint: string; locale?: string }): Promise<void>;
   changeRole(orgId: string, sub: string, role: string): Promise<void>;
