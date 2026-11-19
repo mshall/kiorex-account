@@ -98,15 +98,61 @@ ${body}
 
 export const err = (msg: string) => (msg ? `<div class="error" role="alert">${esc(msg)}</div>` : '');
 
-export function phonePage(lang: Lang, uid: string, o: { error?: string; phone?: string; name?: string } = {}): string {
-  const x = t(lang);
-  return page(lang, x.title, `<h1>${x.title}</h1><p>${x.sub}</p>${err(o.error ?? '')}
+const X2 = {
+  en: {
+    pkLogin: 'Sign in with a passkey', pkFail: 'Passkey sign-in failed. Use your phone number instead.',
+    fedWith: (n: string) => `Continue with ${n}`, fedLink: 'Your provider account is not linked yet. Verify your mobile number once to link it to Kiorex Passport.',
+    totpTitle: 'Two-step verification', totpSub: 'Enter the 6-digit code from your authenticator app.', totpCode: 'Authenticator code', totpGo: 'Verify',
+    totpEnrolTitle: 'Set up your authenticator', totpEnrolSub: 'Your role requires two-step verification. Add this key to an authenticator app, then enter the code it shows.', totpKey: 'Setup key',
+    totpErr: { wrong: (n: number) => `Incorrect code. ${n} attempt(s) left.`, locked: 'Too many wrong attempts. Try again in a few minutes.', invalid: 'Enter the 6-digit code.' },
+  },
+  ar: {
+    pkLogin: 'تسجيل الدخول بمفتاح مرور', pkFail: 'فشل الدخول بمفتاح المرور. استخدم رقم هاتفك.',
+    fedWith: (n: string) => `المتابعة عبر ${n}`, fedLink: 'حساب مزوّد الخدمة غير مرتبط بعد. تحقق من رقم هاتفك مرة واحدة لربطه بكيوريكس باسبورت.',
+    totpTitle: 'التحقق بخطوتين', totpSub: 'أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة.', totpCode: 'رمز المصادقة', totpGo: 'تحقق',
+    totpEnrolTitle: 'إعداد تطبيق المصادقة', totpEnrolSub: 'دورك يتطلب التحقق بخطوتين. أضف هذا المفتاح إلى تطبيق مصادقة ثم أدخل الرمز الظاهر.', totpKey: 'مفتاح الإعداد',
+    totpErr: { wrong: (n: number) => `الرمز غير صحيح. تبقّت ${n} محاولة.`, locked: 'محاولات خاطئة كثيرة. حاول بعد دقائق.', invalid: 'أدخل الرمز المكوّن من 6 أرقام.' },
+  },
+} as const;
+export const t2 = (lang: Lang) => X2[lang];
+
+export function phonePage(lang: Lang, uid: string, o: { error?: string; phone?: string; name?: string; passkeyLogin?: boolean; federation?: Array<{ id: string; name: string }>; fedLinkNotice?: boolean } = {}): string {
+  const x = t(lang); const y = t2(lang);
+  const fed = (o.federation ?? []).map((u) => `<a class="btn secondary" data-federate="${esc(u.id)}" href="/interaction/${esc(uid)}/federate/${esc(u.id)}">${esc(y.fedWith(u.name))}</a>`).join('');
+  const pk = o.passkeyLogin
+    ? `<button id="pk-login" class="secondary" type="button">${y.pkLogin}</button><div id="pk-msg" role="status"></div>
+<form id="pk-finish" method="post" action="/interaction/${esc(uid)}/passkey/login/finish"></form>` : '';
+  const script = o.passkeyLogin ? `
+const out=document.getElementById('pk-msg');
+document.getElementById('pk-login').addEventListener('click',async()=>{
+  try{
+    const o=await (await fetch('/interaction/${uid}/passkey/login/options',{method:'POST'})).json();
+    const a=await SimpleWebAuthnBrowser.startAuthentication({optionsJSON:o});
+    const r=await fetch('/interaction/${uid}/passkey/login/verify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(a)});
+    if(!r.ok)throw new Error('verify');
+    document.getElementById('pk-finish').submit();
+  }catch(e){out.textContent=${JSON.stringify(y.pkFail)};out.className='error';}
+});` : undefined;
+  return page(lang, x.title, `<h1>${x.title}</h1><p>${x.sub}</p>${o.fedLinkNotice ? `<div class="ok" role="status">${y.fedLink}</div>` : ''}${err(o.error ?? '')}
 <form method="post" action="/interaction/${esc(uid)}/phone">
 <input type="hidden" name="lang" value="${lang}">
 <label for="phone">${x.phone}</label><input id="phone" class="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required value="${esc(o.phone ?? '')}" placeholder="+201000000001">
 <div class="hint">${x.phoneHint}</div>
 <label for="name">${x.name}</label><input id="name" name="name" autocomplete="name" value="${esc(o.name ?? '')}">
-<button type="submit">${x.send}</button></form>`, { langSwitchHref: `/interaction/${uid}?lang=${lang === 'ar' ? 'en' : 'ar'}` });
+<button type="submit">${x.send}</button></form>${pk}${fed}`,
+  { langSwitchHref: `/interaction/${uid}?lang=${lang === 'ar' ? 'en' : 'ar'}`, script });
+}
+
+/** KA-10: TOTP challenge, or first-time enrolment (secret shown) for privileged roles. */
+export function totpPage(lang: Lang, uid: string, o: { error?: string; enrol?: { secret: string; uri: string } } = {}): string {
+  const y = t2(lang);
+  const head = o.enrol
+    ? `<h1>${y.totpEnrolTitle}</h1><p>${y.totpEnrolSub}</p><p>${y.totpKey}: <bdi dir="ltr" id="totp-secret"><code>${esc(o.enrol.secret)}</code></bdi></p><p class="hint"><bdi dir="ltr">${esc(o.enrol.uri)}</bdi></p>`
+    : `<h1>${y.totpTitle}</h1><p>${y.totpSub}</p>`;
+  return page(lang, y.totpTitle, `${head}${err(o.error ?? '')}
+<form method="post" action="/interaction/${esc(uid)}/totp"><input type="hidden" name="lang" value="${lang}">
+<label for="totp">${y.totpCode}</label><input id="totp" class="code" name="totp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required autofocus>
+<button type="submit">${y.totpGo}</button></form>`, { langSwitchHref: `/interaction/${uid}?lang=${lang === 'ar' ? 'en' : 'ar'}` });
 }
 
 export function codePage(lang: Lang, uid: string, maskedPhone: string, o: { error?: string } = {}): string {

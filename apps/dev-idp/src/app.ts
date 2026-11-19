@@ -13,8 +13,18 @@ import { Passkeys } from './passkeys.js';
 import { createProvider } from './provider.js';
 import { LogoutDispatcher } from './logout.js';
 import { handleInteraction } from './interactions.js';
-import { handleApi, type ApiDeps } from './api.js';
-import { send } from './http.js';
+import { handleApi, revokeAllSessions, type ApiDeps } from './api.js';
+import { DevInbox, Notifier, TeeChannel } from './notify.js';
+import { Events } from './events.js';
+import { Totp } from './totp.js';
+import { Guardianship } from './guardian.js';
+import { AccountLinking } from './links.js';
+import { Orgs } from './orgs.js';
+import { Federation } from './federation.js';
+import { FakeUpstreamIdp } from './fake-upstream.js';
+import type { Ctx } from './services.js';
+import { send, redirect } from './http.js';
+import { HttpError } from './services.js';
 import { purgeExpired } from './adapter.js';
 
 export interface DevIdp {
@@ -25,6 +35,10 @@ export interface DevIdp {
   port: number;
   otpChannel: OtpChannel;
   otp: OtpService;
+  inbox: DevInbox;
+  events: Events;
+  upstream?: FakeUpstreamIdp;
+  ctx: Ctx;
   testNumbers: string[];
   seedUsers: SeedUser[];
   key: SigningKey;
@@ -39,6 +53,10 @@ export interface CreateAppOptions {
   fetchImpl?: typeof fetch;
   /** Override OTP policy numbers, e.g. for fast tests. */
   quiet?: boolean;
+  /** Epoch-seconds clock for tests (TOTP windows, guardian expiry, invitation expiry). Defaults to real time. */
+  now?: () => number;
+  /** Separate clock for TOTP windows so tests can step through many 30 s windows without ageing bearer tokens. */
+  totpNow?: () => number;
 }
 
 export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
@@ -52,11 +70,32 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
   await accounts.seed(seedUsers);
   const audit = new Audit(pool);
   const key = await loadOrCreateSigningKey(pool);
-  const otpChannel = o.otpChannel ?? new LogChannel((l) => { if (!o.quiet) console.log(l); });
+  const now = o.now ?? (() => Math.floor(Date.now() / 1000));
+  // Messaging is MOCKED: OTPs are logged (injected/log channel) AND written to the DB dev inbox (GET /dev/inbox).
+  const inbox = new DevInbox(pool);
+  const logChannel = o.otpChannel ?? new LogChannel((l) => { if (!o.quiet) console.log(l); });
+  const otpChannel = new TeeChannel(logChannel, inbox.otpChannel());
   const otp = new OtpService(pool, cfg, otpChannel, { nodeEnv: rt.nodeEnv, testNumbers });
-  const provider = createProvider({ cfg, pool, accounts, key, issuer: rt.issuer });
-  provider.proxy = rt.trustProxy;
   const dispatcher = new LogoutDispatcher(rt.issuer, key, cfg, o.fetchImpl);
+  const events = new Events(pool);
+  const hooks: Ctx['hooks'] = { revokeSessions: async () => undefined };
+  const ctx: Ctx = { pool, cfg, accounts, audit, events, notifier: new Notifier(inbox), key, issuer: rt.issuer, dispatcher, now, hooks };
+  const orgs = new Orgs(ctx);
+  const provider = createProvider({ cfg, pool, accounts, key, issuer: rt.issuer, orgClaims: (sub) => orgs.claimsFor(sub) });
+  provider.proxy = rt.trustProxy;
+
+  // KA-11: second fake upstream IdP (dev), only when the flag account.provider_sso is on
+  const upstreams = new Map<string, FakeUpstreamIdp>();
+  if (rt.providerSsoEnabled) {
+    for (const u of cfg.federation.upstreams) {
+      const idp = new FakeUpstreamIdp({ id: u.id, name: u.name, clientId: u.local.clientId, clientSecret: u.local.clientSecret, users: u.local.users, redirectUris: [`${rt.issuer}/federation/callback`] });
+      await idp.start(rt.upstreamPort);
+      upstreams.set(u.id, idp);
+    }
+  }
+  const federation = new Federation(ctx, rt.providerSsoEnabled, upstreams, o.fetchImpl);
+  const totp = new Totp(pool, cfg, o.totpNow ?? now);
+  const svc = { guardian: new Guardianship(ctx), linking: new AccountLinking(ctx, otp), orgs, totp, federation };
   const origin = new URL(rt.issuer);
   const passkeys = new Passkeys(pool, { id: origin.hostname, name: cfg.passwordless.passkeys.rpName, origin: origin.origin });
   const suppressedSessions = new Set<string>();
@@ -86,8 +125,10 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
   const apiDeps: ApiDeps = {
     provider, pool, accounts, dispatcher, passkeys, audit, key, issuer: rt.issuer,
     audience: cfg.defaultAudience, passkeysEnabled: rt.passkeysEnabled, suppressedSessions,
+    cfg, svc, ctx, trustProxy: rt.trustProxy, now,
   };
-  const iDeps = { provider, accounts, otp, passkeys, audit, passkeysEnabled: rt.passkeysEnabled, trustProxy: rt.trustProxy };
+  hooks.revokeSessions = (sub) => revokeAllSessions(apiDeps, sub);
+  const iDeps = { provider, accounts, otp, passkeys, audit, passkeysEnabled: rt.passkeysEnabled, trustProxy: rt.trustProxy, pool, cfg, totp, federation };
 
   const swBrowser = path.join(REPO_ROOT, 'node_modules/@simplewebauthn/browser/dist/bundle/index.umd.min.js');
   const swScript = readFileSync(swBrowser, 'utf8');
@@ -98,7 +139,25 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
       const url = new URL(req.url ?? '/', rt.issuer);
       const p = url.pathname;
       try {
-        if (p === '/healthz') return send(res, 200, { status: 'ok', env: 'dev-only', issuer: rt.issuer });
+        if (p === '/healthz') return send(res, 200, { status: 'ok', env: 'dev-only', issuer: rt.issuer, upstream_issuer: [...upstreams.values()][0]?.issuer ?? null });
+        // dev inbox / event outbox for E2E tests (mock messaging, CLAUDE.md founder decision); dev IdP never runs in production
+        if (p === '/dev/inbox' && req.method === 'GET') {
+          const q = url.searchParams;
+          return send(res, 200, { messages: await inbox.list({ to: q.get('to') ?? undefined, channel: q.get('channel') ?? undefined, template: q.get('template') ?? undefined, afterId: Number(q.get('after') ?? 0) || undefined }) });
+        }
+        if (p === '/dev/inbox' && req.method === 'DELETE') { await inbox.clear(); return send(res, 200, { ok: true }); }
+        if (p === '/dev/events' && req.method === 'GET') return send(res, 200, { events: await events.list(Number(url.searchParams.get('after') ?? 0) || 0, url.searchParams.get('type') ?? undefined) });
+        // KA-11: upstream IdP redirects the browser here; we verify server-side, then resume the interaction
+        if (p === '/federation/callback' && req.method === 'GET') {
+          try {
+            if (url.searchParams.get('error')) return send(res, 400, { error: 'upstream_error', detail: url.searchParams.get('error') });
+            const uid = await federation.callback(url.searchParams.get('state') ?? '', url.searchParams.get('code') ?? '');
+            return redirect(res, `/interaction/${uid}/federate/done`);
+          } catch (e) {
+            if (e instanceof HttpError) return send(res, e.status, { error: e.code, ...e.extra });
+            throw e;
+          }
+        }
         if (p === '/static/brand/tokens.css') return send(res, 200, brandAsset('tokens.css'), { 'content-type': 'text/css' });
         if (p === '/static/brand/kiorex-mark.svg') return send(res, 200, brandAsset('kiorex-mark.svg'), { 'content-type': 'image/svg+xml' });
         if (p === '/static/simplewebauthn-browser.js') return send(res, 200, swScript, { 'content-type': 'application/javascript' });
@@ -118,13 +177,14 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
     server.listen(rt.port, '127.0.0.1', resolve);
   });
   const port = (server.address() as { port: number }).port;
-  const purge = setInterval(() => void purgeExpired(pool).catch(() => undefined), 10 * 60_000);
+  const purge = setInterval(() => { void purgeExpired(pool).catch(() => undefined); void svc.guardian.expireDue().catch(() => undefined); }, 10 * 60_000);
   purge.unref();
 
   return {
-    server, provider, pool, issuer: rt.issuer, port, otpChannel, otp, testNumbers, seedUsers, key,
+    server, provider, pool, issuer: rt.issuer, port, otpChannel, otp, inbox, events, upstream: [...upstreams.values()][0], ctx, testNumbers, seedUsers, key,
     close: async () => {
       clearInterval(purge);
+      for (const u of upstreams.values()) await u.stop();
       await new Promise<void>((r) => server.close(() => r()));
       server.closeAllConnections?.();
       await pool.end();

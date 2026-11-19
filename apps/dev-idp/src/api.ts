@@ -10,14 +10,28 @@ import type { Passkeys } from './passkeys.js';
 import type { Audit } from './audit.js';
 import type { SigningKey } from './keys.js';
 import { readBody, send } from './http.js';
+import type { IdpConfig } from './config.js';
+import type { Guardianship } from './guardian.js';
+import type { AccountLinking } from './links.js';
+import type { Orgs } from './orgs.js';
+import type { Totp } from './totp.js';
+import type { Federation } from './federation.js';
+import type { Ctx } from './services.js';
+import { handleExtended, errorResponse } from './routes.js';
+
+export interface Services { guardian: Guardianship; linking: AccountLinking; orgs: Orgs; totp: Totp; federation: Federation }
 
 export interface ApiDeps {
   provider: Provider; pool: Pool; accounts: Accounts; dispatcher: LogoutDispatcher; passkeys: Passkeys;
   audit: Audit; key: SigningKey; issuer: string; audience: string; passkeysEnabled: boolean;
   suppressedSessions: Set<string>;
+  cfg: IdpConfig; svc: Services; ctx: Ctx; trustProxy: boolean; now: () => number;
 }
 
-interface Caller { sub: string; sessionUid?: string; jti: string }
+export interface Caller {
+  sub: string; sessionUid?: string; jti: string; sid: string; clientId: string;
+  acr?: string; amr?: string[]; authTime?: number; scope?: string; orgs?: unknown;
+}
 
 async function authenticate(d: ApiDeps, req: IncomingMessage): Promise<Caller | undefined> {
   const h = String(req.headers.authorization ?? '');
@@ -25,16 +39,18 @@ async function authenticate(d: ApiDeps, req: IncomingMessage): Promise<Caller | 
   if (!m) return undefined;
   try {
     const pub = await importJWK(d.key.publicJwk as JWK, 'RS256');
-    await jwtVerify(m[1], pub, { issuer: d.issuer, audience: d.audience, algorithms: ['RS256'] });
+    await jwtVerify(m[1], pub, { issuer: d.issuer, audience: d.audience, algorithms: ['RS256'], currentDate: new Date(d.now() * 1000) });
     // JWT access tokens are not persisted by oidc-provider, so "still valid" = the login session bound to this
     // token's (client_id, sid) still exists. Revoking the session therefore invalidates API access at once.
-    const { jti, sid, client_id: clientId, sub } = decodeJwt(m[1]) as { jti?: string; sid?: string; client_id?: string; sub?: string };
+    const claims = decodeJwt(m[1]) as { jti?: string; sid?: string; client_id?: string; sub?: string; act?: unknown; acr?: string; amr?: string[]; auth_time?: number; scope?: string; kx_orgs?: unknown };
+    const { jti, sid, client_id: clientId, sub } = claims;
     if (!jti || !sid || !clientId || !sub) return undefined;
+    if (claims.act) return undefined; // guardian acting-as tokens are for products, never for the account self-service API
     const r = await d.pool.query(
       `SELECT uid FROM oidc_payloads WHERE model='Session' AND expires_at > now()
          AND payload->>'accountId'=$1 AND payload->'authorizations'->$2->>'sid'=$3`, [sub, clientId, sid]);
     if (!r.rows[0]) return undefined;
-    return { sub, sessionUid: r.rows[0].uid as string, jti };
+    return { sub, sessionUid: r.rows[0].uid as string, jti, sid, clientId, acr: claims.acr, amr: claims.amr, authTime: claims.auth_time, scope: claims.scope, orgs: claims.kx_orgs };
   } catch {
     return undefined;
   }
@@ -60,6 +76,10 @@ export async function revokeSession(d: ApiDeps, sessionUid: string, sub: string)
   await d.pool.query(`DELETE FROM session_meta WHERE session_uid=$1`, [sessionUid]);
   await d.audit.record('session.revoked', sub, { session: sessionUid.slice(0, 6), deliveries: deliveries.map((x) => ({ client: x.clientId, ok: x.ok })) });
   return deliveries;
+}
+
+export async function revokeAllSessions(d: ApiDeps, sub: string): Promise<void> {
+  for (const s of await listSessions(d, sub)) await revokeSession(d, s.session_id, sub);
 }
 
 async function listSessions(d: ApiDeps, sub: string, current?: string) {
@@ -92,6 +112,12 @@ export async function deleteAccount(d: ApiDeps, sub: string): Promise<{ deliveri
   // any grants not tied to a live session (e.g. refresh-token only)
   await d.pool.query(`DELETE FROM oidc_payloads WHERE payload->>'accountId'=$1`, [sub]);
   await d.pool.query(`DELETE FROM passkeys WHERE sub=$1`, [sub]);
+  await d.pool.query(`DELETE FROM totp_credentials WHERE sub=$1`, [sub]);
+  await d.pool.query(`DELETE FROM account_contacts WHERE sub=$1`, [sub]);
+  await d.pool.query(`DELETE FROM federated_identities WHERE sub=$1`, [sub]);
+  await d.pool.query(`UPDATE link_requests SET status='cancelled' WHERE (primary_sub=$1 OR secondary_sub=$1) AND status IN ('pending_verification','pending_review')`, [sub]);
+  await d.svc.guardian.endAllFor(sub);
+  await d.svc.orgs.endAllFor(sub);
   const deliveries: LogoutDelivery[] = [];
   for (const clientId of d.dispatcher.clientIds) {
     const r = await d.dispatcher.send(clientId, 'subject.deleted', sub);
@@ -107,6 +133,11 @@ export async function handleApi(d: ApiDeps, req: IncomingMessage, res: ServerRes
   if (!caller) return send(res, 401, { error: 'invalid_token' }, { 'www-authenticate': 'Bearer error="invalid_token"' });
   const p = url.pathname;
   const method = req.method ?? 'GET';
+  try {
+    if (await handleExtended(d, caller, req, res, url)) return;
+  } catch (e) {
+    return errorResponse(res, e);
+  }
 
   if (p === '/api/sessions' && method === 'GET') return send(res, 200, { sessions: await listSessions(d, caller.sub, caller.sessionUid) });
 
@@ -133,6 +164,11 @@ export async function handleApi(d: ApiDeps, req: IncomingMessage, res: ServerRes
       subject: { ...identityClaims(a), status: a.status },
       sessions: await listSessions(d, caller.sub, caller.sessionUid),
       passkeys: await d.passkeys.list(caller.sub),
+      dependants: await d.svc.guardian.list(caller.sub),
+      memberships: await d.svc.orgs.mine(caller.sub),
+      federated_identities: await d.svc.federation.list(caller.sub),
+      linked_contacts: (await d.pool.query(`SELECT type, value, source, created_at FROM account_contacts WHERE sub=$1`, [caller.sub])).rows,
+      totp_enrolled: await d.svc.totp.isEnrolled(caller.sub),
       note: 'Identity data only. Clinical data is never held by Kiorex Account (ADR-013).',
     });
   }

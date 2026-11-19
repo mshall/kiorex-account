@@ -35,9 +35,11 @@ export function buildClients(cfg: IdpConfig): ClientMetadata[] {
 
 export interface ProviderDeps {
   cfg: IdpConfig; pool: Pool; accounts: Accounts; key: SigningKey; issuer: string;
+  /** KA-09: active memberships as hints for the `kx_orgs` claim (scope kx_org only). */
+  orgClaims?: (sub: string) => Promise<Array<{ org_id: string; role_hint: string }>>;
 }
 
-export function createProvider({ cfg, pool, accounts, key, issuer }: ProviderDeps): Provider {
+export function createProvider({ cfg, pool, accounts, key, issuer, orgClaims }: ProviderDeps): Provider {
   const L = cfg.tokenLifetimes;
   const claims: Record<string, string[]> = {};
   for (const s of cfg.scopes) claims[s.name] = s.claims;
@@ -46,6 +48,8 @@ export function createProvider({ cfg, pool, accounts, key, issuer }: ProviderDep
   const langOf = (ctx: { oidc?: { params?: { ui_locales?: unknown } } }): Lang =>
     String(ctx.oidc?.params?.ui_locales ?? '').startsWith('ar') ? 'ar' : 'en';
 
+  // eslint-disable-next-line prefer-const
+  let provider: Provider;
   const configuration: Configuration = {
     adapter: makePgAdapter(pool),
     clients: buildClients(cfg),
@@ -79,7 +83,19 @@ export function createProvider({ cfg, pool, accounts, key, issuer }: ProviderDep
       const { sub: _sub, ...rest } = identityClaims(a); // sub is set by the library
       void _sub;
       const sid = (token as { sid?: string }).sid;
-      return sid ? { ...rest, sid } : rest; // sid lets products match back-channel logout tokens
+      const out: Record<string, unknown> = sid ? { ...rest, sid } : { ...rest }; // sid lets products match back-channel logout tokens
+      // KA-10: assurance signal (acr/amr/auth_time) from the login session; products require acr=mfa for money/clinical/ops actions
+      const sessionUid = (token as { sessionUid?: string }).sessionUid;
+      const session = sessionUid ? await provider.Session.findByUid(sessionUid) : undefined;
+      if (session) {
+        if (session.acr) out.acr = session.acr;
+        if (session.amr) out.amr = session.amr;
+        if (session.loginTs) out.auth_time = session.loginTs;
+      }
+      // KA-09: membership hints only when the client asked for scope kx_org (no clinical data, ADR-013)
+      const scope = String((token as { scope?: string }).scope ?? '');
+      if (orgClaims && scope.split(' ').includes('kx_org')) out.kx_orgs = await orgClaims(accountId);
+      return out;
     },
     interactions: { url: (_ctx, interaction) => `/interaction/${interaction.uid}` },
     features: {
@@ -116,6 +132,6 @@ export function createProvider({ cfg, pool, accounts, key, issuer }: ProviderDep
       ctx.body = out;
     },
   };
-  void issuer;
-  return new Provider(issuer, configuration);
+  provider = new Provider(issuer, configuration);
+  return provider;
 }
