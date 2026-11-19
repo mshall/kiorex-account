@@ -1,0 +1,8 @@
+{
+  "$comment": "LOCAL DEV ONLY seed users (INTEGRATION.md). Never read by the Cognito/tofu stack. The 000000 OTP bypass is accepted only for these numbers and only when NODE_ENV != production.",
+  "users": [
+    { "sub": "01HZKX00000000000000000001", "phone": "+201000000001", "name": "Amira", "locale": "ar", "roles": ["patient"] },
+    { "sub": "01HZKX00000000000000000002", "phone": "+201000000002", "name": "Hassan", "locale": "en", "roles": ["patient"] },
+    { "sub": "01HZKX00000000000000000099", "phone": "+201000000099", "name": "Ops Super Admin", "locale": "en", "roles": ["ops_admin", "super_admin"] }
+  ]
+}

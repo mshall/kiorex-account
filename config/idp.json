@@ -1,0 +1,142 @@
+{
+  "$comment": "Kiorex Account IdP configuration-as-code (KX-04 KA-01..KA-05, KX-22). Single source of truth read by (a) apps/dev-idp (environment 'local') and (b) the Cognito OpenTofu stack (environments 'staging'/'production'). Never put production secrets here: the tofu stack generates client secrets into Secrets Manager. No clinical data in tokens or claims (ADR-013).",
+  "schemaVersion": 1,
+  "issuer": {
+    "local": "http://localhost:4400",
+    "staging": "TODO_NEEDS_HUMAN: https://account.staging.kiorex.com (domain per KX-19)",
+    "production": "https://account.kiorex.com"
+  },
+  "resourceServers": [
+    { "identifier": "kiorex-api", "name": "Kiorex API", "accessTokenFormat": "jwt", "signingAlg": "RS256" }
+  ],
+  "defaultAudience": "kiorex-api",
+  "scopes": [
+    { "name": "openid", "claims": ["sub", "sid"] },
+    { "name": "profile", "claims": ["name", "locale"] },
+    { "name": "phone", "claims": ["phone_number", "phone_number_verified"] },
+    { "name": "kx", "description": "Role hints only. Never grants clinical access (ADR-013/BR40).", "claims": ["kx_roles"] },
+    { "name": "offline_access", "claims": [] }
+  ],
+  "accessTokenClaims": ["sub", "phone_number", "phone_number_verified", "name", "locale", "kx_roles"],
+  "claimsMapping": {
+    "$comment": "IdP attribute -> token claim. Cognito: custom attributes are declared on the user pool schema (custom:kx_roles etc.) and mapped via the pre-token-generation trigger.",
+    "sub": { "source": "subject.id", "cognito": "sub", "note": "Opaque ULID/UUID; never derived from phone or email (KX-04 §03)." },
+    "phone_number": { "source": "contact.phone", "cognito": "phone_number" },
+    "phone_number_verified": { "source": "contact.phoneVerified", "cognito": "phone_number_verified" },
+    "name": { "source": "subject.displayName", "cognito": "name" },
+    "locale": { "source": "subject.locale", "cognito": "locale", "allowed": ["ar", "en"] },
+    "kx_roles": { "source": "membership.roleHints", "cognito": "custom:kx_roles", "type": "string[]", "allowed": ["patient", "ops_admin", "super_admin"] }
+  },
+  "forbiddenClaims": ["diagnosis", "medications", "allergies", "conditions", "national_id", "patient_id", "chart", "encounter", "prescription", "result", "email_verified_clinical"],
+  "tokenLifetimes": {
+    "$comment": "KA-04: access <= 15 min; refresh 30 days with rotation + reuse detection; audience-specific tokens.",
+    "accessTokenSeconds": 900,
+    "idTokenSeconds": 900,
+    "refreshTokenDays": 30,
+    "refreshRotation": true,
+    "refreshReuseDetection": true,
+    "authorizationCodeSeconds": 60,
+    "sessionDays": 30,
+    "interactionSeconds": 900
+  },
+  "passwordless": {
+    "primaryFactor": "phone_otp",
+    "passwordsAllowedForPatients": false,
+    "otp": {
+      "codeLength": 6,
+      "ttlSeconds": 300,
+      "maxAttemptsPerChallenge": 5,
+      "maxSendsPerPhonePerHour": 5,
+      "maxSendsPerIpPerHour": 20,
+      "lockoutMinutesAfterExhaustedChallenge": 15,
+      "channels": ["whatsapp", "sms"],
+      "channelFallbackOrder": ["whatsapp", "sms"],
+      "devBypass": { "code": "000000", "onlyWhenNodeEnvNot": "production", "onlySeededTestNumbers": true }
+    },
+    "passkeys": { "flag": "account.passkeys", "optional": true, "rpName": "Kiorex", "userVerification": "preferred", "residentKey": "preferred" }
+  },
+  "mfaPolicy": {
+    "$comment": "KA-03: TOTP for privileged/ops/provider roles. Enforced by Cognito (MFA = ON with software token for these groups via pre-auth/step-up). The dev IdP only advertises it (amr/acr) and does not enforce TOTP locally.",
+    "requiredForRoles": ["ops_admin", "super_admin", "owner", "admin", "finance"],
+    "method": "totp",
+    "patients": "optional_passkey",
+    "stepUpAcr": "urn:kiorex:acr:mfa"
+  },
+  "sessions": { "listAndRevoke": true, "backchannelLogout": true, "events": ["session.revoked", "subject.deleted"] },
+  "clients": [
+    {
+      "clientId": "kiorex-web",
+      "name": "Kiorex patient web",
+      "type": "public",
+      "grantTypes": ["authorization_code", "refresh_token"],
+      "scopes": ["openid", "profile", "phone", "kx", "offline_access"],
+      "pkce": "S256",
+      "environments": {
+        "local": {
+          "redirectUris": ["http://localhost:5180/auth/callback"],
+          "postLogoutRedirectUris": ["http://localhost:5180/"],
+          "backchannelLogoutUri": "http://localhost:4000/api/v1/auth/backchannel-logout"
+        },
+        "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" },
+        "production": { "redirectUris": ["https://kiorex.com/auth/callback"], "postLogoutRedirectUris": ["https://kiorex.com/"], "backchannelLogoutUri": "TODO_NEEDS_HUMAN: Kiorex API URL (api.kiorex.com?) per KX-19" }
+      }
+    },
+    {
+      "clientId": "kiorex-ops",
+      "name": "Kiorex ops console / super admin",
+      "type": "public",
+      "grantTypes": ["authorization_code", "refresh_token"],
+      "scopes": ["openid", "profile", "phone", "kx", "offline_access"],
+      "pkce": "S256",
+      "mfaRequired": true,
+      "environments": {
+        "local": {
+          "redirectUris": ["http://localhost:5181/auth/callback"],
+          "postLogoutRedirectUris": ["http://localhost:5181/"],
+          "backchannelLogoutUri": "http://localhost:4000/api/v1/auth/backchannel-logout"
+        },
+        "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" },
+        "production": { "redirectUris": ["TODO_NEEDS_HUMAN: ops.kiorex.com callback"], "postLogoutRedirectUris": [], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" }
+      }
+    },
+    {
+      "clientId": "kiorex-mobile",
+      "name": "Kiorex mobile (Expo)",
+      "type": "public",
+      "grantTypes": ["authorization_code", "refresh_token"],
+      "scopes": ["openid", "profile", "phone", "kx", "offline_access"],
+      "pkce": "S256",
+      "applicationType": "native",
+      "environments": {
+        "local": {
+          "redirectUris": ["kiorex://auth/callback", "http://localhost:8081/auth/callback"],
+          "postLogoutRedirectUris": ["kiorex://auth/logout", "http://localhost:8081/"],
+          "backchannelLogoutUri": "http://localhost:4000/api/v1/auth/backchannel-logout"
+        },
+        "staging": { "redirectUris": ["kiorex://auth/callback"], "postLogoutRedirectUris": [], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" },
+        "production": { "redirectUris": ["kiorex://auth/callback"], "postLogoutRedirectUris": [], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" }
+      }
+    },
+    {
+      "clientId": "kiorly-clinic",
+      "name": "Kiorly Clinic (provider SSO, KCV-201 seam)",
+      "type": "confidential",
+      "grantTypes": ["authorization_code", "refresh_token"],
+      "scopes": ["openid", "profile", "phone", "kx", "offline_access"],
+      "pkce": "S256",
+      "tokenEndpointAuthMethod": "client_secret_basic",
+      "mfaRequired": true,
+      "environments": {
+        "local": {
+          "clientSecret": "dev-kiorly-clinic-secret",
+          "redirectUris": ["http://localhost:5173/auth/kiorex/callback"],
+          "postLogoutRedirectUris": ["http://localhost:5173/"],
+          "backchannelLogoutUri": "http://localhost:3000/api/v1/auth/kiorex/backchannel-logout"
+        },
+        "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" },
+        "production": { "redirectUris": ["https://app.kiorly.com/auth/kiorex/callback"], "postLogoutRedirectUris": ["https://app.kiorly.com/"], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" }
+      }
+    }
+  ],
+  "flags": { "account.passkeys": true }
+}
