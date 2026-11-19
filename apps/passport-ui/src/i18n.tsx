@@ -162,7 +162,7 @@ const en = {
   'err.invitation_not_for_this_account': 'That invitation was sent to a different number.', 'err.invalid_token': 'Enter the invitation code.', 'err.already_member': 'You are already a member.', 'err.insufficient_membership': 'You need to be an owner or admin for that.',
   'err.last_owner': 'An organisation needs at least one owner.', 'err.invalid_legal_name': 'Enter the legal name (up to 120 characters).', 'err.invalid_country': 'Enter a 2-letter country code, for example EG.', 'err.invalid_role_hint': 'Choose a role.',
   'err.only_owner_can_invite_owner': 'Only an owner can invite an owner.', 'err.only_owner_can_change_owner': 'Only an owner can change an owner.', 'err.only_owner_can_remove_owner': 'Only an owner can remove an owner.',
-  'err.cannot_revoke_current_app': 'This is the app you are using. Sign out instead.', 'err.app_not_found': 'That app no longer has access.', 'err.not_found': 'We could not find that.', 'err.org_not_found': 'We could not find that organisation.',
+  'err.cannot_revoke_current_app': 'This is the app you are using. Sign out instead.', 'err.app_not_found': 'That app no longer has access.', 'err.not_found': 'We could not find that.', 'err.membership_not_found': 'That member was not found.', 'err.not_enrolled': 'The authenticator app is not on.', 'err.invalid_product_ref': 'That product reference is not allowed.', 'err.org_not_found': 'We could not find that organisation.',
 } as const;
 
 type Key = keyof typeof en;
@@ -307,7 +307,7 @@ const ar: Record<Key, string> = {
   'err.invitation_not_for_this_account': 'أُرسلت هذه الدعوة إلى رقم آخر.', 'err.invalid_token': 'أدخل رمز الدعوة.', 'err.already_member': 'أنت عضو بالفعل.', 'err.insufficient_membership': 'يجب أن تكون مالكًا أو مديرًا لفعل ذلك.',
   'err.last_owner': 'تحتاج المؤسسة إلى مالك واحد على الأقل.', 'err.invalid_legal_name': 'أدخل الاسم القانوني (حتى 120 حرفًا).', 'err.invalid_country': 'أدخل رمز دولة من حرفين، مثال: EG.', 'err.invalid_role_hint': 'اختر دورًا.',
   'err.only_owner_can_invite_owner': 'المالك وحده يمكنه دعوة مالك.', 'err.only_owner_can_change_owner': 'المالك وحده يمكنه تغيير مالك.', 'err.only_owner_can_remove_owner': 'المالك وحده يمكنه إزالة مالك.',
-  'err.cannot_revoke_current_app': 'هذا هو التطبيق الذي تستخدمه. سجّل الخروج بدلًا من ذلك.', 'err.app_not_found': 'هذا التطبيق لم تعد له صلاحية.', 'err.not_found': 'لم نجد ما طلبته.', 'err.org_not_found': 'لم نجد هذه المؤسسة.',
+  'err.cannot_revoke_current_app': 'هذا هو التطبيق الذي تستخدمه. سجّل الخروج بدلًا من ذلك.', 'err.app_not_found': 'هذا التطبيق لم تعد له صلاحية.', 'err.not_found': 'لم نجد ما طلبته.', 'err.membership_not_found': 'لم نجد هذا العضو.', 'err.not_enrolled': 'تطبيق المصادقة غير مفعّل.', 'err.invalid_product_ref': 'مرجع المنتج هذا غير مسموح.', 'err.org_not_found': 'لم نجد هذه المؤسسة.',
 };
 
 export const clientName = (lang: Lang, id: string): string => { const k = `client.${id}`; const v = (DICTS[lang] as Record<string, string>)[k]; return v ?? id; };
