@@ -1,0 +1,8 @@
+{
+  "name": "@kiorex/backchannel",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": { "jose": "^5.9.6" }
+}
