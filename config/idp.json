@@ -11,13 +11,14 @@
   ],
   "defaultAudience": "kiorex-api",
   "scopes": [
-    { "name": "openid", "claims": ["sub", "sid"] },
+    { "name": "openid", "claims": ["sub", "sid", "auth_time", "acr", "amr"] },
     { "name": "profile", "claims": ["name", "locale"] },
     { "name": "phone", "claims": ["phone_number", "phone_number_verified"] },
     { "name": "kx", "description": "Role hints only. Never grants clinical access (ADR-013/BR40).", "claims": ["kx_roles"] },
+    { "name": "kx_org", "description": "Organisation membership hints (org_id + role hint). Never grants clinical access (ADR-013/BR40).", "claims": ["kx_orgs"] },
     { "name": "offline_access", "claims": [] }
   ],
-  "accessTokenClaims": ["sub", "phone_number", "phone_number_verified", "name", "locale", "kx_roles"],
+  "accessTokenClaims": ["sub", "phone_number", "phone_number_verified", "name", "locale", "kx_roles", "kx_orgs", "act", "acr", "amr"],
   "claimsMapping": {
     "$comment": "IdP attribute -> token claim. Cognito: custom attributes are declared on the user pool schema (custom:kx_roles etc.) and mapped via the pre-token-generation trigger.",
     "sub": { "source": "subject.id", "cognito": "sub", "note": "Opaque ULID/UUID; never derived from phone or email (KX-04 §03)." },
@@ -25,7 +26,11 @@
     "phone_number_verified": { "source": "contact.phoneVerified", "cognito": "phone_number_verified" },
     "name": { "source": "subject.displayName", "cognito": "name" },
     "locale": { "source": "subject.locale", "cognito": "locale", "allowed": ["ar", "en"] },
-    "kx_roles": { "source": "membership.roleHints", "cognito": "custom:kx_roles", "type": "string[]", "allowed": ["patient", "ops_admin", "super_admin"] }
+    "kx_roles": { "source": "membership.roleHints", "cognito": "custom:kx_roles", "type": "string[]", "allowed": ["patient", "ops_admin", "super_admin"] },
+    "kx_orgs": { "source": "membership.activeOrgs", "cognito": "custom:kx_orgs", "type": "{org_id,role_hint}[]", "note": "KA-09. Only when scope kx_org is requested. Hints only; the product decides permissions (KX-04 section 03)." },
+    "act": { "source": "guardian.actor", "note": "KA-06. RFC 8693 actor claim on guardian acting-as tokens: sub = dependant, act.sub = guardian." },
+    "acr": { "source": "session.assurance", "note": "KA-10. urn:kiorex:acr:basic (phone OTP / federation) or urn:kiorex:acr:mfa (second factor or user-verifying passkey)." },
+    "amr": { "source": "session.methods", "note": "KA-10. RFC 8176 values (otp, swk, hwk, user, mfa) plus Kiorex extensions 'totp' and 'fed'." }
   },
   "forbiddenClaims": ["diagnosis", "medications", "allergies", "conditions", "national_id", "patient_id", "chart", "encounter", "prescription", "result", "email_verified_clinical"],
   "tokenLifetimes": {
@@ -56,11 +61,50 @@
     "passkeys": { "flag": "account.passkeys", "optional": true, "rpName": "Kiorex", "userVerification": "preferred", "residentKey": "preferred" }
   },
   "mfaPolicy": {
-    "$comment": "KA-03: TOTP for privileged/ops/provider roles. Enforced by Cognito (MFA = ON with software token for these groups via pre-auth/step-up). The dev IdP only advertises it (amr/acr) and does not enforce TOTP locally.",
+    "$comment": "KA-03/KA-10: TOTP for privileged/ops/provider roles. The dev IdP enforces TOTP locally (otplib) at login for accounts holding any requiredForRoles role (a user-verifying passkey also satisfies it). Production: Cognito MFA = ON with software token for these groups via pre-auth/step-up.",
     "requiredForRoles": ["ops_admin", "super_admin", "owner", "admin", "finance"],
     "method": "totp",
     "patients": "optional_passkey",
     "stepUpAcr": "urn:kiorex:acr:mfa"
+  },
+  "stepUp": {
+    "$comment": "KA-10. Products require acr=urn:kiorex:acr:mfa and a fresh auth_time for money, clinical and ops actions. The IdP issues a step-up token from POST /api/step-up after TOTP or a user-verifying passkey assertion.",
+    "acr": { "basic": "urn:kiorex:acr:basic", "mfa": "urn:kiorex:acr:mfa" },
+    "freshnessSeconds": 300,
+    "sensitiveActions": ["money", "clinical", "ops", "account_merge", "guardian_override"],
+    "totp": { "issuer": "Kiorex Passport", "periodSeconds": 30, "digits": 6, "epochToleranceSeconds": 30, "maxAttemptsPerWindow": 5, "lockoutMinutes": 5 }
+  },
+  "guardianship": {
+    "$comment": "KA-06 (KX-04 sections 03/05). Guardian links expire automatically at the age of majority. TODO_NEEDS_HUMAN: legal confirmation of the age per market and of the accepted evidence types (Docs/NEEDS_HUMAN.md).",
+    "defaultMarket": "EG",
+    "ageOfMajority": { "EG": 18, "default": 18 },
+    "scopedTokenSeconds": 600,
+    "actScopes": ["dependant:profile", "dependant:booking", "dependant:consent"],
+    "evidenceTypes": ["self_declared", "birth_certificate_ref", "court_order_ref", "provider_attested"],
+    "maxDependantsPerGuardian": 20
+  },
+  "orgs": {
+    "$comment": "KA-09. Membership = hint only; products decide permissions. No clinical data in orgs, memberships or claims (ADR-013).",
+    "roleHints": ["owner", "admin", "doctor", "nurse", "receptionist", "finance", "pharmacist", "lab_technician", "staff"],
+    "invitationTtlDays": 7,
+    "productRefKeys": ["kiorly_clinic_tenant_id", "kiorly_pharmacy_tenant_id", "kiorly_lab_tenant_id"]
+  },
+  "federation": {
+    "$comment": "KA-11 dev: a second fake upstream IdP (apps/dev-idp/src/fake-upstream.ts). Production uses enterprise SAML/OIDC federation in the managed IdP (phase 4).",
+    "flag": "account.provider_sso",
+    "upstreams": [
+      {
+        "id": "fake-hospital",
+        "name": "Fake Hospital SSO (dev)",
+        "local": {
+          "port": 4401, "clientId": "kiorex-passport", "clientSecret": "dev-fake-upstream-secret",
+          "users": [
+            { "id": "dr-salma", "name": "Dr. Salma", "email": "salma@fake-hospital.test" },
+            { "id": "nurse-omar", "name": "Omar (nurse)", "email": "omar@fake-hospital.test" }
+          ]
+        }
+      }
+    ]
   },
   "sessions": { "listAndRevoke": true, "backchannelLogout": true, "events": ["session.revoked", "subject.deleted"] },
   "clients": [
@@ -69,7 +113,7 @@
       "name": "Kiorex patient web",
       "type": "public",
       "grantTypes": ["authorization_code", "refresh_token"],
-      "scopes": ["openid", "profile", "phone", "kx", "offline_access"],
+      "scopes": ["openid", "profile", "phone", "kx", "kx_org", "offline_access"],
       "pkce": "S256",
       "environments": {
         "local": {
@@ -86,7 +130,7 @@
       "name": "Kiorex ops console / super admin",
       "type": "public",
       "grantTypes": ["authorization_code", "refresh_token"],
-      "scopes": ["openid", "profile", "phone", "kx", "offline_access"],
+      "scopes": ["openid", "profile", "phone", "kx", "kx_org", "offline_access"],
       "pkce": "S256",
       "mfaRequired": true,
       "environments": {
@@ -104,7 +148,7 @@
       "name": "Kiorex mobile (Expo)",
       "type": "public",
       "grantTypes": ["authorization_code", "refresh_token"],
-      "scopes": ["openid", "profile", "phone", "kx", "offline_access"],
+      "scopes": ["openid", "profile", "phone", "kx", "kx_org", "offline_access"],
       "pkce": "S256",
       "applicationType": "native",
       "environments": {
@@ -122,7 +166,7 @@
       "name": "Kiorly Clinic (provider SSO, KCV-201 seam)",
       "type": "confidential",
       "grantTypes": ["authorization_code", "refresh_token"],
-      "scopes": ["openid", "profile", "phone", "kx", "offline_access"],
+      "scopes": ["openid", "profile", "phone", "kx", "kx_org", "offline_access"],
       "pkce": "S256",
       "tokenEndpointAuthMethod": "client_secret_basic",
       "mfaRequired": true,
@@ -138,5 +182,5 @@
       }
     }
   ],
-  "flags": { "account.passkeys": true }
+  "flags": { "account.passkeys": true, "account.provider_sso": true }
 }

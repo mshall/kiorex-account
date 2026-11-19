@@ -53,10 +53,38 @@ const idpSchema = z.object({
   mfaPolicy: z.object({ requiredForRoles: z.array(z.string()) }).passthrough(),
   clients: z.array(clientSchema),
   flags: z.record(z.boolean()),
+  stepUp: z.object({
+    acr: z.object({ basic: z.string(), mfa: z.string() }),
+    freshnessSeconds: z.number(),
+    sensitiveActions: z.array(z.string()),
+    totp: z.object({
+      issuer: z.string(), periodSeconds: z.number(), digits: z.number(), epochToleranceSeconds: z.number(),
+      maxAttemptsPerWindow: z.number(), lockoutMinutes: z.number(),
+    }),
+  }),
+  guardianship: z.object({
+    defaultMarket: z.string(),
+    ageOfMajority: z.record(z.number()),
+    scopedTokenSeconds: z.number().max(900),
+    actScopes: z.array(z.string()),
+    evidenceTypes: z.array(z.string()),
+    maxDependantsPerGuardian: z.number(),
+  }),
+  orgs: z.object({ roleHints: z.array(z.string()), invitationTtlDays: z.number(), productRefKeys: z.array(z.string()) }),
+  federation: z.object({
+    flag: z.string(),
+    upstreams: z.array(z.object({
+      id: z.string(), name: z.string(),
+      local: z.object({
+        port: z.number(), clientId: z.string(), clientSecret: z.string(),
+        users: z.array(z.object({ id: z.string(), name: z.string(), email: z.string() })),
+      }),
+    })),
+  }),
 });
 const seedSchema = z.object({
   users: z.array(z.object({
-    sub: z.string(), phone: z.string(), name: z.string(), locale: z.enum(['ar', 'en']), roles: z.array(z.string()),
+    sub: z.string(), phone: z.string(), name: z.string(), locale: z.enum(['ar', 'en']), roles: z.array(z.string()), totpSecret: z.string().optional(),
   })),
 });
 
@@ -85,12 +113,16 @@ export interface RuntimeOptions {
   nodeEnv: string | undefined;
   trustProxy: boolean;
   passkeysEnabled: boolean;
+  providerSsoEnabled: boolean;
+  /** Port of the fake upstream IdP (KA-11); 0 = ephemeral. */
+  upstreamPort: number;
   logOtp: boolean;
 }
 
 export function runtimeFromEnv(cfg: IdpConfig, env: NodeJS.ProcessEnv = process.env): RuntimeOptions {
   const port = Number(env.PORT ?? 4400);
   const flagEnv = env.KX_FLAG_ACCOUNT_PASSKEYS;
+  const ssoEnv = env.KX_FLAG_ACCOUNT_PROVIDER_SSO;
   return {
     port,
     issuer: env.ISSUER ?? (port === 4400 ? cfg.issuer.local : `http://localhost:${port}`),
@@ -99,6 +131,8 @@ export function runtimeFromEnv(cfg: IdpConfig, env: NodeJS.ProcessEnv = process.
     nodeEnv: env.NODE_ENV,
     trustProxy: env.KX_TRUST_PROXY === 'true',
     passkeysEnabled: flagEnv !== undefined ? flagEnv === 'true' : cfg.flags['account.passkeys'] ?? false,
+    providerSsoEnabled: ssoEnv !== undefined ? ssoEnv === 'true' : cfg.flags['account.provider_sso'] ?? false,
+    upstreamPort: Number(env.KX_FAKE_UPSTREAM_PORT ?? cfg.federation.upstreams[0]?.local.port ?? 4401),
     logOtp: true,
   };
 }
