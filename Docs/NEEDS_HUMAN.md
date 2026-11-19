@@ -17,7 +17,28 @@ Everything below needs a founder/legal/ops decision or credentials. Nothing here
 | 11 | TOTP for ops/provider roles: confirm MFA policy and recovery process (lost device) | Security/ops policy | `config/idp.json` `mfaPolicy` | ops console prod |
 | 12 | Deploy / `tofu apply` for the identity stack | Rule: no AWS deploy until the founder says so | infra repo area (other agent) | everything in AWS |
 
-## Known engineering gaps (not decisions, tracked for the spike)
-- Dev IdP does not enforce TOTP for `mfaPolicy` roles locally; enforcement is a Cognito/Keycloak concern (KA-03 TOTP part, KA-10 step-up).
-- Passkey **login** (assertion) is not implemented in the dev IdP; registration is (KA-03 optional second method). Production IdP provides login.
-- Guardian/dependant links (KA-06), account linking (KA-08), org/membership API (KA-09), SCIM/federation (KA-11) are out of scope for this phase-1 repo state.
+| 13 | **Age of majority and accepted guardian evidence** per market (config `guardianship.ageOfMajority`, `evidenceTypes`): confirm 18 for EG and the document types; what happens at majority (dependant claims their own Passport with a phone) | Legal | `config/idp.json` `guardianship`, `src/guardian.ts` | production KA-06 |
+| 14 | Guardian / invitation / account-link **message wording** (AR + EN) and Meta-approved utility templates (`guardian_link_created`, `guardian_link_ended`, `org_invitation`, `account_link_verification`, `account_merge_completed`) | Legal/brand + Meta approval | `apps/dev-idp/src/notify.ts` `BODIES` (placeholders, mocked) | production messaging |
+| 15 | **Operator review policy** for account merges: who may approve, SLA, evidence checked, reversal window, and the product-side patient-record merge process (never automatic) | Ops/legal/clinical safety | `src/links.ts` | production KA-08 |
+| 16 | **Organisation verification**: who may create an org, how legal names/countries are verified, invitation channel (WhatsApp vs email) and the product-side mapping of role hints to permissions | Product/ops | `src/orgs.ts` | production KA-09 |
+| 17 | **Provider SSO**: which enterprise upstreams, SAML vs OIDC, SCIM scope; first-link verification policy (phone OTP vs Kiorly password re-auth) | Commercial + security | `src/federation.ts` (fake upstream only) | KA-11 prod, phase 4 |
+| 18 | **Step-up policy**: which actions are `money` / `clinical` / `ops` (config `stepUp.sensitiveActions`), freshness window (300 s) and whether passkey UV counts as MFA for ops | Security policy | `config/idp.json` `stepUp` | production KA-10 |
+
+## Provider go-live (CLAUDE.md: all third-party providers are MOCKED for now)
+Real providers are wired in a dedicated pre-launch pass, staging first. Mock adapters exercise the same code paths and write to the DB dev inbox.
+
+| Provider | Mock today | Real-provider task (keys / templates needed) |
+|---|---|---|
+| WhatsApp Business (OTP + notifications) | `DevInbox.otpChannel` -> `WhatsAppAuthTemplateChannel` with an injected fake fetch (`apps/dev-idp/src/notify.ts`) | Meta-approved templates `TODO_NEEDS_HUMAN` (authentication + utility), `WA_PHONE_NUMBER_ID`, `WA_ACCESS_TOKEN` (items 2-3, 14) |
+| SMS fallback | `SmsChannel` with an inbox publisher | Provider + sender ID (item 4) |
+| Enterprise upstream IdP (provider SSO) | `FakeUpstreamIdp` on :4401 | Real SAML/OIDC upstream metadata, client credentials per customer (item 17) |
+| Email (org invitations if chosen) | not built | Provider + templates |
+
+## Known engineering gaps (not decisions)
+- **SCIM provisioning** (KA-11 second half) is not built; only OIDC federation to an upstream.
+- The dev IdP does not **deliver** identity events (`guardian.link.changed`, `membership.changed`, `account.merged`) to products: they are written to `event_outbox` / `GET /dev/events`. Production transport to be decided with the Kiorex API (back-channel-style push vs. polling). Only `session.revoked`/`subject.deleted` are pushed today.
+- Products cannot yet query "is this guardian link still active?" between token issuance and expiry (acting-as tokens are <= 10 min and sid-bound; link revocation is not pushed to products).
+- Dependants: no flow for a dependant to claim their own Passport at majority; no guardian re-verification; no dependant deletion/export endpoint.
+- Account merge: a resolution can leave an org without an owner (not blocked); TOTP/other secrets of the merged account are not transferred; only identity data moves (products merge their own patient records).
+- TOTP secrets are stored in clear in the dev DB (dev IdP only); production MFA lives in the managed IdP. Dev inbox stores OTP codes and invitation tokens in clear (mock messaging, dev only).
+- Step-up tokens come from `POST /api/step-up` (IdP-signed, same key), not from the standard `/auth?acr_values=` round trip; acr_values/max_age on `/auth` are not honoured by the dev provider.

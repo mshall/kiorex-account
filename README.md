@@ -23,7 +23,7 @@ npm test               # unit + end-to-end tests (needs Postgres on 5433; uses a
 npm run typecheck
 npm run db:reset       # clear dev sessions/tokens/OTP rate limits
 ```
-Env: `PORT`, `ISSUER`, `DATABASE_URL`, `KX_DB_SCHEMA`, `KX_FLAG_ACCOUNT_PASSKEYS=true|false`, `KX_TRUST_PROXY`.
+Env: `PORT`, `ISSUER`, `DATABASE_URL`, `KX_DB_SCHEMA`, `KX_FLAG_ACCOUNT_PASSKEYS=true|false`, `KX_FLAG_ACCOUNT_PROVIDER_SSO=true|false`, `KX_FAKE_UPSTREAM_PORT` (default 4401), `KX_TRUST_PROXY`.
 
 ## Dev IdP contract (INTEGRATION.md)
 - Issuer `http://localhost:4400`, discovery `/.well-known/openid-configuration`, JWKS `/jwks`. Auth code + PKCE (S256 mandatory).
@@ -36,3 +36,16 @@ Env: `PORT`, `ISSUER`, `DATABASE_URL`, `KX_DB_SCHEMA`, `KX_FLAG_ACCOUNT_PASSKEYS
 - Session API (Bearer access token): `GET /api/sessions`, `DELETE /api/sessions/:id`, `DELETE /api/sessions` (all others), `GET /api/account/export`, `DELETE /api/account`, passkeys `/api/passkeys/register/{options,verify}` (flag `account.passkeys`). RP-initiated logout at `/session/end`.
 - Pages are AR/EN with RTL, Kiorex brand tokens (`../_brand`, committed fallback in `apps/dev-idp/assets/brand`).
 - OTP limits: 5 sends/phone/h, 20/IP/h, 5 attempts/challenge then 15 min lockout (HTTP 429).
+
+## Identity APIs added for KA-06/08/09/10/11 (all Bearer access token unless noted)
+All messaging is **mocked** (founder decision 19 Nov 2026): OTPs, invitations and notifications are logged and written to a DB dev inbox.
+`GET /dev/inbox?to=&channel=&template=&after=` (and `DELETE /dev/inbox`) lists them for E2E tests (OTP code is in `data.code`);
+`GET /dev/events?type=&after=` lists identity events (`guardian.link.changed`, `membership.changed`, `account.merged`).
+- **Guardian (KA-06)**: `POST|GET /api/dependants`, `DELETE /api/dependants/:sub`, `POST /api/dependants/:sub/co-guardians`, `POST /api/guardian-links/:id/accept`,
+  `POST /api/guardian/act-as {dependant_sub, scope?}` -> acting-as token (`sub`=dependant, `act.sub`=guardian, <= 10 min, never past the age-of-majority expiry).
+- **Account linking (KA-08)**: `POST /api/links {phone}` (OTP to the OTHER number), `POST /api/links/:id/verify {code}`, `GET /api/links`, `DELETE /api/links/:id`;
+  operator review (ops role + MFA step-up): `GET /api/ops/links[?status=]`, `POST /api/ops/links/:id/{approve,reject,reverse}`. Never automatic.
+- **Orgs (KA-09)**: `POST|GET /api/orgs`, `GET /api/orgs/:id/members`, `POST /api/orgs/:id/invitations`, `DELETE .../invitations/:iid`, `PATCH|DELETE /api/orgs/:id/members/:sub`, `POST /api/invitations/accept {token}`. Claim `kx_orgs` with scope `kx_org`.
+- **Step-up (KA-10)**: login tokens carry `acr`/`amr`/`auth_time`; `GET /api/totp`, `POST /api/totp/{enroll,confirm}`, `GET /api/step-up/policy?action=`, `POST /api/step-up {method:'totp',code}` or `{method:'passkey',response}` (+ `POST /api/step-up/passkey/options`) -> fresh `acr=urn:kiorex:acr:mfa` token. Ops/privileged roles must pass TOTP at login (otplib; seeded ops secret in `config/seed-users.json`, dev only).
+- **Passkey login (KA-03)**: login page button; `POST /interaction/:uid/passkey/login/{options,verify,finish}` (flag `account.passkeys`).
+- **Federation (KA-11)**: flag `account.provider_sso`; second fake upstream IdP on port 4401 (`apps/dev-idp/src/fake-upstream.ts`); `GET /api/federation/identities`, `DELETE /api/federation/identities/:upstream/:sub`.
