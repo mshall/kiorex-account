@@ -1,4 +1,4 @@
-# infra/tofu — OpenTofu for Kiorex Passport (Kiorex Account)
+# infra/tofu — OpenTofu for Kiorex Passport
 
 Implements ADR-028 / KX-21 §01. OpenTofu **1.13.9** (`.opentofu-version`), `hashicorp/aws ~> 6.0`. **Nothing in this
 tree has been applied.** Do not deploy until the founder approves the first deploy.

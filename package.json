@@ -2,7 +2,7 @@
   "name": "kiorex-account",
   "private": true,
   "version": "0.1.0",
-  "description": "Kiorex Account: IdP configuration-as-code, local dev OIDC provider, OTP sender, back-channel logout helpers",
+  "description": "Kiorex Passport: IdP configuration-as-code, local dev OIDC provider, OTP sender, back-channel logout helpers",
   "type": "module",
   "workspaces": [
     "apps/*",

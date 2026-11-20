@@ -1,6 +1,6 @@
 /**
  * OIDC Back-Channel Logout helpers (OpenID Connect Back-Channel Logout 1.0 §2.4-2.6)
- * used by Kiorex Account (issuer side) and by products (receiver side). KA-05.
+ * used by Kiorex Passport (issuer side) and by products (receiver side). KA-05.
  *
  * No custom crypto: signing/verification is delegated to `jose`.
  */

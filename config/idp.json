@@ -1,5 +1,5 @@
 {
-  "$comment": "Kiorex Account IdP configuration-as-code (KX-04 KA-01..KA-05, KX-22). Single source of truth read by (a) apps/dev-idp (environment 'local') and (b) the Cognito OpenTofu stack (environments 'staging'/'production'). Never put production secrets here: the tofu stack generates client secrets into Secrets Manager. No clinical data in tokens or claims (ADR-013).",
+  "$comment": "Kiorex Passport IdP configuration-as-code (KX-04 KA-01..KA-05, KX-22). Single source of truth read by (a) apps/dev-idp (environment 'local') and (b) the Cognito OpenTofu stack (environments 'staging'/'production'). Never put production secrets here: the tofu stack generates client secrets into Secrets Manager. No clinical data in tokens or claims (ADR-013).",
   "schemaVersion": 1,
   "issuer": {
     "local": "http://localhost:4400",

@@ -213,7 +213,7 @@ export async function handleApi(d: ApiDeps, req: IncomingMessage, res: ServerRes
       federated_identities: await d.svc.federation.list(caller.sub),
       linked_contacts: (await d.pool.query(`SELECT type, value, source, created_at FROM account_contacts WHERE sub=$1`, [caller.sub])).rows,
       totp_enrolled: await d.svc.totp.isEnrolled(caller.sub),
-      note: 'Identity data only. Clinical data is never held by Kiorex Account (ADR-013).',
+      note: 'Identity data only. Clinical data is never held by Kiorex Passport (ADR-013).',
     });
   }
   if (p === '/api/account' && method === 'DELETE') { // KA-07
