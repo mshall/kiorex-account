@@ -164,6 +164,16 @@ export class Orgs {
     await this.c.audit.record('org.invitation.declined', user.sub, { org: pending.org_id, invitation: invitationId });
   }
 
+  /** KA-09: invitations this organisation has sent that are still open (managers only). Tokens are never returned; the invitee phone is masked. */
+  async sentInvitations(orgId: string, sub: string) {
+    await this.requireManager(orgId, sub);
+    const r = await this.c.pool.query(
+      `SELECT id AS invitation_id, role_hint, invitee_phone, invited_by, created_at, expires_at,
+              CASE WHEN revoked_at IS NOT NULL THEN 'revoked' WHEN consumed_at IS NOT NULL THEN 'accepted' WHEN expires_at <= $2 THEN 'expired' ELSE 'pending' END AS status
+         FROM invitations WHERE org_id=$1 ORDER BY created_at DESC LIMIT 200`, [orgId, new Date(this.c.now() * 1000)]);
+    return r.rows.map((x: any) => ({ invitation_id: x.invitation_id, role_hint: x.role_hint, invitee_phone_masked: `${String(x.invitee_phone).slice(0, 4)}****${String(x.invitee_phone).slice(-2)}`, invited_by: x.invited_by, created_at: x.created_at, expires_at: x.expires_at, status: x.status }));
+  }
+
   async revokeInvitation(actor: Account, orgId: string, invitationId: string) {
     await this.requireManager(orgId, actor.sub);
     const r = await this.c.pool.query(`UPDATE invitations SET revoked_at=now() WHERE id=$1 AND org_id=$2 AND consumed_at IS NULL AND revoked_at IS NULL RETURNING id`, [invitationId, orgId]);

@@ -93,6 +93,26 @@ describe('KA-09 organisations and memberships', () => {
     expect((await h.idp.pool.query(`SELECT count(*)::int AS n FROM memberships WHERE org_id=$1 AND sub=$2`, [org, doc.sub])).rows[0].n).toBe(1);
   });
 
+  it('managers list the invitations the organisation sent (status, masked phone, no token); members cannot; revoke changes the status', async () => {
+    const owner = await user(); const doc = await user(); const outsider = await user();
+    const org = (await newOrg(owner.token)).json.org_id as string;
+    const a = await invite(owner, org, doc);
+    const b = await invite(owner, org, outsider, 'assistant');
+    const list = await call(h, owner.token, 'GET', `/api/orgs/${org}/invitations`);
+    expect(list.status).toBe(200);
+    expect(list.json.invitations).toHaveLength(2);
+    expect(list.json.invitations.find((i: any) => i.invitation_id === a.id)).toMatchObject({ status: 'pending', role_hint: 'doctor' });
+    expect(JSON.stringify(list.json)).not.toContain(a.token);
+    expect(JSON.stringify(list.json)).not.toContain(doc.phone);
+    expect((await call(h, owner.token, 'DELETE', `/api/orgs/${org}/invitations/${b.id}`)).status).toBe(200);
+    expect((await call(h, owner.token, 'GET', `/api/orgs/${org}/invitations`)).json.invitations.find((i: any) => i.invitation_id === b.id).status).toBe('revoked');
+    expect((await call(h, doc.token, 'POST', '/api/invitations/accept', { token: a.token })).status).toBe(200);
+    expect((await call(h, owner.token, 'GET', `/api/orgs/${org}/invitations`)).json.invitations.find((i: any) => i.invitation_id === a.id).status).toBe('accepted');
+    // a plain doctor member and a non-member cannot read the list
+    expect((await call(h, doc.token, 'GET', `/api/orgs/${org}/invitations`)).status).toBe(403);
+    expect((await call(h, outsider.token, 'GET', `/api/orgs/${org}/invitations`)).status).toBe(404);
+  });
+
   it('expired and revoked invitations are refused', async () => {
     const owner = await user(); const a = await user(); const b = await user();
     const org = (await newOrg(owner.token)).json.org_id;

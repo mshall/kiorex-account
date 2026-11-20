@@ -171,6 +171,7 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
   if (p === '/api/invitations/accept' && m === 'POST') return ok(200, await svc.orgs.accept(await account(d, caller), (await json(req)).token));
   if (s[0] === 'api' && s[1] === 'orgs' && s[2]) {
     if (s[3] === 'members' && s.length === 4 && m === 'GET') return ok(200, { members: await svc.orgs.members(s[2], caller.sub) });
+    if (s[3] === 'invitations' && s.length === 4 && m === 'GET') return ok(200, { invitations: await svc.orgs.sentInvitations(s[2], caller.sub) });
     if (s[3] === 'invitations' && s.length === 4 && m === 'POST') return ok(201, await svc.orgs.invite(await account(d, caller), s[2], await json(req)));
     if (s[3] === 'invitations' && s[4] && m === 'DELETE') { await svc.orgs.revokeInvitation(await account(d, caller), s[2], s[4]); return ok(200, { status: 'revoked' }); }
     if (s[3] === 'members' && s[4] && m === 'PATCH') { await svc.orgs.changeRole(await account(d, caller), s[2], s[4], (await json(req)).role_hint); return ok(200, { status: 'updated' }); }
