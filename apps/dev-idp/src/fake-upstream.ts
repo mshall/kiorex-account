@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { createHash, randomBytes } from 'node:crypto';
-import { SignJWT, exportJWK, generateKeyPair, type JWK, type KeyLike } from 'jose';
+import { SignJWT, exportJWK, generateKeyPair, type JWK, type CryptoKey } from 'jose';
 
 export interface FakeUpstreamUser { id: string; name: string; email: string }
 export interface FakeUpstreamOptions {
@@ -16,7 +16,7 @@ export class FakeUpstreamIdp {
   issuer = '';
   port = 0;
   private server?: http.Server;
-  private priv?: KeyLike;
+  private priv?: CryptoKey;
   private pub?: JWK;
   private readonly txns = new Map<string, { redirectUri: string; state: string; nonce: string; challenge: string }>();
   private readonly codes = new Map<string, { user: FakeUpstreamUser; nonce: string; redirectUri: string; challenge: string; exp: number }>();

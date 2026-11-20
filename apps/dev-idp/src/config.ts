@@ -22,37 +22,37 @@ const clientSchema = z.object({
   applicationType: z.enum(['web', 'native']).optional(),
   tokenEndpointAuthMethod: z.string().optional(),
   mfaRequired: z.boolean().optional(),
-  environments: z.object({ local: envBlock }).passthrough(),
+  environments: z.looseObject({ local: envBlock }),
 });
 const idpSchema = z.object({
-  issuer: z.object({ local: z.string() }).passthrough(),
+  issuer: z.looseObject({ local: z.string() }),
   defaultAudience: z.string(),
-  resourceServers: z.array(z.object({ identifier: z.string() }).passthrough()),
-  scopes: z.array(z.object({ name: z.string(), claims: z.array(z.string()) }).passthrough()),
+  resourceServers: z.array(z.looseObject({ identifier: z.string() })),
+  scopes: z.array(z.looseObject({ name: z.string(), claims: z.array(z.string()) })),
   accessTokenClaims: z.array(z.string()),
   forbiddenClaims: z.array(z.string()),
-  tokenLifetimes: z.object({
+  tokenLifetimes: z.looseObject({
     accessTokenSeconds: z.number().max(900),
     idTokenSeconds: z.number(),
     refreshTokenDays: z.number(),
     authorizationCodeSeconds: z.number(),
     sessionDays: z.number(),
     interactionSeconds: z.number(),
-  }).passthrough(),
-  passwordless: z.object({
-    otp: z.object({
+  }),
+  passwordless: z.looseObject({
+    otp: z.looseObject({
       codeLength: z.number(),
       ttlSeconds: z.number(),
       maxAttemptsPerChallenge: z.number(),
       maxSendsPerPhonePerHour: z.number(),
       maxSendsPerIpPerHour: z.number(),
       lockoutMinutesAfterExhaustedChallenge: z.number(),
-    }).passthrough(),
-    passkeys: z.object({ flag: z.string(), rpName: z.string() }).passthrough(),
-  }).passthrough(),
-  mfaPolicy: z.object({ requiredForRoles: z.array(z.string()) }).passthrough(),
+    }),
+    passkeys: z.looseObject({ flag: z.string(), rpName: z.string() }),
+  }),
+  mfaPolicy: z.looseObject({ requiredForRoles: z.array(z.string()) }),
   clients: z.array(clientSchema),
-  flags: z.record(z.boolean()),
+  flags: z.record(z.string(), z.boolean()),
   stepUp: z.object({
     acr: z.object({ basic: z.string(), mfa: z.string() }),
     freshnessSeconds: z.number(),
@@ -64,7 +64,7 @@ const idpSchema = z.object({
   }),
   guardianship: z.object({
     defaultMarket: z.string(),
-    ageOfMajority: z.record(z.number()),
+    ageOfMajority: z.record(z.string(), z.number()),
     scopedTokenSeconds: z.number().max(900),
     actScopes: z.array(z.string()),
     evidenceTypes: z.array(z.string()),

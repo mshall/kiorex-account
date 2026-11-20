@@ -12,15 +12,15 @@
   "dependencies": {
     "@kiorex/backchannel": "*",
     "@kiorex/otp-sender": "*",
-    "@simplewebauthn/browser": "^13.0.0",
-    "@simplewebauthn/server": "^13.0.0",
+    "@simplewebauthn/browser": "^14.0.0",
+    "@simplewebauthn/server": "^14.1.0",
     "esbuild": "^0.28.2",
-    "jose": "^5.9.6",
+    "jose": "^6.2.18",
     "oidc-provider": "^9.0.0",
     "otplib": "^13.6.0",
     "pg": "^8.13.0",
-    "ulid": "^2.3.0",
-    "zod": "^3.24.0"
+    "ulid": "^3.0.2",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/oidc-provider": "^8.8.0",

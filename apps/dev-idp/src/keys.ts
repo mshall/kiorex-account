@@ -1,4 +1,4 @@
-import { generateKeyPair, exportJWK, importJWK, type JWK, type KeyLike } from 'jose';
+import { generateKeyPair, exportJWK, importJWK, type JWK, type CryptoKey } from 'jose';
 import { randomUUID } from 'node:crypto';
 import type { Pool } from './db.js';
 
@@ -6,7 +6,7 @@ export interface SigningKey {
   kid: string;
   privateJwk: JWK;
   publicJwk: JWK;
-  privateKey: KeyLike | Uint8Array;
+  privateKey: CryptoKey | Uint8Array;
 }
 
 /** Dev-only RSA key (RS256), persisted in Postgres so tokens survive restarts. Production keys are managed by the IdP. */

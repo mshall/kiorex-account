@@ -9,7 +9,7 @@ import {
   jwtVerify,
   createRemoteJWKSet,
   type JWTPayload,
-  type KeyLike,
+  type CryptoKey,
   type JWTVerifyGetKey,
   type JWK,
   createLocalJWKSet,
@@ -39,7 +39,7 @@ export interface BuildLogoutTokenOptions {
   sub?: string;
   sid?: string;
   event: KxLogoutEvent;
-  key: KeyLike | Uint8Array;
+  key: CryptoKey | Uint8Array;
   kid?: string;
   alg?: string;
   now?: number; // epoch seconds, for tests

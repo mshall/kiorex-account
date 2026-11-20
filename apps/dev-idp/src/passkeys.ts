@@ -1,7 +1,7 @@
 import {
   generateRegistrationOptions, verifyRegistrationResponse, generateAuthenticationOptions, verifyAuthenticationResponse,
   type RegistrationResponseJSON, type PublicKeyCredentialCreationOptionsJSON,
-  type AuthenticationResponseJSON, type PublicKeyCredentialRequestOptionsJSON, type AuthenticatorTransportFuture,
+  type AuthenticationResponseJSON, type PublicKeyCredentialRequestOptionsJSON, type AuthenticatorTransport,
 } from '@simplewebauthn/server';
 import type { Pool } from './db.js';
 import type { Account } from './accounts.js';
@@ -58,7 +58,7 @@ export class Passkeys {
   async loginOptions(key: string, sub?: string): Promise<PublicKeyCredentialRequestOptionsJSON> {
     const allow = sub
       ? (await this.pool.query(`SELECT credential_id, transports FROM passkeys WHERE sub=$1`, [sub])).rows
-          .map((r) => ({ id: r.credential_id as string, transports: (r.transports ?? undefined) as AuthenticatorTransportFuture[] | undefined }))
+          .map((r) => ({ id: r.credential_id as string, transports: (r.transports ?? undefined) as AuthenticatorTransport[] | undefined }))
       : undefined;
     const opts = await generateAuthenticationOptions({ rpID: this.rp.id, userVerification: 'preferred', allowCredentials: allow });
     await this.pool.query(
