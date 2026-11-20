@@ -58,7 +58,7 @@ export function createProvider({ cfg, pool, accounts, key, issuer, orgClaims }: 
     claims,
     scopes: cfg.scopes.map((s) => s.name),
     conformIdTokenClaims: false,
-    pkce: { required: () => true, methods: ['S256'] },
+    pkce: { required: () => true },
     ttl: {
       AccessToken: L.accessTokenSeconds,
       IdToken: L.idTokenSeconds,
