@@ -52,6 +52,7 @@ All messaging is **mocked** (founder decision 19 Nov 2026): OTPs, invitations an
 - **Step-up (KA-10)**: login tokens carry `acr`/`amr`/`auth_time`; `GET /api/totp`, `POST /api/totp/{enroll,confirm}`, `GET /api/step-up/policy?action=`, `POST /api/step-up {method:'totp',code}` or `{method:'passkey',response}` (+ `POST /api/step-up/passkey/options`) -> fresh `acr=urn:kiorex:acr:mfa` token. Ops/privileged roles must pass TOTP at login (otplib; seeded ops secret in `config/seed-users.json`, dev only).
 - **Passkey login (KA-03)**: login page button; `POST /interaction/:uid/passkey/login/{options,verify,finish}` (flag `account.passkeys`).
 - **Federation (KA-11)**: flag `account.provider_sso`; second fake upstream IdP on port 4401 (`apps/dev-idp/src/fake-upstream.ts`); `GET /api/federation/identities`, `DELETE /api/federation/identities/:upstream/:sub`.
+- **SCIM 2.0 (KA-11)**: `/scim/v2/Users` + `/Groups` with a per-organisation bearer token (`POST /api/orgs/:id/scim-tokens`); see `Docs/SCIM.md`.
 
 ## Passport web UI (`/account`)
 `npm run dev`, then open <http://localhost:4400/account> (sign in with a seed number and OTP `000000`, or read the code in `GET /dev/inbox`; ops `+201000000099` also needs the TOTP from `config/seed-users.json`).
