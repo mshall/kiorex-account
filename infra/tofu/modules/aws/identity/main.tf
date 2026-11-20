@@ -173,7 +173,7 @@ resource "aws_lambda_function" "fn" {
   for_each      = local.code
   function_name = "${var.name}-${each.key}"
   role          = aws_iam_role.fn.arn
-  runtime       = "nodejs22.x"
+  runtime       = "nodejs24.x"
   # Real handlers from packages/otp-sender when a bundle is supplied; inline placeholders otherwise.
   handler          = local.use_bundle && contains(keys(local.bundle_handlers), each.key) ? local.bundle_handlers[each.key] : "index.handler"
   filename         = local.use_bundle && contains(keys(local.bundle_handlers), each.key) ? var.otp_bundle_path : data.archive_file.fn[each.key].output_path
