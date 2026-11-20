@@ -20,14 +20,14 @@ locals {
   # Clients, token lifetimes and scopes come from config/idp.json (KA-01..05) - single source of truth.
   idp     = jsondecode(file("${path.root}/../../../../../../config/idp.json"))
   idp_env = "staging"
-  is_url  = { for u in distinct(flatten([for c in local.idp.clients : concat(c.environments[local.idp_env].redirectUris, c.environments[local.idp_env].postLogoutRedirectUris, [c.environments[local.idp_env].backchannelLogoutUri])])) : u => can(regex("^[a-z][a-z0-9+.-]*://", u)) }
+  is_url  = { for u in distinct(flatten([for c in local.idp.clients : concat(c.environments[local.idp_env].redirectUris, c.environments[local.idp_env].postLogoutRedirectUris, try([c.environments[local.idp_env].backchannelLogoutUri], []))])) : u => can(regex("^[a-z][a-z0-9+.-]*://", u)) }
   clients = {
     for c in local.idp.clients : c.clientId => {
       generate_secret        = c.type == "confidential"
       scopes                 = [for s in c.scopes : s if s != "offline_access"] # Cognito issues refresh tokens without a scope
       callback_urls          = [for u in c.environments[local.idp_env].redirectUris : u if local.is_url[u]]
       logout_urls            = [for u in c.environments[local.idp_env].postLogoutRedirectUris : u if local.is_url[u]]
-      backchannel_logout_uri = local.is_url[c.environments[local.idp_env].backchannelLogoutUri] ? c.environments[local.idp_env].backchannelLogoutUri : null
+      backchannel_logout_uri = try(local.is_url[c.environments[local.idp_env].backchannelLogoutUri] ? c.environments[local.idp_env].backchannelLogoutUri : null, null) # the Passport SPA client has none
     }
   }
   # Clients whose redirect URIs are still TODO_NEEDS_HUMAN in idp.json are skipped (Cognito needs >= 1 callback URL).
