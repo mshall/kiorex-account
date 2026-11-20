@@ -8,8 +8,8 @@
 
 ![OIDC](https://img.shields.io/badge/OIDC-auth%20code%20%2B%20PKCE-3730A3)
 ![Managed IdP](https://img.shields.io/badge/prod-managed%20IdP%20(Cognito%20default)-0369A1)
-![TypeScript](https://img.shields.io/badge/TypeScript-Node%20%3E%3D20-3730A3?logo=typescript&logoColor=white)
-![React](https://img.shields.io/badge/UI-React%2018%20AR%2FEN-0369A1?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-Node%20%3E%3D26.13-3730A3?logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/UI-React%2019%20AR%2FEN-0369A1?logo=react&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-dev%20IdP-3730A3?logo=postgresql&logoColor=white)
 ![Status](https://img.shields.io/badge/status-dev%20complete-E8735E)
 ![License](https://img.shields.io/badge/license-private-lightgrey)

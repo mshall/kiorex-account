@@ -8,6 +8,7 @@ Start with the [README](../README.md), then pick a document.
 | [KA_TRACE.md](KA_TRACE.md) | KX-04 requirement trace (KA-01 to KA-14) with tests and prod path |
 | [IDP_SCORECARD.md](IDP_SCORECARD.md) | Managed IdP comparison; vendor decision NEEDS_HUMAN |
 | [SCIM.md](SCIM.md) | SCIM 2.0 provisioning per organisation |
+| [UPGRADE_NOTES.md](UPGRADE_NOTES.md) | Toolchain/dependency versions, breaking changes handled, pinned items, how to verify |
 | [NEEDS_HUMAN.md](NEEDS_HUMAN.md) | Open decisions (legal wording, vendor, hosting, tokens) |
 | [TEST_DATA.md](TEST_DATA.md) | Synthetic QA data (DEV ONLY) |
 
