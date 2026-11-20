@@ -119,6 +119,8 @@ const en = {
   'org.roleChanged': 'Role updated.', 'org.create': 'Create an organisation', 'org.create.name': 'Legal name', 'org.create.country': 'Country (2 letters)', 'org.create.submit': 'Create', 'org.created': 'Organisation created.',
   'org.hint.owner': 'Owner: can invite and remove anyone.', 'org.hint.admin': 'Admin: can invite and manage members.', 'org.hint.doctor': 'Doctor', 'org.hint.physiotherapist': 'Physiotherapist', 'org.hint.nurse': 'Nurse', 'org.hint.dispatcher': 'Dispatcher', 'org.hint.assistant': 'Assistant', 'org.hint.front_desk': 'Front desk', 'org.hint.receptionist': 'Receptionist',
   'org.hint.finance': 'Finance', 'org.hint.pharmacist': 'Pharmacist', 'org.hint.lab_technician': 'Lab technician', 'org.hint.staff': 'Staff', 'org.hintNote': 'A role hint does not grant clinical access.',
+  'org.sent': 'Sent invitations', 'org.sent.empty': 'No invitations sent yet.', 'org.sent.to': 'To {phone}', 'org.sent.expires': 'Expires {date}', 'org.sent.revoke': 'Revoke', 'org.sent.revokeTitle': 'Revoke this invitation?', 'org.sent.revokeBody': 'The person will no longer be able to use it. You can send a new one later.', 'org.sent.revoked': 'Invitation revoked.',
+  'org.sent.status.pending': 'Pending', 'org.sent.status.accepted': 'Accepted', 'org.sent.status.expired': 'Expired', 'org.sent.status.revoked': 'Revoked',
   'org.status.active': 'Active', 'org.status.revoked': 'Ended', 'org.status.merged': 'Merged',
 
   // privacy
@@ -269,6 +271,8 @@ const ar: Record<Key, string> = {
   'org.roleChanged': 'تم تحديث الدور.', 'org.create': 'إنشاء مؤسسة', 'org.create.name': 'الاسم القانوني', 'org.create.country': 'الدولة (حرفان)', 'org.create.submit': 'إنشاء', 'org.created': 'تم إنشاء المؤسسة.',
   'org.hint.owner': 'مالك: يمكنه دعوة أي شخص وإزالته.', 'org.hint.admin': 'مدير: يمكنه دعوة الأعضاء وإدارتهم.', 'org.hint.doctor': 'طبيب', 'org.hint.physiotherapist': 'أخصائي علاج طبيعي', 'org.hint.nurse': 'ممرض', 'org.hint.dispatcher': 'منسّق زيارات', 'org.hint.assistant': 'مساعد', 'org.hint.front_desk': 'مكتب الاستقبال', 'org.hint.receptionist': 'موظف استقبال',
   'org.hint.finance': 'مالية', 'org.hint.pharmacist': 'صيدلي', 'org.hint.lab_technician': 'فني معمل', 'org.hint.staff': 'موظف', 'org.hintNote': 'إشارة الدور لا تمنح صلاحية الاطلاع على البيانات الطبية.',
+  'org.sent': 'الدعوات المرسلة', 'org.sent.empty': 'لم تُرسل أي دعوات بعد.', 'org.sent.to': 'إلى {phone}', 'org.sent.expires': 'تنتهي {date}', 'org.sent.revoke': 'سحب الدعوة', 'org.sent.revokeTitle': 'سحب هذه الدعوة؟', 'org.sent.revokeBody': 'لن يتمكن الشخص من استخدامها بعد الآن. يمكنك إرسال دعوة جديدة لاحقًا.', 'org.sent.revoked': 'تم سحب الدعوة.',
+  'org.sent.status.pending': 'قيد الانتظار', 'org.sent.status.accepted': 'مقبولة', 'org.sent.status.expired': 'منتهية', 'org.sent.status.revoked': 'مسحوبة',
   'org.status.active': 'نشط', 'org.status.revoked': 'منتهٍ', 'org.status.merged': 'مدمج',
 
   'prv.title': 'البيانات والخصوصية', 'prv.lead': 'نزّل ما يحتفظ به كيوريكس باسبورت عنك، أو احذف حسابك.',

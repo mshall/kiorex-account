@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { useI18n, NEEDS_HUMAN_KEYS } from './i18n';
 import { ApiError } from './api';
+import { PulseLine } from './brand/components/web/KiorexLogo';
 
 export function Button({ variant = 'primary', busy, children, className = '', ...rest }: { variant?: 'primary' | 'secondary' | 'danger' | 'ghost'; busy?: boolean } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return <button type="button" {...rest} disabled={rest.disabled || busy} aria-busy={busy || undefined} className={`btn btn-${variant} ${className}`}>{children}</button>;
@@ -41,7 +42,7 @@ export function Loading({ label }: { label?: string }) {
   const { t } = useI18n();
   return (
     <div className="loading" role="status" aria-live="polite">
-      <svg viewBox="0 0 120 24" width="96" height="20" aria-hidden="true" className="pulse-loader"><path d="M0 12h38l6-9 8 18 7-12 5 3h56" fill="none" stroke="var(--kx-pulse)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      <span aria-hidden="true"><PulseLine size={16} loop label="" /></span>
       <span>{label ?? t('app.loading')}</span>
     </div>
   );

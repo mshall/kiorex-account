@@ -6,6 +6,7 @@ import { useI18n, type TKey } from './i18n';
 import { Link, navigate, useRoute } from './router';
 import { Loading, ToastProvider, Alert, Button } from './ui';
 import { safeReturn } from './util';
+import { KiorexLogo, PulseLine } from './brand/components/web/KiorexLogo';
 import { HomePage } from './pages/Home';
 import { SecurityPage } from './pages/Security';
 import { FamilyPage } from './pages/Family';
@@ -21,20 +22,15 @@ function useTheme(): [Theme, (t: Theme) => void] {
   const [theme, setTheme] = useState<Theme>(() => { try { const v = localStorage.getItem('kx-theme'); return v === 'light' || v === 'dark' ? v : 'system'; } catch { return 'system'; } });
   useEffect(() => {
     const h = document.documentElement;
-    if (theme === 'system') delete h.dataset.theme; else h.dataset.theme = theme;
+    h.dataset.theme = theme === 'system' ? 'auto' : theme; // 'auto' = follow the OS (tokens.css)
     try { if (theme === 'system') localStorage.removeItem('kx-theme'); else localStorage.setItem('kx-theme', theme); } catch { /* ignore */ }
   }, [theme]);
   return [theme, setTheme];
 }
 
-function Brand() {
-  return (
-    <span className="brand">
-      <img src="/static/brand/kiorex-mark.svg" alt="" width="32" height="32" />
-      <span className="wordmark" dir="ltr">KIORE<b>X</b></span>
-      <span className="brand-sub">Passport</span>
-    </span>
-  );
+/** Kiorex Passport lockup (brand artwork); the inverse tone is swapped in by CSS in dark mode. */
+function Brand({ height = 40 }: { height?: number }) {
+  return <span className="brand"><KiorexLogo className="logo-light" variant="lockup" product="passport" tone="color" height={height} title="Kiorex Passport" /><KiorexLogo className="logo-dark" variant="lockup" product="passport" tone="inverse" height={height} title="" /></span>;
 }
 
 function Toolbar() {
@@ -66,7 +62,7 @@ function Shell({ children }: { children: ReactNode }) {
     <>
       <a className="skip" href="#main">{t('app.skip')}</a>
       <header className="topbar">
-        <Link to="/account" className="brand-link"><Brand /></Link>
+        <Link to="/account" className="brand-link" aria-label="Kiorex Passport"><Brand /></Link>
         <Toolbar />
         <Button variant="ghost" onClick={signOut}>{t('app.signOut')}</Button>
       </header>
@@ -110,9 +106,15 @@ export function SignInPage({ notice, auth }: { notice?: 'expired' | 'failed' | '
         {notice === 'deleted' ? <Alert kind="success"><strong>{t('signin.deleted.title')}</strong> {t('signin.deleted.body')}</Alert> : null}
         {notice === 'expired' ? <Alert kind="warning">{t('signin.expired')}</Alert> : null}
         {notice === 'failed' ? <Alert kind="error">{t('signin.failed')}</Alert> : null}
-        <h1>{t('signin.title')}</h1>
-        <p className="lead">{t('signin.lead')}</p>
-        <Button onClick={go}>{t('signin.cta')}</Button>
+        <div className="card hero-card">
+          <div className="hero">
+            <span aria-hidden="true"><PulseLine size={24} label="" /></span>
+            <h1>{t('signin.title')}</h1>
+            <p className="lead">{t('signin.lead')}</p>
+            <Button onClick={go}>{t('signin.cta')}</Button>
+            <p className="secure"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg>{lang === 'ar' ? 'تسجيل دخول آمن برمز يُرسل إلى هاتفك' : 'Secure sign-in with a code sent to your phone'}</p>
+          </div>
+        </div>
       </main>
       <footer className="foot"><span>{t('app.devNote')}</span></footer>
     </>

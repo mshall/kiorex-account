@@ -24,6 +24,7 @@ export interface Resolution { name?: 'primary' | 'secondary'; membership_roles?:
 export interface Membership { org_id: string; legal_name: string; country: string; edition?: string; membership_id: string; role_hint: string; status: string; effective_from: string }
 export interface OrgMember { membership_id: string; sub: string; name: string | null; role_hint: string; status: string; effective_from: string }
 export interface PendingInvitation { invitation_id: string; org_id: string; legal_name: string; role_hint: string; expires_at: string; invited_by_name: string | null }
+export interface SentInvitation { invitation_id: string; role_hint: string; invitee_phone_masked: string; invited_by: string; created_at: string; expires_at: string; status: 'pending' | 'accepted' | 'expired' | 'revoked' }
 export interface ConnectedApp { client_id: string; name: string; scopes: string[]; first_granted_at: string | null; last_granted_at: string | null }
 export interface StepUpResult { access_token: string; expires_in: number; acr: string; amr: string[] }
 export interface FederatedIdentity { upstream_id: string; upstream_sub: string; email: string | null; display_name: string | null; linked_at: string }
@@ -64,6 +65,8 @@ export interface Api {
   inviteMember(orgId: string, b: { phone: string; role_hint: string; locale?: string }): Promise<void>;
   changeRole(orgId: string, sub: string, role: string): Promise<void>;
   removeMember(orgId: string, sub: string): Promise<void>;
+  sentInvitations(orgId: string): Promise<SentInvitation[]>;
+  revokeInvitation(orgId: string, invitationId: string): Promise<void>;
   pendingInvitations(): Promise<PendingInvitation[]>;
   acceptInvitation(id: string): Promise<{ org_id: string; role_hint: string }>;
   acceptInvitationToken(token: string): Promise<{ org_id: string; role_hint: string }>;
@@ -138,6 +141,8 @@ export function createApi(baseUrl: string, auth: AuthLike, doFetch: typeof fetch
     inviteMember: async (id, b) => { await call('POST', `/api/orgs/${enc(id)}/invitations`, b); },
     changeRole: async (id, sub, role) => { await call('PATCH', `/api/orgs/${enc(id)}/members/${enc(sub)}`, { role_hint: role }); },
     removeMember: async (id, sub) => { await call('DELETE', `/api/orgs/${enc(id)}/members/${enc(sub)}`); },
+    sentInvitations: async (id) => (await call<{ invitations: SentInvitation[] }>('GET', `/api/orgs/${enc(id)}/invitations`)).invitations,
+    revokeInvitation: async (id, inv) => { await call('DELETE', `/api/orgs/${enc(id)}/invitations/${enc(inv)}`); },
     pendingInvitations: async () => (await call<{ invitations: PendingInvitation[] }>('GET', '/api/invitations')).invitations,
     acceptInvitation: (id) => call('POST', `/api/invitations/${enc(id)}/accept`, {}),
     acceptInvitationToken: (token) => call('POST', '/api/invitations/accept', { token }),

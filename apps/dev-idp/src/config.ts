@@ -98,11 +98,20 @@ export function loadSeedUsers(file = path.join(REPO_ROOT, 'config/seed-users.jso
   return seedSchema.parse(JSON.parse(readFileSync(file, 'utf8'))).users;
 }
 
-/** Brand assets: prefer ../_brand (workspace sibling), fall back to the committed copy (CI). */
-export function brandAsset(name: 'tokens.css' | 'kiorex-mark.svg'): string {
+/** Brand assets: tokens.css prefers ../_brand (workspace sibling, always fresh) and falls back to the committed copy (CI); everything else is the committed copy. */
+export const BRAND_FILES: Record<string, string> = {
+  'tokens.css': 'text/css', 'fonts.css': 'text/css', 'kiorex-mark.svg': 'image/svg+xml', 'favicon.svg': 'image/svg+xml', 'favicon.ico': 'image/x-icon', 'apple-touch-icon.png': 'image/png',
+  'passport-lockup.svg': 'image/svg+xml', 'passport-lockup-inverse.svg': 'image/svg+xml',
+  'fonts/Jost_400Regular.ttf': 'font/ttf', 'fonts/Jost_500Medium.ttf': 'font/ttf', 'fonts/Jost_600SemiBold.ttf': 'font/ttf',
+  'fonts/IBMPlexSansArabic_400Regular.ttf': 'font/ttf', 'fonts/IBMPlexSansArabic_600SemiBold.ttf': 'font/ttf',
+};
+export function brandBytes(name: string): Buffer {
   const sibling = path.resolve(REPO_ROOT, '../_brand', name);
   const local = path.resolve(here, '../assets/brand', name);
-  return readFileSync(existsSync(sibling) ? sibling : local, 'utf8');
+  return readFileSync(name === 'tokens.css' && existsSync(sibling) ? sibling : local);
+}
+export function brandAsset(name: 'tokens.css' | 'fonts.css' | 'kiorex-mark.svg'): string {
+  return brandBytes(name).toString('utf8');
 }
 
 export interface RuntimeOptions {

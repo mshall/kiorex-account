@@ -1,0 +1,6 @@
+/* Self-hosted brand fonts (Jost for Latin, IBM Plex Sans Arabic for Arabic); served from /static/brand/fonts/. */
+@font-face{font-family:"Jost";font-weight:400;font-display:swap;src:url(/static/brand/fonts/Jost_400Regular.ttf) format("truetype")}
+@font-face{font-family:"Jost";font-weight:500;font-display:swap;src:url(/static/brand/fonts/Jost_500Medium.ttf) format("truetype")}
+@font-face{font-family:"Jost";font-weight:600;font-display:swap;src:url(/static/brand/fonts/Jost_600SemiBold.ttf) format("truetype")}
+@font-face{font-family:"IBM Plex Sans Arabic";font-weight:400;font-display:swap;unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF;src:url(/static/brand/fonts/IBMPlexSansArabic_400Regular.ttf) format("truetype")}
+@font-face{font-family:"IBM Plex Sans Arabic";font-weight:500 700;font-display:swap;unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF;src:url(/static/brand/fonts/IBMPlexSansArabic_600SemiBold.ttf) format("truetype")}

@@ -61,3 +61,6 @@ Pages: account home, security (passkeys, authenticator app, sessions, sign-in ac
 npm test               # includes UI unit/component tests (jsdom, axe) and the dev-IdP API tests
 npm run test:e2e       # Playwright on the SYSTEM Chrome (no browser download); starts its own IdP on :4450 with a throwaway schema
 ```
+
+## Brand (Q11)
+Passport uses the shared Kiorex brand kit (`../_brand`, vendored under `apps/dev-idp/assets/brand/` and `apps/passport-ui/src/brand/`): Passport lockup, `tokens.css` (set `data-theme="auto"` on `<html>` to follow the OS; `light`/`dark` force), self-hosted Jost + IBM Plex Sans Arabic (`/static/brand/fonts.css`). Never redraw the logo; re-vendor when `_brand` changes.

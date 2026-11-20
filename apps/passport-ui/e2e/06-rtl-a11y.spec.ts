@@ -57,8 +57,7 @@ test('RTL specifics: logical layout mirrors, latin tokens stay LTR, the wordmark
   const page = await ctx.newPage();
   await page.goto('/account');
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-  await expect(page.locator('.wordmark')).toHaveText('KIOREX');
-  await expect(page.locator('.wordmark')).toHaveAttribute('dir', 'ltr');
+  await expect(page.getByRole('img', { name: 'Kiorex Passport' }).first()).toBeVisible(); // the brand lockup (SVG artwork, always Latin, never mirrored text)
   const dir = await page.locator('h1').evaluate((e) => getComputedStyle(e).direction);
   expect(dir).toBe('rtl');
   await signIn(page, randomPhone(), { name: 'منى' });

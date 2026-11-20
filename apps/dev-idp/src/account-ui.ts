@@ -44,7 +44,7 @@ export function passportBundle(): Promise<Bundle> {
   return cached;
 }
 
-const BOOT = `try{var l=localStorage.getItem('kx-lang')||'ar';var h=document.documentElement;h.lang=l;h.dir=l==='ar'?'rtl':'ltr';var t=localStorage.getItem('kx-theme');if(t==='dark'||t==='light')h.dataset.theme=t;}catch(e){}`;
+const BOOT = `try{var l=localStorage.getItem('kx-lang')||'ar';var h=document.documentElement;h.lang=l;h.dir=l==='ar'?'rtl':'ltr';var t=localStorage.getItem('kx-theme');h.dataset.theme=(t==='dark'||t==='light')?t:'auto';}catch(e){}`;
 /** Own CSP for the SPA: external CSS/JS from this origin, the tiny boot script by hash (no 'unsafe-inline' for scripts), API calls to this origin only. */
 const CSP = `default-src 'self'; script-src 'self' 'sha256-${createHash('sha256').update(BOOT).digest('base64')}'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'`;
 
@@ -52,8 +52,8 @@ export function shellHtml(issuer: string): string {
   const cfg = JSON.stringify({ issuer, clientId: PASSPORT_CLIENT_ID, kiorexWebUrl: 'http://localhost:5180' }).replace(/</g, '\\u003c');
   // Language/theme are applied before first paint so there is no LTR/light flash (AR default, RTL).
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kiorex Passport</title><meta name="color-scheme" content="light dark"><link rel="icon" href="/static/brand/kiorex-mark.svg">
-<link rel="stylesheet" href="/static/brand/tokens.css"><link rel="stylesheet" href="/account/assets/app.css">
+<title>Kiorex Passport</title><meta name="color-scheme" content="light dark"><link rel="icon" href="/static/brand/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png">
+<link rel="stylesheet" href="/static/brand/tokens.css"><link rel="stylesheet" href="/static/brand/fonts.css"><link rel="stylesheet" href="/account/assets/app.css">
 <script>${BOOT}</script></head><body>
 <div id="root"></div>
 <noscript><p style="padding:24px;font-family:sans-serif">${esc('Kiorex Passport needs JavaScript. / يحتاج كيوريكس باسبورت إلى جافاسكربت.')}</p></noscript>

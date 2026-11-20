@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import type Provider from 'oidc-provider';
 import { LogChannel, type OtpChannel } from '@kiorex/otp-sender';
-import { loadIdpConfig, loadSeedUsers, brandAsset, REPO_ROOT, type IdpConfig, type RuntimeOptions, type SeedUser } from './config.js';
+import { loadIdpConfig, loadSeedUsers, BRAND_FILES, brandBytes, REPO_ROOT, type IdpConfig, type RuntimeOptions, type SeedUser } from './config.js';
 import { createPool, migrate, type Pool } from './db.js';
 import { Accounts } from './accounts.js';
 import { Audit } from './audit.js';
@@ -168,8 +168,13 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
             throw e;
           }
         }
-        if (p === '/static/brand/tokens.css') return send(res, 200, brandAsset('tokens.css'), { 'content-type': 'text/css' });
-        if (p === '/static/brand/kiorex-mark.svg') return send(res, 200, brandAsset('kiorex-mark.svg'), { 'content-type': 'image/svg+xml' });
+        if (p.startsWith('/static/brand/')) {
+          const name = p.slice('/static/brand/'.length);
+          const type = Object.prototype.hasOwnProperty.call(BRAND_FILES, name) ? BRAND_FILES[name] : undefined;
+          if (!type) return send(res, 404, { error: 'not_found' });
+          res.writeHead(200, { 'content-type': type, 'cache-control': 'public, max-age=300', 'x-content-type-options': 'nosniff' });
+          return void res.end(brandBytes(name));
+        }
         if (p === '/static/simplewebauthn-browser.js') return send(res, 200, swScript, { 'content-type': 'application/javascript' });
         if (p === '/dev/reset-rate-limits' && req.method === 'POST') { await otp.resetRateLimits(); return send(res, 200, { ok: true }); }
         if (p === '/account' || p.startsWith('/account/')) return await handleAccountUi(rt.issuer, req, res, p);

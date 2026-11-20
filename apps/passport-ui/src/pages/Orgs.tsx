@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '../app-context';
 import { useI18n, type TKey } from '../i18n';
-import { ApiError, type Membership, type OrgMember, type PendingInvitation } from '../api';
+import { ApiError, type Membership, type OrgMember, type PendingInvitation, type SentInvitation } from '../api';
 import { Alert, Async, Badge, Button, Card, ConfirmDialog, Empty, Field, Ltr, useAction, useAsync, useToast } from '../ui';
 import { E164, fmtDate, normPhone } from '../util';
 import { useRoute } from '../router';
@@ -49,6 +49,36 @@ function Invitations({ onJoined }: { onJoined: () => void }) {
   );
 }
 
+const SENT_KIND = { pending: 'info', accepted: 'success', expired: 'neutral', revoked: 'danger' } as const;
+
+/** KA-09: invitations this organisation has sent (status, masked phone, never the token) with revoke for pending ones. */
+function SentInvitations({ orgId, reloadKey }: { orgId: string; reloadKey: number }) {
+  const { api } = useApp();
+  const { t, lang } = useI18n();
+  const toast = useToast();
+  const { busy, run } = useAction();
+  const sent = useAsync<SentInvitation[]>(() => api.sentInvitations(orgId), [orgId, reloadKey]);
+  const [revoking, setRevoking] = useState<SentInvitation | null>(null);
+  const revoke = () => revoking && run(() => api.revokeInvitation(orgId, revoking.invitation_id), () => { toast.ok(t('org.sent.revoked')); setRevoking(null); sent.reload(); });
+  return (
+    <>
+      <h4>{t('org.sent')}</h4>
+      <Async state={sent}>{(d) => d.length === 0 ? <Empty>{t('org.sent.empty')}</Empty> : (
+        <ul className="list" aria-label={t('org.sent')} data-testid="sent-invitations">{d.map((i) => (
+          <li key={i.invitation_id} className="row">
+            <span>
+              <strong>{roleName(t, i.role_hint)}</strong> <Badge kind={SENT_KIND[i.status]}>{t(`org.sent.status.${i.status}` as TKey)}</Badge>
+              <span className="hint block">{t('org.sent.to', { phone: '' })}<Ltr>{i.invitee_phone_masked}</Ltr> · {t('org.sent.expires', { date: fmtDate(i.expires_at, lang) })}</span>
+            </span>
+            {i.status === 'pending' ? <Button variant="ghost" onClick={() => setRevoking(i)} aria-label={`${t('org.sent.revoke')} - ${i.invitee_phone_masked}`}>{t('org.sent.revoke')}</Button> : null}
+          </li>))}
+        </ul>
+      )}</Async>
+      {revoking ? <ConfirmDialog title={t('org.sent.revokeTitle')} body={t('org.sent.revokeBody')} confirmLabel={t('org.sent.revoke')} danger busy={busy} onConfirm={() => void revoke()} onCancel={() => setRevoking(null)} /> : null}
+    </>
+  );
+}
+
 function Manage({ m }: { m: Membership }) {
   const { api, meta, account } = useApp();
   const { t } = useI18n();
@@ -58,12 +88,13 @@ function Manage({ m }: { m: Membership }) {
   const roles = meta?.orgs.role_hints ?? ['owner', 'admin', 'doctor', 'nurse', 'receptionist', 'finance', 'pharmacist', 'lab_technician', 'staff'];
   const [phone, setPhone] = useState(''); const [role, setRole] = useState('staff'); const [msg, setMsg] = useState('');
   const [removing, setRemoving] = useState<OrgMember | null>(null);
+  const [sentKey, setSentKey] = useState(0);
   const { err } = useI18n();
   const invite = async () => {
     const p = normPhone(phone);
     if (!E164.test(p)) { setMsg(err('invalid_phone')); return; }
     setMsg('');
-    await run(async () => { try { await api.inviteMember(m.org_id, { phone: p, role_hint: role }); } catch (x) { const a = x as ApiError; setMsg(err(a.code, a.status)); throw new ApiError(0, 'cancelled'); } }, () => { toast.ok(t('org.invite.sent')); setPhone(''); });
+    await run(async () => { try { await api.inviteMember(m.org_id, { phone: p, role_hint: role }); } catch (x) { const a = x as ApiError; setMsg(err(a.code, a.status)); throw new ApiError(0, 'cancelled'); } }, () => { toast.ok(t('org.invite.sent')); setPhone(''); setSentKey((n) => n + 1); });
   };
   const change = (mem: OrgMember, r: string) => run(() => api.changeRole(m.org_id, mem.sub, r), () => { toast.ok(t('org.roleChanged')); members.reload(); });
   const remove = () => removing && run(() => api.removeMember(m.org_id, removing.sub), () => { toast.ok(t('org.removed')); setRemoving(null); members.reload(); });
@@ -88,6 +119,7 @@ function Manage({ m }: { m: Membership }) {
         <Field label={t('org.invite.role')}>{(p) => <select {...p} name="invite-role" value={role} onChange={(e) => setRole(e.target.value)}>{roles.map((r) => <option key={r} value={r}>{roleName(t, r)}</option>)}</select>}</Field>
         <Button type="submit" busy={busy}>{t('org.invite.send')}</Button>
       </form>
+      <SentInvitations orgId={m.org_id} reloadKey={sentKey} />
       {removing ? <ConfirmDialog title={t('org.removeTitle')} body={removing.name ?? undefined} confirmLabel={t('org.removeMember')} danger busy={busy} onConfirm={() => void remove()} onCancel={() => setRemoving(null)} /> : null}
     </div>
   );

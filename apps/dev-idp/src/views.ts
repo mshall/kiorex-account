@@ -66,36 +66,48 @@ export function errorText(lang: Lang, reason?: string, attemptsLeft?: number): s
 
 let cssCache: string | undefined;
 const css = () => (cssCache ??= `${brandAsset('tokens.css')}
-:root{--kx-err-bg:#FDECEA;--kx-err-fg:#8A1F11;--kx-err-bd:#F5C2BC;--kx-ok-bg:#E7F6EE;--kx-ok-fg:#14532D;--kx-field:#64748B}
-@media (prefers-color-scheme:dark){:root{--kx-err-bg:#3B1219;--kx-err-fg:#FCA5A5;--kx-err-bd:#7F1D1D;--kx-ok-bg:#0B2F1E;--kx-ok-fg:#86EFAC;--kx-field:#7C84B0}}
+${brandAsset('fonts.css')}
+:root{--kx-field:#64748B;--kx-err-fg:#8A1F11}
+@media (prefers-color-scheme:dark){:root{--kx-field:#7C84B0;--kx-err-fg:#FCA5A5}}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--kx-ground);color:var(--kx-text);font-family:var(--kx-font);padding:16px;line-height:1.6}
-html[lang=ar] body{font-family:"IBM Plex Sans Arabic",var(--kx-font);line-height:1.8}
-.card{width:100%;max-width:420px;background:var(--kx-surface);border:1px solid var(--kx-border);border-radius:var(--kx-radius);padding:28px 24px;box-shadow:0 10px 30px rgba(55,48,163,.08)}
-@media (prefers-color-scheme:dark){.card{box-shadow:none}}
-.brand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
-.brand img{height:30px;width:auto;background:#fff;border-radius:8px;padding:2px 4px}.wordmark{letter-spacing:.28em;font-weight:600;color:var(--kx-ink);direction:ltr}.passport{font-size:.75rem;color:var(--kx-text-muted);letter-spacing:.12em;text-transform:uppercase;margin-inline-start:auto}.wordmark b{color:var(--kx-ink-2);font-weight:600}
-h1{font-size:1.35rem;margin:0 0 6px;line-height:1.3}p{color:var(--kx-text-muted);line-height:1.6;margin:0 0 16px}
-label{display:block;font-weight:600;margin:12px 0 6px}
-input{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--kx-field);border-radius:10px;font:inherit;background:var(--kx-surface);color:var(--kx-text)}
-input:focus,button:focus-visible,a:focus-visible{outline:3px solid var(--kx-pulse);outline-offset:2px}
-.hint{font-size:.875rem;color:var(--kx-text-muted)}
-button,.btn{display:block;width:100%;min-height:44px;margin-top:16px;padding:12px;border:1px solid transparent;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;background:var(--kx-gradient);color:#fff;text-align:center;text-decoration:none}
-button.secondary,.btn.secondary{background:transparent;color:var(--kx-ink-2);border-color:var(--kx-field)}
-.error{background:var(--kx-err-bg);color:var(--kx-err-fg);border:1px solid var(--kx-err-bd);border-radius:10px;padding:10px 12px;margin-bottom:12px}
-.ok{background:var(--kx-ok-bg);color:var(--kx-ok-fg);border-radius:10px;padding:10px 12px;margin-top:12px}
-.foot{display:flex;justify-content:space-between;gap:12px;margin-top:18px;font-size:.8rem;color:var(--kx-text-muted)}
-a{color:var(--kx-ink-2)}
-.code{letter-spacing:.5em;text-align:center;font-size:1.4rem;direction:ltr}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;color:var(--kx-text);font-family:var(--kx-font);line-height:1.6;
+ background:radial-gradient(1100px 520px at 50% -12%,color-mix(in srgb,var(--kx-primary) 14%,transparent),transparent 70%),var(--kx-bg)}
+html[lang=ar] body{line-height:1.85}
+.card{width:100%;max-width:440px;background:var(--kx-surface);border:1px solid var(--kx-border);border-radius:var(--kx-radius-xl);padding:32px 28px 24px;box-shadow:var(--kx-shadow-3)}
+.brand{display:flex;justify-content:center;margin:0 0 22px}.brand img{height:40px;width:auto;display:block}
+.secure{display:flex;align-items:center;justify-content:center;gap:6px;margin:-8px 0 20px;font-size:.8125rem;color:var(--kx-text-subtle)}
+.secure svg{flex:none}
+h1{font-size:1.5rem;letter-spacing:-.015em;margin:0 0 8px;line-height:1.25;text-align:center;font-weight:600}
+p{color:var(--kx-text-muted);margin:0 0 18px;text-align:center}
+label{display:block;font-weight:500;margin:14px 0 6px;font-size:.9375rem}
+input{width:100%;min-height:48px;padding:10px 14px;border:1px solid var(--kx-field);border-radius:var(--kx-radius-md);font:inherit;background:var(--kx-surface);color:var(--kx-text);transition:border-color var(--kx-dur-fast),box-shadow var(--kx-dur-fast)}
+input:focus{outline:none;border-color:var(--kx-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--kx-focus) 35%,transparent)}
+button:focus-visible,a:focus-visible{outline:var(--kx-focus-width) solid var(--kx-focus);outline-offset:2px}
+.hint{font-size:.8125rem;color:var(--kx-text-subtle);margin-top:6px}
+button,.btn{display:block;width:100%;min-height:48px;margin-top:16px;padding:12px;border:1px solid transparent;border-radius:var(--kx-radius-md);font:inherit;font-weight:600;cursor:pointer;background:var(--kx-gradient);color:#fff;text-align:center;text-decoration:none;transition:transform var(--kx-dur-fast) var(--kx-ease-standard),filter var(--kx-dur-fast)}
+button:hover,.btn:hover{filter:brightness(1.06)}button:active,.btn:active{transform:scale(.985)}
+button.secondary,.btn.secondary{background:transparent;color:var(--kx-link);border-color:var(--kx-border-strong);filter:none}
+button.secondary:hover,.btn.secondary:hover{background:var(--kx-primary-soft)}
+.error{background:var(--kx-danger-soft);color:var(--kx-err-fg);border:1px solid color-mix(in srgb,var(--kx-danger) 40%,transparent);border-radius:var(--kx-radius-md);padding:10px 14px;margin-bottom:12px;text-align:start}
+.ok{background:var(--kx-success-soft);color:var(--kx-success);border-radius:var(--kx-radius-md);padding:10px 14px;margin-top:12px}
+.foot{display:flex;justify-content:space-between;gap:12px;margin-top:22px;padding-top:14px;border-top:1px solid var(--kx-hairline);font-size:.78rem;color:var(--kx-text-subtle)}
+a{color:var(--kx-link)}
+.code{letter-spacing:.5em;text-align:center;font-size:1.5rem;direction:ltr;font-variant-numeric:tabular-nums}
 .phone{direction:ltr;text-align:start}
+code{font-family:var(--kx-font-mono)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}`);
+
+const LOCK = `<picture><source srcset="/static/brand/passport-lockup-inverse.svg" media="(prefers-color-scheme: dark)"><img src="/static/brand/passport-lockup.svg" alt="Kiorex Passport"></picture>`;
+const SHIELD = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>`;
 
 export function page(lang: Lang, title: string, body: string, opts: { langSwitchHref?: string; script?: string } = {}): string {
   const tx = T[lang];
-  return `<!doctype html><html lang="${lang}" dir="${lang === 'ar' ? 'rtl' : 'ltr'}"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)} - Kiorex Passport</title>
-<link rel="icon" href="/static/brand/kiorex-mark.svg"><style>${css()}</style></head><body><main class="card">
-<div class="brand"><img src="/static/brand/kiorex-mark.svg" alt="Kiorex"><span class="wordmark" aria-hidden="true">KIORE<b>X</b></span><span class="passport">Passport</span></div>
+  const secure = lang === 'ar' ? 'اتصال آمن بحساب كيوريكس باسبورت' : 'Secure sign-in with your Kiorex Passport';
+  return `<!doctype html><html lang="${lang}" dir="${lang === 'ar' ? 'rtl' : 'ltr'}" data-theme="auto"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>${esc(title)} - Kiorex Passport</title>
+<link rel="icon" href="/static/brand/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png"><style>${css()}</style></head><body><main class="card">
+<div class="brand">${LOCK}</div><div class="secure">${SHIELD}<span>${esc(secure)}</span></div>
 ${body}
 <div class="foot"><span>${esc(tx.devNote)}</span>${opts.langSwitchHref ? `<a href="${esc(opts.langSwitchHref)}" hreflang="${lang === 'ar' ? 'en' : 'ar'}">${esc(tx.lang)}</a>` : ''}</div>
 </main>${opts.script ? `<script src="/static/simplewebauthn-browser.js"></script><script>${opts.script}</script>` : ''}</body></html>`;

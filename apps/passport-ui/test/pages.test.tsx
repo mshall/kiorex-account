@@ -190,6 +190,22 @@ describe('Organisations page', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Accept - Nile Clinic' }));
     await waitFor(() => expect(a.acceptInvitation).toHaveBeenCalledWith('I1'));
   });
+  it('lists sent invitations with masked phone and revokes a pending one after confirmation', async () => {
+    const sent = [
+      { invitation_id: 'V1', role_hint: 'nurse', invitee_phone_masked: '+201****03', invited_by: 'S1', created_at: iso(-1), expires_at: iso(6), status: 'pending' as const },
+      { invitation_id: 'V2', role_hint: 'doctor', invitee_phone_masked: '+201****04', invited_by: 'S1', created_at: iso(-9), expires_at: iso(-2), status: 'expired' as const },
+    ];
+    const a = fakeApi({ orgs: async () => [m('owner')], orgMembers: async () => [], sentInvitations: async () => sent, revokeInvitation: async () => undefined });
+    renderApp(<OrgsPage />, { api: a });
+    const card = await screen.findByRole('listitem', { name: 'Nile Clinic' });
+    await userEvent.click(within(card).getByRole('button', { name: 'Manage members' }));
+    const list = await screen.findByRole('list', { name: 'Sent invitations' });
+    expect(list).toHaveTextContent('+201****03');
+    expect(within(list).getAllByRole('button')).toHaveLength(1); // only the pending one can be revoked
+    await userEvent.click(within(list).getByRole('button', { name: /Revoke/ }));
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Revoke' }));
+    await waitFor(() => expect(a.revokeInvitation).toHaveBeenCalledWith('O1', 'V1'));
+  });
   it('shows member management only to owners/admins; every role carries the no-clinical-access note', async () => {
     const owner = renderApp(<OrgsPage />, { api: fakeApi({ orgs: async () => [m('owner')] }) });
     const card = await screen.findByRole('listitem', { name: 'Nile Clinic' });
