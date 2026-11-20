@@ -135,6 +135,19 @@ export async function migrate(pool: Pool, schema: string): Promise<void> {
       code_verifier text NOT NULL, result jsonb, expires_at timestamptz NOT NULL
     );
 
+    -- KA-11 SCIM 2.0 provider-directory sync: per-org bearer tokens (hash only) and the org-scoped set of SCIM-provisioned users
+    CREATE TABLE IF NOT EXISTS scim_tokens (
+      id text PRIMARY KEY, org_id text NOT NULL REFERENCES organizations(org_id), token_hash text NOT NULL UNIQUE, label text NOT NULL,
+      created_by text NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), last_used_at timestamptz, revoked_at timestamptz
+    );
+    CREATE INDEX IF NOT EXISTS scim_tokens_org ON scim_tokens (org_id);
+    CREATE TABLE IF NOT EXISTS scim_users (
+      org_id text NOT NULL REFERENCES organizations(org_id), sub text NOT NULL, external_id text, user_name text NOT NULL,
+      active boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (org_id, sub)
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS scim_users_name ON scim_users (org_id, lower(user_name));
+
     CREATE TABLE IF NOT EXISTS audit_events (
       seq bigserial PRIMARY KEY, at timestamptz NOT NULL DEFAULT now(), type text NOT NULL, sub text, data jsonb NOT NULL DEFAULT '{}',
       prev_hash text NOT NULL, hash text NOT NULL

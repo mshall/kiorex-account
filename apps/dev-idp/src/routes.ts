@@ -174,6 +174,10 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
     if (s[3] === 'invitations' && s.length === 4 && m === 'GET') return ok(200, { invitations: await svc.orgs.sentInvitations(s[2], caller.sub) });
     if (s[3] === 'invitations' && s.length === 4 && m === 'POST') return ok(201, await svc.orgs.invite(await account(d, caller), s[2], await json(req)));
     if (s[3] === 'invitations' && s[4] && m === 'DELETE') { await svc.orgs.revokeInvitation(await account(d, caller), s[2], s[4]); return ok(200, { status: 'revoked' }); }
+    // KA-11 SCIM: per-organisation bearer tokens, managed by owner/admin (the token itself is shown once)
+    if (s[3] === 'scim-tokens' && s.length === 4 && m === 'GET') { await svc.orgs.assertManager(s[2], caller.sub); return ok(200, { tokens: await svc.scim.listTokens(s[2]) }); }
+    if (s[3] === 'scim-tokens' && s.length === 4 && m === 'POST') { await svc.orgs.assertManager(s[2], caller.sub); return ok(201, { ...(await svc.scim.createToken(s[2], await account(d, caller), (await json(req)).label)), scim_base_url: `${d.issuer}/scim/v2` }); }
+    if (s[3] === 'scim-tokens' && s[4] && m === 'DELETE') { await svc.orgs.assertManager(s[2], caller.sub); await svc.scim.revokeToken(s[2], await account(d, caller), s[4]); return ok(200, { status: 'revoked' }); }
     if (s[3] === 'members' && s[4] && m === 'PATCH') { await svc.orgs.changeRole(await account(d, caller), s[2], s[4], (await json(req)).role_hint); return ok(200, { status: 'updated' }); }
     if (s[3] === 'members' && s[4] && m === 'DELETE') { await svc.orgs.remove(await account(d, caller), s[2], s[4]); return ok(200, { status: 'removed' }); }
   }

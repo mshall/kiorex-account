@@ -21,6 +21,7 @@ import { Guardianship } from './guardian.js';
 import { AccountLinking } from './links.js';
 import { Orgs } from './orgs.js';
 import { Federation } from './federation.js';
+import { Scim } from './scim.js';
 import { FakeUpstreamIdp } from './fake-upstream.js';
 import type { Ctx } from './services.js';
 import { send, redirect } from './http.js';
@@ -105,7 +106,8 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
   }
   const federation = new Federation(ctx, rt.providerSsoEnabled, upstreams, o.fetchImpl);
   const totp = new Totp(pool, cfg, o.totpNow ?? now);
-  const svc = { guardian: new Guardianship(ctx), linking: new AccountLinking(ctx, otp), orgs, totp, federation };
+  const scim = new Scim(ctx);
+  const svc = { guardian: new Guardianship(ctx), linking: new AccountLinking(ctx, otp), orgs, totp, federation, scim };
   const origin = new URL(rt.issuer);
   const passkeys = new Passkeys(pool, { id: origin.hostname, name: cfg.passwordless.passkeys.rpName, origin: origin.origin });
   const suppressedSessions = new Set<string>();
@@ -179,6 +181,7 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
         if (p === '/dev/reset-rate-limits' && req.method === 'POST') { await otp.resetRateLimits(); return send(res, 200, { ok: true }); }
         if (p === '/account' || p.startsWith('/account/')) return await handleAccountUi(rt.issuer, req, res, p);
         if (p.startsWith('/interaction/')) return await handleInteraction(iDeps, req, res, url);
+        if (p === '/scim/v2' || p.startsWith('/scim/v2/')) return await scim.handle(req, res, url); // KA-11 SCIM 2.0 (org bearer token)
         if (p.startsWith('/api/')) return await handleApi(apiDeps, req, res, url);
         return providerCb(req, res);
       } catch (e) {

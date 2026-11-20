@@ -86,6 +86,9 @@ export class Orgs {
     return role;
   }
 
+  /** Owner/admin of the organisation (404 for non-members, 403 for other roles). */
+  async assertManager(orgId: string, sub: string): Promise<string> { return this.requireManager(orgId, sub); }
+
   async members(orgId: string, sub: string) {
     await this.requireManager(orgId, sub);
     const r = await this.c.pool.query(`SELECT m.id AS membership_id, m.sub, a.name, m.role_hint, m.status, m.effective_from, m.expires_at FROM memberships m JOIN accounts a ON a.sub=m.sub WHERE m.org_id=$1 ORDER BY m.created_at`, [orgId]);
