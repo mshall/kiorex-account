@@ -24,3 +24,7 @@ npx tsx scripts/seed-demo.ts --reset       # removes only demo records (subs 01H
 | +201000009001 / 9002 / 9003 | Ops admin / finance / support | TOTP `REMOVED-OLD-DEMO-TOTP-SECRET` / `REMOVED-OLD-DEMO-TOTP-SECRET` / none |
 | +201000000001 / 0002 | Amira / Hassan | e2e fixtures, unchanged |
 Pages: `/account/family` (guardian links, act-as), `/account/orgs` (memberships; pending invite for `+201000001010`, token `demo-invite-nile-nurse`), `/account/security` (demo sessions for 1001, 1005), `/account/ops/links` (ops reviewer queue). OTP codes are also visible at `/dev/inbox`. Dependant accounts have no phone/login by design.
+
+## Rev 2.3 additions (Kiorly Nurse personas)
+Accounts (phone OTP `000000`, restart the dev IdP after a first run so the test-number list includes them; seed-all.sh does): `+201000003001` Mona Adel (solo nurse), `3002` agency owner, `3003` dispatcher Dina, `3004`/`3005`/`3007`/`3008`/`3009` agency nurses, `3006` aide, `3010` Dr Mai Hassan (physiotherapist), `3011` Noha Nurse (pending invitation, token `demo-invite-agency-nurse`), and patient `+201000001013` Nabila Hamdy.
+Organisations with `edition` (display hint, KA-14): `org_demo_mona_nursing` (NURSE, owner Mona), `org_demo_care_agency` (NURSE: owner, dispatcher, 5 nurses, assistant; Mona is also a `nurse` member = multi-edition memberships), `org_demo_nile_care` gains the physiotherapist Mai (CLINIC). Role hints: owner, dispatcher, nurse, assistant, physiotherapist.

@@ -213,6 +213,114 @@
         "ops_admin",
         "support"
       ]
+    },
+    {
+      "sub": "01HZKXD0000000000000001013",
+      "phone": "+201000001013",
+      "name": "نبيلة حمدي",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000003001",
+      "phone": "+201000003001",
+      "name": "Mona Adel",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000003002",
+      "phone": "+201000003002",
+      "name": "Agency Owner",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000003003",
+      "phone": "+201000003003",
+      "name": "Dina Dispatcher",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000003004",
+      "phone": "+201000003004",
+      "name": "Heba Nurse",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000003005",
+      "phone": "+201000003005",
+      "name": "Salma Nurse",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000003006",
+      "phone": "+201000003006",
+      "name": "Aya Aide",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000003007",
+      "phone": "+201000003007",
+      "name": "Nadine Nurse",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000003008",
+      "phone": "+201000003008",
+      "name": "Rawan Nurse",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000003009",
+      "phone": "+201000003009",
+      "name": "Yara Nurse",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000003010",
+      "phone": "+201000003010",
+      "name": "Dr Mai Hassan",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000003011",
+      "phone": "+201000003011",
+      "name": "Noha Nurse (pending invite)",
+      "locale": "ar",
+      "roles": [
+        "patient"
+      ]
     }
   ]
 }

@@ -53,8 +53,9 @@ for (const g of demo.guardianLinks) {
     [g.id, g.guardian, g.dependant, g.relationship, JSON.stringify({ type: g.evidence, reference: g.evidence === 'self_declared' ? undefined : 'DEMO-REF-0001' })]);
 }
 for (const o of demo.organizations) {
-  await q(`INSERT INTO organizations (org_id, legal_name, country, product_refs, created_by) VALUES ($1,$2,$3,'{}',$4)
-           ON CONFLICT (org_id) DO UPDATE SET legal_name=$2, status='active'`, [o.orgId, o.legalName, o.country, o.owner]);
+  // edition (CLINIC | NURSE) is a display hint only (KA-14, ADR-031): Kiorly Nurse orgs show the Nurse edition in Passport
+  await q(`INSERT INTO organizations (org_id, legal_name, country, product_refs, edition, created_by) VALUES ($1,$2,$3,'{}',$4,$5)
+           ON CONFLICT (org_id) DO UPDATE SET legal_name=$2, edition=$4, status='active'`, [o.orgId, o.legalName, o.country, o.edition ?? 'CLINIC', o.owner]);
   for (const m of o.members) {
     const id = `demo_mem_${o.orgId}_${m.sub.slice(-4)}`;
     await q(`INSERT INTO memberships (id, org_id, sub, role_hint, invited_by) VALUES ($1,$2,$3,$4,$5)
