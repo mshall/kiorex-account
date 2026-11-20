@@ -11,3 +11,5 @@ test_otp_enabled = false # never in prod
 # Clients/scopes/token lifetimes: ../../../../../../config/idp.json (environments.production).
 
 account_service_enabled = false
+
+enable_demo_seed = false # Q10: never seed demo data in prod (the plan fails if this is true)

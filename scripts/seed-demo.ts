@@ -10,7 +10,8 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-if (process.env.NODE_ENV === 'production') throw new Error('refusing to seed demo data in production');
+import { assertDemoSeedAllowed } from './demo-seed-guard.js';
+assertDemoSeedAllowed('Kiorex Passport dev IdP (local DB kiorex_account)');
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const url = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:5433/kiorex_account';
 const reset = process.argv.includes('--reset');
@@ -30,6 +31,7 @@ if (reset) {
   await q(`DELETE FROM organizations WHERE org_id LIKE 'org_demo_%'`);
   await q(`DELETE FROM guardian_links WHERE id LIKE 'demo_gl_%'`);
   await q(`DELETE FROM link_requests WHERE id LIKE 'demo_lr_%'`);
+  await q(`DELETE FROM passkeys WHERE credential_id LIKE 'demo_pk_%'`);
   await q(`DELETE FROM totp_credentials WHERE sub IN ${subs}`);
   await q(`DELETE FROM session_meta WHERE sub IN ${subs}`);
   await q(`DELETE FROM accounts WHERE ${DEMO}`);
@@ -48,9 +50,13 @@ for (const d of demo.dependants) {
            ON CONFLICT (sub) DO UPDATE SET name=$2, dob=$4, status='active', deleted_at=NULL`, [d.sub, d.name, d.locale, rel(d.dob)]);
 }
 for (const g of demo.guardianLinks) {
-  await q(`INSERT INTO guardian_links (id, guardian_sub, dependant_sub, relationship, evidence, status, expires_at)
-           VALUES ($1,$2,$3,$4,$5,'active', now() + interval '10 years') ON CONFLICT (id) DO UPDATE SET status='active', ended_at=NULL`,
-    [g.id, g.guardian, g.dependant, g.relationship, JSON.stringify({ type: g.evidence, reference: g.evidence === 'self_declared' ? undefined : 'DEMO-REF-0001' })]);
+  // state: active (default) | pending (awaiting evidence review) | expired (past expires_at) | ended (guardian stopped it)
+  const st = g.state ?? 'active';
+  const expires = st === 'expired' ? "now() - interval '3 days'" : "now() + interval '10 years'";
+  await q(`INSERT INTO guardian_links (id, guardian_sub, dependant_sub, relationship, evidence, status, expires_at, ended_at, ended_reason)
+           VALUES ($1,$2,$3,$4,$5,$6, ${expires}, ${st === 'ended' ? 'now() - interval \'20 days\'' : 'NULL'}, $7)
+           ON CONFLICT (id) DO UPDATE SET status=$6, expires_at=${expires}, ended_at=${st === 'ended' ? 'now() - interval \'20 days\'' : 'NULL'}, ended_reason=$7`,
+    [g.id, g.guardian, g.dependant, g.relationship, JSON.stringify({ type: g.evidence, reference: g.evidence === 'self_declared' ? undefined : 'DEMO-REF-0001' }), st, g.endedReason ?? null]);
 }
 for (const o of demo.organizations) {
   // edition (CLINIC | NURSE) is a display hint only (KA-14, ADR-031): Kiorly Nurse orgs show the Nurse edition in Passport
@@ -63,14 +69,33 @@ for (const o of demo.organizations) {
   }
 }
 for (const i of demo.invitations) {
-  const th = createHash('sha256').update(i.tokenPlain).digest('hex');
-  await q(`INSERT INTO invitations (id, org_id, role_hint, invitee_phone, token_hash, invited_by, expires_at)
-           VALUES ($1,$2,$3,$4,$5,$6, now() + interval '7 days') ON CONFLICT (id) DO UPDATE SET expires_at = now() + interval '7 days', consumed_at=NULL, revoked_at=NULL`,
-    [i.id, i.orgId, i.role, i.phone, th, demo.organizations.find((o: any) => o.orgId === i.orgId).owner]);
+  // state: pending (default, valid 7 days) | consumed | expired | revoked
+  const th = createHash('sha256').update(i.tokenPlain).digest('hex'); const st = i.state ?? 'pending';
+  const expires = st === 'expired' ? "now() - interval '2 days'" : "now() + interval '7 days'";
+  await q(`INSERT INTO invitations (id, org_id, role_hint, invitee_phone, token_hash, invited_by, expires_at, consumed_at, consumed_by, revoked_at)
+           VALUES ($1,$2,$3,$4,$5,$6, ${expires}, ${st === 'consumed' ? 'now() - interval \'1 day\'' : 'NULL'}, $7, ${st === 'revoked' ? 'now() - interval \'1 day\'' : 'NULL'})
+           ON CONFLICT (id) DO UPDATE SET expires_at=${expires}, consumed_at=${st === 'consumed' ? 'now() - interval \'1 day\'' : 'NULL'}, consumed_by=$7, revoked_at=${st === 'revoked' ? 'now() - interval \'1 day\'' : 'NULL'}`,
+    [i.id, i.orgId, i.role, i.phone, th, demo.organizations.find((o: any) => o.orgId === i.orgId).owner, st === 'consumed' ? i.consumedBy ?? null : null]);
 }
 for (const l of demo.linkRequests) {
   await q(`INSERT INTO link_requests (id, primary_sub, secondary_sub, secondary_phone, status, conflicts, verified_at)
-           VALUES ($1,$2,$3,$4,$5,'[]', now()) ON CONFLICT (id) DO UPDATE SET status=$5`, [l.id, l.primary, l.secondary, l.phone, l.status]);
+           VALUES ($1,$2,$3,$4,$5,'[]', CASE WHEN $5 = 'pending_verification' THEN NULL ELSE now() END) ON CONFLICT (id) DO UPDATE SET status=$5`, [l.id, l.primary, l.secondary, l.phone, l.status]);
+  if (l.note) await q(`UPDATE link_requests SET review_note=$2, reviewed_by='01HZKXD0000000000000009001', reviewed_at=now() WHERE id=$1`, [l.id, l.note]);
+}
+// ended membership (shows in the history of /account/orgs), passkeys and security events (step-up success / failure, revoked session)
+for (const m of demo.endedMemberships ?? []) {
+  await q(`INSERT INTO memberships (id, org_id, sub, role_hint, invited_by, status, ended_at) VALUES ($1,$2,$3,$4,$5,'ended', now() - interval '12 days')
+           ON CONFLICT (id) DO UPDATE SET status='ended', ended_at=now() - interval '12 days'`, [`demo_mem_${m.orgId}_${m.sub.slice(-4)}`, m.orgId, m.sub, m.role, m.owner]);
+}
+for (const sub of demo.passkeys ?? []) {
+  await q(`INSERT INTO passkeys (credential_id, sub, public_key, counter, transports, device_type, backed_up) VALUES ($1,$2,$3,5,'["internal"]','multiDevice',true) ON CONFLICT (credential_id) DO NOTHING`,
+    [`demo_pk_${sub.slice(-4)}`, sub, Buffer.alloc(65, 7)]); // synthetic key: listed in /account/security, cannot sign in
+}
+for (const e of demo.securityEvents ?? []) {
+  if ((await q(`SELECT 1 FROM audit_events WHERE data->>'demoKey' = $1`, [`${e.sub}:${e.type}`])).rowCount) continue;
+  const prev = (await q(`SELECT hash FROM audit_events ORDER BY seq DESC LIMIT 1`)).rows[0]?.hash ?? 'GENESIS';
+  const at = new Date(Date.now() - e.agoMinutes * 60_000).toISOString(); const data = { demo: true, demoKey: `${e.sub}:${e.type}` };
+  await q(`INSERT INTO audit_events (at, type, sub, data, prev_hash, hash) VALUES ($1,$2,$3,$4,$5,$6)`, [at, e.type, e.sub, JSON.stringify(data), prev, createHash('sha256').update(JSON.stringify([prev, at, e.type, e.sub, data])).digest('hex')]);
 }
 // a few sessions / security events so "Security" pages are not empty
 for (const sub of ['01HZKXD0000000000000001001', '01HZKXD0000000000000001005']) {

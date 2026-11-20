@@ -2,70 +2,77 @@
   "$comment": "DEV ONLY demo data for the Passport dev IdP (see TEST_DATA.md). All people, phones (+20100000xxxx) and ids are synthetic. Applied idempotently by scripts/seed-demo.ts.",
   "dependants": [
     {
-      "sub": "01HZKXD0000000000000003001",
+      "sub": "01HZKXD0000000000000004001",
       "name": "Yassin Samir Ali",
       "nameAr": "ياسين سمير علي",
       "dob": "-8y",
       "locale": "ar"
     },
     {
-      "sub": "01HZKXD0000000000000003002",
+      "sub": "01HZKXD0000000000000004002",
       "name": "Laila Samir Ali",
       "nameAr": "ليلى سمير علي",
       "dob": "-4y",
       "locale": "ar"
     },
     {
-      "sub": "01HZKXD0000000000000003003",
+      "sub": "01HZKXD0000000000000004003",
       "name": "Salma Karim Mostafa",
       "nameAr": "سلمى كريم مصطفى",
       "dob": "-15y",
       "locale": "en"
     },
     {
-      "sub": "01HZKXD0000000000000003004",
+      "sub": "01HZKXD0000000000000004004",
       "name": "Adam Mahmoud El-Sayed",
       "nameAr": "آدم محمود السيد",
       "dob": "-2y",
       "locale": "ar"
     }
+    ,
+    { "sub": "01HZKXD0000000000000004005", "name": "Zeina Tarek Zaki", "nameAr": "زينة طارق زكي", "dob": "-6y", "locale": "ar" },
+    { "sub": "01HZKXD0000000000000004006", "name": "Kareem Omar Hegazy", "nameAr": "كريم عمر حجازي", "dob": "-17y", "locale": "en" },
+    { "sub": "01HZKXD0000000000000004007", "name": "Mariam Dalia Ibrahim", "nameAr": "مريم داليا إبراهيم", "dob": "-9y", "locale": "ar" }
   ],
   "guardianLinks": [
     {
       "id": "demo_gl_01",
       "guardian": "01HZKXD0000000000000001001",
-      "dependant": "01HZKXD0000000000000003001",
+      "dependant": "01HZKXD0000000000000004001",
       "relationship": "parent",
       "evidence": "self_declared"
     },
     {
       "id": "demo_gl_02",
       "guardian": "01HZKXD0000000000000001001",
-      "dependant": "01HZKXD0000000000000003002",
+      "dependant": "01HZKXD0000000000000004002",
       "relationship": "parent",
       "evidence": "birth_certificate_ref"
     },
     {
       "id": "demo_gl_03",
       "guardian": "01HZKXD0000000000000001002",
-      "dependant": "01HZKXD0000000000000003001",
+      "dependant": "01HZKXD0000000000000004001",
       "relationship": "parent",
       "evidence": "self_declared"
     },
     {
       "id": "demo_gl_04",
       "guardian": "01HZKXD0000000000000001003",
-      "dependant": "01HZKXD0000000000000003003",
+      "dependant": "01HZKXD0000000000000004003",
       "relationship": "legal_guardian",
       "evidence": "court_order_ref"
     },
     {
       "id": "demo_gl_05",
       "guardian": "01HZKXD0000000000000001005",
-      "dependant": "01HZKXD0000000000000003004",
+      "dependant": "01HZKXD0000000000000004004",
       "relationship": "parent",
       "evidence": "self_declared"
-    }
+    },
+    { "id": "demo_gl_06", "guardian": "01HZKXD0000000000000001009", "dependant": "01HZKXD0000000000000004005", "relationship": "parent", "evidence": "self_declared", "state": "ended", "endedReason": "guardian_request" },
+    { "id": "demo_gl_07", "guardian": "01HZKXD0000000000000001007", "dependant": "01HZKXD0000000000000004006", "relationship": "parent", "evidence": "birth_certificate_ref", "state": "expired" },
+    { "id": "demo_gl_08", "guardian": "01HZKXD0000000000000001008", "dependant": "01HZKXD0000000000000004007", "relationship": "legal_guardian", "evidence": "court_order_ref", "state": "pending" }
   ],
   "organizations": [
     {
@@ -192,7 +199,10 @@
       "role": "nurse",
       "phone": "+201000003011",
       "tokenPlain": "demo-invite-agency-nurse"
-    }
+    },
+    { "id": "demo_inv_03", "orgId": "org_demo_nile_care", "role": "receptionist", "phone": "+201000001006", "tokenPlain": "demo-invite-consumed", "state": "consumed", "consumedBy": "01HZKXD0000000000000002002" },
+    { "id": "demo_inv_04", "orgId": "org_demo_nile_care", "role": "doctor", "phone": "+201000001007", "tokenPlain": "demo-invite-expired", "state": "expired" },
+    { "id": "demo_inv_05", "orgId": "org_demo_delta_pharma", "role": "pharmacist", "phone": "+201000001011", "tokenPlain": "demo-invite-revoked", "state": "revoked" }
   ],
   "linkRequests": [
     {
@@ -201,6 +211,18 @@
       "secondary": "01HZKXD0000000000000001009",
       "phone": "+201000001009",
       "status": "pending_review"
-    }
+    },
+    { "id": "demo_lr_02", "primary": "01HZKXD0000000000000001006", "secondary": "01HZKXD0000000000000001007", "phone": "+201000001007", "status": "rejected", "note": "Different people (demo)" },
+    { "id": "demo_lr_03", "primary": "01HZKXD0000000000000001012", "secondary": "01HZKXD0000000000000001010", "phone": "+201000001010", "status": "pending_verification" },
+    { "id": "demo_lr_04", "primary": "01HZKXD0000000000000001004", "secondary": "01HZKXD0000000000000001008", "phone": "+201000001008", "status": "cancelled" }
+  ],
+  "endedMemberships": [
+    { "orgId": "org_demo_nile_care", "sub": "01HZKXD0000000000000001011", "role": "receptionist", "owner": "01HZKXD0000000000000002001" }
+  ],
+  "passkeys": ["01HZKXD0000000000000001001", "01HZKXD0000000000000002001"],
+  "securityEvents": [
+    { "sub": "01HZKXD0000000000000001001", "type": "step_up.success", "agoMinutes": 3 },
+    { "sub": "01HZKXD0000000000000001005", "type": "step_up.failed", "agoMinutes": 190 },
+    { "sub": "01HZKXD0000000000000001001", "type": "session.revoked", "agoMinutes": 2900 }
   ]
 }

@@ -18,10 +18,11 @@
     "test": "vitest run",
     "test:unit": "vitest run packages",
     "db:reset": "npm run db:reset -w @kiorex/dev-idp",
-    "db:seed:demo": "tsx scripts/seed-demo.ts",
+    "db:seed:demo": "DEMO_SEED_ALLOWED=true tsx scripts/seed-demo.ts",
     "test:e2e": "playwright test -c apps/passport-ui/e2e/playwright.config.ts"
   },
   "devDependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.1173.0",
     "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.65.1",
     "@testing-library/jest-dom": "^6.9.1",

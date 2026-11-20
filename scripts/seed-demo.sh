@@ -3,6 +3,6 @@
 # Run `../scripts/seed-all.sh` (workspace root) to seed every product in dependency order.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
-export NODE_ENV=development
+export NODE_ENV=development DEMO_SEED_ALLOWED=true
 DB=postgresql://postgres:postgres@127.0.0.1:5433/kiorex_account?schema=public
 DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5433/kiorex_account" npx tsx scripts/seed-demo.ts "$@"
