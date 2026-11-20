@@ -4,7 +4,7 @@ export type Pool = pg.Pool;
 
 export function createPool(databaseUrl: string, schema: string): Pool {
   if (!/^[a-z_][a-z0-9_]*$/.test(schema)) throw new Error(`invalid schema name: ${schema}`);
-  return new pg.Pool({ connectionString: databaseUrl, max: 10, options: `-c search_path=${schema},public` });
+  return new pg.Pool({ connectionString: databaseUrl, max: Number(process.env.DB_POOL_MAX) > 0 ? Number(process.env.DB_POOL_MAX) : 10, options: `-c search_path=${schema},public` });
 }
 
 export async function migrate(pool: Pool, schema: string): Promise<void> {
