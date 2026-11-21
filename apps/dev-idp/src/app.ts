@@ -2,7 +2,8 @@ import http from 'node:http';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import type Provider from 'oidc-provider';
-import { LogChannel, type OtpChannel } from '@kiorex/otp-sender';
+import { createOtpChannelFromEnv, genericStatusBody, HttpMessagingTransport, isRealOtp, LogChannel, providerEnv, signedWebhookHeaders, type OtpChannel } from '@kiorex/otp-sender';
+import { DeliveryStatus } from './delivery.js';
 import { loadIdpConfig, loadSeedUsers, BRAND_FILES, brandBytes, REPO_ROOT, type IdpConfig, type RuntimeOptions, type SeedUser } from './config.js';
 import { createPool, migrate, type Pool } from './db.js';
 import { Accounts } from './accounts.js';
@@ -24,7 +25,7 @@ import { Federation } from './federation.js';
 import { Scim } from './scim.js';
 import { FakeUpstreamIdp } from './fake-upstream.js';
 import type { Ctx } from './services.js';
-import { send, redirect } from './http.js';
+import { send, redirect, readBody } from './http.js';
 import { HttpError } from './services.js';
 import { purgeExpired } from './adapter.js';
 import { PASSPORT_CLIENT_ID, handleAccountUi } from './account-ui.js';
@@ -47,11 +48,15 @@ export interface DevIdp {
   close(): Promise<void>;
 }
 
+const readRaw = async (req: http.IncomingMessage): Promise<string> => (await readBody(req)).toString('utf8');
+
 export interface CreateAppOptions {
   runtime: RuntimeOptions;
   cfg?: IdpConfig;
   seedUsers?: SeedUser[];
   otpChannel?: OtpChannel;
+  /** Provider env (SMS_MODE, WHATSAPP_MODE, ...). Defaults to process.env; tests inject it. */
+  env?: NodeJS.ProcessEnv;
   fetchImpl?: typeof fetch;
   /** Override OTP policy numbers, e.g. for fast tests. */
   quiet?: boolean;
@@ -83,14 +88,22 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
   const key = await loadOrCreateSigningKey(pool);
   const now = o.now ?? (() => Math.floor(Date.now() / 1000));
   // Messaging is MOCKED: OTPs are logged (injected/log channel) AND written to the DB dev inbox (GET /dev/inbox).
+  // REAL providers (SMS_MODE / WHATSAPP_MODE=real): OTP and notifications go out through the generic HTTP providers only. The dev inbox,
+  // the log channel (which prints codes) and the dev simulators are all disabled, so no code is ever logged or readable over HTTP.
+  const env = o.env ?? process.env;
+  const realMessaging = isRealOtp(env);
+  const delivery = new DeliveryStatus(pool, env);
   const inbox = new DevInbox(pool);
-  const logChannel = o.otpChannel ?? new LogChannel((l) => { if (!o.quiet) console.log(l); });
-  const otpChannel = new TeeChannel(logChannel, inbox.otpChannel());
+  const onSent = (s: { channel: string; providerRef: string; phone: string }) => delivery.recordSent(s.channel, s.providerRef, s.phone).catch(() => undefined);
+  const otpChannel = realMessaging
+    ? createOtpChannelFromEnv({ nodeEnv: rt.nodeEnv, env, onSent })
+    : new TeeChannel(o.otpChannel ?? new LogChannel((l) => { if (!o.quiet) console.log(l); }), inbox.otpChannel());
+  const notifier = new Notifier(inbox, realMessaging && providerEnv('WHATSAPP', env).mode === 'real' ? { transport: new HttpMessagingTransport('WHATSAPP', providerEnv('WHATSAPP', env)), onSent } : undefined);
   const otp = new OtpService(pool, cfg, otpChannel, { nodeEnv: rt.nodeEnv, testNumbers });
   const dispatcher = new LogoutDispatcher(rt.issuer, key, cfg, o.fetchImpl);
   const events = new Events(pool);
   const hooks: Ctx['hooks'] = { revokeSessions: async () => undefined };
-  const ctx: Ctx = { pool, cfg, accounts, audit, events, notifier: new Notifier(inbox), key, issuer: rt.issuer, dispatcher, now, hooks };
+  const ctx: Ctx = { pool, cfg, accounts, audit, events, notifier, key, issuer: rt.issuer, dispatcher, now, hooks };
   const orgs = new Orgs(ctx);
   const provider = createProvider({ cfg, pool, accounts, key, issuer: rt.issuer, orgClaims: (sub) => orgs.claimsFor(sub) });
   provider.proxy = rt.trustProxy;
@@ -153,6 +166,26 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
       try {
         if (p === '/healthz') return send(res, 200, { status: 'ok', env: 'dev-only', issuer: rt.issuer, upstream_issuer: [...upstreams.values()][0]?.issuer ?? null });
         // dev inbox / event outbox for E2E tests (mock messaging, CLAUDE.md founder decision); dev IdP never runs in production
+        // provider delivery-status webhooks (SMS / WhatsApp): HMAC verified, idempotent, forward-only statuses; reachable in every mode
+        if ((p === '/webhooks/sms' || p === '/webhooks/whatsapp') && req.method === 'POST') {
+          const raw = await readRaw(req);
+          const r = await delivery.handleWebhook(p.slice('/webhooks/'.length), raw, req.headers);
+          return r ? send(res, 200, r) : send(res, 401, { error: 'invalid_signature' });
+        }
+        if (realMessaging && (p.startsWith('/dev/inbox') || p.startsWith('/dev/webhooks') || p.startsWith('/dev/delivery-status') || p === '/dev/reset-rate-limits')) return send(res, 404, { error: 'not_found' });
+        if (p === '/dev/delivery-status' && req.method === 'GET') return send(res, 200, { statuses: await delivery.list() });
+        if (p === '/dev/webhooks/simulate' && req.method === 'POST') {
+          // DEV: deliver a SIGNED status webhook for a dev-inbox message through the same verified handler a real provider hits
+          const body = JSON.parse((await readRaw(req)) || '{}') as { providerRef?: string; state?: string };
+          const status = ({ DELIVERED: 'delivered', READ: 'read', FAILED: 'failed' } as Record<string, 'delivered' | 'read' | 'failed'>)[String(body.state ?? '').toUpperCase()];
+          const ref = String(body.providerRef ?? '');
+          const m = /^mock_(whatsapp|sms)_\d+$/.exec(ref);
+          if (!status || !m) return send(res, 400, { error: 'invalid_request' });
+          const kind = m[1].toUpperCase() as 'SMS' | 'WHATSAPP';
+          const payload = genericStatusBody(ref, status, status === 'failed' ? 'SIMULATED_FAILURE' : undefined);
+          const r = await delivery.handleWebhook(m[1], payload, signedWebhookHeaders(providerEnv(kind, env).webhookSecret, payload));
+          return send(res, r ? 200 : 401, r ?? { error: 'invalid_signature' });
+        }
         if (p === '/dev/inbox' && req.method === 'GET') {
           const q = url.searchParams;
           return send(res, 200, { messages: await inbox.list({ to: q.get('to') ?? undefined, channel: q.get('channel') ?? undefined, template: q.get('template') ?? undefined, afterId: Number(q.get('after') ?? 0) || undefined }) });

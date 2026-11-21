@@ -22,7 +22,7 @@ export const totpCode = (h: Pick<Harness, 'clock'>, secret: string, extra = 0) =
 
 let portSeed = 4410 + (process.pid % 200);
 
-export async function startHarness(opts: { passkeys?: boolean; providerSso?: boolean } = {}): Promise<Harness> {
+export async function startHarness(opts: { passkeys?: boolean; providerSso?: boolean; env?: Record<string, string> } = {}): Promise<Harness> {
   const port = portSeed++;
   const schema = `kx_test_${process.pid}_${port}`;
   const issuer = `http://localhost:${port}`;
@@ -57,7 +57,7 @@ export async function startHarness(opts: { passkeys?: boolean; providerSso?: boo
     now: () => Math.floor(Date.now() / 1000) + clock.offset,
     totpNow: () => Math.floor(Date.now() / 1000) + clock.totpOffset,
   };
-  const idp = await createApp({ runtime, cfg, otpChannel: channel, quiet: true, now: clock.now, totpNow: clock.totpNow });
+  const idp = await createApp({ runtime, cfg, otpChannel: channel, env: { ...(opts.env ?? {}) }, quiet: true, now: clock.now, totpNow: clock.totpNow });
   return {
     idp, issuer, channel, received, receiverFails, clock,
     stop: async () => {
@@ -209,7 +209,7 @@ export async function call(h: Harness, token: string, method: string, path: stri
 
 export async function inbox(h: Harness, q: Record<string, string> = {}) {
   const r = await fetch(`${h.issuer}/dev/inbox?${new URLSearchParams(q)}`);
-  return (await r.json()).messages as Array<{ id: number; channel: string; to: string; template: string; locale: string; body: string; data: Record<string, any>; state: string }>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  return (await r.json()).messages as Array<{ id: number; channel: string; to: string; template: string; locale: string; body: string; data: Record<string, any>; state: string; providerRef: string }>; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 export async function events(h: Harness, q: Record<string, string> = {}) {
   const r = await fetch(`${h.issuer}/dev/events?${new URLSearchParams(q)}`);

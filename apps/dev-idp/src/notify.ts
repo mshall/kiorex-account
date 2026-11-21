@@ -1,24 +1,32 @@
 import {
-  FallbackChannel, SmsChannel, WhatsAppAuthTemplateChannel, type OtpChannel, type OtpMessage,
+  FallbackChannel, HttpMessagingTransport, maskPhone, SmsChannel, WhatsAppAuthTemplateChannel, type OtpChannel, type OtpMessage,
 } from '@kiorex/otp-sender';
+import { randomUUID } from 'node:crypto';
 import type { Pool } from './db.js';
 
 /**
  * Messaging is MOCKED (CLAUDE.md founder decision 19 Nov 2026): every message is logged AND written to the DB dev inbox that
  * E2E tests read from GET /dev/inbox. The mock walks the same code paths as production: WhatsApp authentication template
- * first, SMS fallback, templates rendered per locale. Real providers are wired in the provider go-live pass (NEEDS_HUMAN).
+ * first, SMS fallback, templates rendered per locale. REAL providers (SMS_MODE / WHATSAPP_MODE=real, see Docs/PROVIDERS.md) bypass this
+ * inbox entirely (see createApp): nothing is recorded, /dev/inbox is 404 and no OTP is logged.
  */
 export interface InboxMessage {
   id: number; channel: string; to: string; template: string; locale: string; body: string; data: Record<string, unknown>; state: string; created_at: string;
+  /** Reference a provider status webhook would carry for this message (`mock_<channel>_<id>`), used by POST /dev/webhooks/simulate. */
+  providerRef: string;
 }
 
 export class DevInbox {
   constructor(private readonly pool: Pool, private readonly log: (l: string) => void = () => {}) {}
 
   async record(m: { channel: string; to: string; template: string; locale: string; body: string; data?: Record<string, unknown>; state?: string }): Promise<void> {
-    await this.pool.query(
-      `INSERT INTO dev_inbox (channel, recipient, template, locale, body, data, state) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    const ins = await this.pool.query(
+      `INSERT INTO dev_inbox (channel, recipient, template, locale, body, data, state) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
       [m.channel, m.to, m.template, m.locale, m.body, JSON.stringify(m.data ?? {}), m.state ?? 'delivered'],
+    );
+    await this.pool.query(
+      `INSERT INTO delivery_status (provider_ref, channel, recipient_masked, status) VALUES ($1,$2,$3,'SENT') ON CONFLICT (provider_ref) DO NOTHING`,
+      [`mock_${m.channel}_${ins.rows[0].id}`, m.channel, maskPhone(m.to)],
     );
     this.log(`[dev-inbox] ${m.channel} to=${m.to} template=${m.template}`);
   }
@@ -31,12 +39,12 @@ export class DevInbox {
     if (f.afterId) { args.push(f.afterId); where.push(`id > $${args.length}`); }
     args.push(Math.min(f.limit ?? 200, 1000));
     const r = await this.pool.query(
-      `SELECT id::int, channel, recipient AS "to", template, locale, body, data, state, created_at FROM dev_inbox
+      `SELECT id::int, channel, recipient AS "to", template, locale, body, data, state, created_at, 'mock_' || channel || '_' || id AS "providerRef" FROM dev_inbox
         ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY id ASC LIMIT $${args.length}`, args);
     return r.rows;
   }
 
-  async clear(): Promise<void> { await this.pool.query('TRUNCATE dev_inbox'); }
+  async clear(): Promise<void> { await this.pool.query('TRUNCATE dev_inbox, delivery_status'); }
 
   /** OTP delivery channel: WhatsApp authentication-template mock first, SMS mock as fallback (KA-02 paths). */
   otpChannel(opts: { whatsappFails?: () => boolean } = {}): OtpChannel {
@@ -83,10 +91,20 @@ const BODIES: Record<NotifyTemplate, Record<'ar' | 'en', (d: Record<string, stri
   account_merge_completed: { en: () => 'Kiorex Passport: your accounts were merged after review.', ar: () => 'كيوريكس باسبورت: تم دمج حساباتك بعد المراجعة.' },
 };
 
-/** Non-OTP notifications (guardian, invitations, link review) through the mock WhatsApp channel into the dev inbox. */
+export interface RealNotifier { transport: HttpMessagingTransport; onSent?: (s: { channel: string; providerRef: string; phone: string }) => Promise<void> }
+
+/**
+ * Non-OTP notifications (guardian, invitations, link review). Mock: through the mock WhatsApp channel into the dev inbox.
+ * Real (WHATSAPP_MODE=real): as a WhatsApp utility template through the generic HTTP provider (template id = the notification name,
+ * mapped to the Meta-approved name with WHATSAPP_TEMPLATE_MAP). Delivery failures are swallowed after the provider retries: a notification
+ * must never break the action that triggered it, and the bodies / recipients are never logged.
+ */
 export class Notifier {
-  constructor(private readonly inbox: DevInbox) {}
+  constructor(private readonly inbox: DevInbox, private readonly real?: RealNotifier) {}
   async send(to: string, template: NotifyTemplate, locale: 'ar' | 'en', vars: Record<string, string>, data: Record<string, unknown> = {}): Promise<void> {
-    await this.inbox.record({ channel: 'whatsapp', to, template, locale, body: BODIES[template][locale](vars), data });
+    const body = BODIES[template][locale](vars);
+    if (!this.real) { await this.inbox.record({ channel: 'whatsapp', to, template, locale, body, data }); return; }
+    const r = await this.real.transport.send({ to, body, reference: `notify:${template}:${randomUUID()}`, templateId: template, locale, variables: vars });
+    if (r.ok) await this.real.onSent?.({ channel: 'whatsapp', providerRef: r.providerRef, phone: to });
   }
 }

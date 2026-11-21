@@ -75,7 +75,7 @@ export interface SmsConfig {
   bodies?: Partial<Record<OtpLocale, (code: string, ttlMinutes: number) => string>>;
 }
 
-const DEFAULT_BODIES: Record<OtpLocale, (c: string, t: number) => string> = {
+export const DEFAULT_BODIES: Record<OtpLocale, (c: string, t: number) => string> = {
   // TODO_NEEDS_HUMAN: legal/brand wording for SMS body must be approved; this text is a functional placeholder.
   en: (c, t) => `Kiorex code: ${c}. Valid ${t} min. Do not share it.`,
   ar: (c, t) => `رمز كيوريكس: ${c}. صالح لمدة ${t} دقائق. لا تشاركه مع أحد.`,

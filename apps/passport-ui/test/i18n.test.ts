@@ -45,10 +45,10 @@ describe('i18n (AR + EN parity)', () => {
       for (const m of src.matchAll(/HttpError\(\d{3},\s*'([a-z_]+)'/g)) codes.add(m[1]);
       for (const m of src.matchAll(/send\(res, \d{3}, \{ error: '([a-z_]+)'/g)) codes.add(m[1]);
     }
-    // internal / non-user-facing: JSON parse, token plumbing, flag keys handled separately, dev-only
+    // internal / non-user-facing: JSON parse, token plumbing, flag keys handled separately, dev-only, provider webhooks (machine callers)
     const internal = new Set(['invalid_json', 'invalid_token', 'dependant_sub_required', 'invalid_scope', 'invalid_method', 'secondary_unavailable', 'account_unavailable', 'not_a_login_account', 'dependant_not_found',
       'server_error', 'method_not_allowed', 'ui_build_failed', 'interaction_mismatch', 'unsupported_prompt', 'upstream_error', 'FEATURE_DISABLED', 'not_verified', 'nothing_to_update', 'session_not_found', 'user_verification_required', 'passkey_invalid',
-      'identity_not_found', 'unknown_upstream', 'federation_failed', 'upstream_not_found', 'expired', 'locked', 'invalid_state', 'state_mismatch', 'upstream_token_exchange_failed', 'upstream_no_id_token', 'upstream_id_token_invalid', 'nonce_mismatch']);
+      'identity_not_found', 'unknown_upstream', 'federation_failed', 'upstream_not_found', 'expired', 'locked', 'invalid_state', 'state_mismatch', 'upstream_token_exchange_failed', 'upstream_no_id_token', 'upstream_id_token_invalid', 'nonce_mismatch', 'invalid_signature', 'invalid_request']);
     const missing = [...codes].filter((c) => !internal.has(c) && !en[`err.${c}`]);
     expect(missing).toEqual([]);
   });

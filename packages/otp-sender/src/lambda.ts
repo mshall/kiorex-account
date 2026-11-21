@@ -1,26 +1,17 @@
 /**
  * Lambda entry points (one exported handler per Cognito trigger), wired from environment variables.
  * Deployed by infra/tofu (other repo area): handler = "lambda.defineAuthChallenge" etc.
- * OTP_CHANNEL: whatsapp-sms in staging/prod. "log" is rejected when NODE_ENV=production.
+ * Delivery is driven only by the shared provider env (Docs/PROVIDERS.md): WHATSAPP_MODE / SMS_MODE = real plus
+ * <KIND>_API_URL, <KIND>_API_KEY, <KIND>_SENDER_ID, <KIND>_WEBHOOK_SECRET. With both mock the dev log channel is used, which is
+ * rejected when NODE_ENV=production. Misconfiguration throws at cold start (variable names only, never values).
  */
-import { createChannel, type ChannelMode } from './channels.js';
+import { createOtpChannelFromEnv } from './real-channels.js';
 import { createOtpHandlers } from './cognito.js';
 import { DEFAULT_OTP_POLICY } from './core.js';
 
 const nodeEnv = process.env.NODE_ENV;
-const mode = (process.env.OTP_CHANNEL ?? 'log') as ChannelMode;
 const handlers = createOtpHandlers({
-  channel: createChannel(mode, {
-    nodeEnv,
-    whatsapp: process.env.WA_PHONE_NUMBER_ID ? {
-      phoneNumberId: process.env.WA_PHONE_NUMBER_ID,
-      accessToken: process.env.WA_ACCESS_TOKEN ?? '',
-      templates: {
-        ar: process.env.WA_TEMPLATE_AR ?? 'TODO_NEEDS_HUMAN_WA_AUTH_TEMPLATE_AR',
-        en: process.env.WA_TEMPLATE_EN ?? 'TODO_NEEDS_HUMAN_WA_AUTH_TEMPLATE_EN',
-      },
-    } : undefined,
-  }),
+  channel: createOtpChannelFromEnv({ nodeEnv }),
   policy: DEFAULT_OTP_POLICY,
   bypass: { nodeEnv, testNumbers: (process.env.OTP_TEST_NUMBERS ?? '').split(',').filter(Boolean) },
 });

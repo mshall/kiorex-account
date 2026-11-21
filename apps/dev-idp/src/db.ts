@@ -64,6 +64,12 @@ export async function migrate(pool: Pool, schema: string): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS dev_inbox_recipient ON dev_inbox (recipient, id);
 
+    -- delivery status of OTP / notification messages (provider status webhooks; forward-only). No codes, no raw phones.
+    CREATE TABLE IF NOT EXISTS delivery_status (
+      provider_ref text PRIMARY KEY, channel text NOT NULL, recipient_masked text NOT NULL, status text NOT NULL DEFAULT 'SENT',
+      error text, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
+    );
+
     -- events the IdP would publish to products (additive contracts: guardian.link.changed, membership.changed, account.merged)
     CREATE TABLE IF NOT EXISTS event_outbox (
       id bigserial PRIMARY KEY, type text NOT NULL, aggregate_type text NOT NULL, aggregate_id text NOT NULL,
