@@ -19,6 +19,7 @@
 </div>
 
 > **Synthetic data only.** Seed users, OTP and reset steps: [Docs/TEST_DATA.md](Docs/TEST_DATA.md) (DEV ONLY). The dev IdP **refuses to start when `NODE_ENV=production`**.
+> **Demo data for manual testing** (personas, counts, click-path test scripts, role checklists): [DEMO_DATA.md](DEMO_DATA.md) (DEV ONLY).
 
 ---
 
