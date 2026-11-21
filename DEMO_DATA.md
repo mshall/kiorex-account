@@ -113,3 +113,6 @@ TOTP: add the secret to any authenticator app (Base32, SHA-1, 30 s, 6 digits). A
 * AWS staging uses Cognito: families, organisations, invitations, link requests and TOTP exist **only** in this local dev IdP (see the staging notes in `Docs/TEST_DATA.md`).
 * `+201000000001/2` are shared with the e2e suite: do not change their accounts.
 * Consuming or revoking an invitation (P4/P5) changes the seeded state; `scripts/seed-demo.ts --reset` brings it back.
+
+---
+Verified: 2026-11-21 (`kiorex_account` database via SELECT: 35 demo-range accounts, link requests `…1009` pending_review / `…1010` pending_verification / `…1007` rejected / `…1008` cancelled, TOTP rows for `…0099`, `…9001`, `…9002` confirmed and `…9003` unconfirmed).
