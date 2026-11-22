@@ -31,7 +31,7 @@ describe('KA-09 Rev 2.3 role hints and nurse client config', () => {
   });
 
   it('kiorly-clinic is ONE client for both editions; nurse.kiorly.com production URIs are TODO_NEEDS_HUMAN; local dev shares :5174', () => {
-    const clients = cfg.clients.filter((c) => c.clientId.startsWith('kiorly-'));
+    const clients = cfg.clients.filter((c) => c.clientId.startsWith('kiorly-') && c.clientId !== 'kiorly-team'); // kiorly-team is the separate staff-app client
     expect(clients.map((c) => c.clientId)).toEqual(['kiorly-clinic']); // no separate nurse client / audience (ADR-031)
     const c = clients[0];
     expect(c.environments.local.redirectUris).toEqual(['http://localhost:5174/auth/kiorex/callback']);

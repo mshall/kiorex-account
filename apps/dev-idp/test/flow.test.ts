@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createRemoteJWKSet, jwtVerify, decodeJwt, decodeProtectedHeader } from 'jose';
-import { startHarness, login, startAuth, randomPhone, Browser, type Harness } from './helpers.js';
+import { startHarness, login, startAuth, randomPhone, Browser, pkce, type Harness } from './helpers.js';
 import { loadIdpConfig } from '../src/config.js';
 
 let h: Harness;
@@ -38,8 +38,8 @@ describe('discovery and clients (KA-01)', () => {
   });
 });
 
-describe('phone OTP login: all four clients', () => {
-  for (const clientId of ['kiorex-web', 'kiorex-ops', 'kiorex-mobile', 'kiorly-clinic']) {
+describe('phone OTP login: all five clients', () => {
+  for (const clientId of ['kiorex-web', 'kiorex-ops', 'kiorex-mobile', 'kiorly-team', 'kiorly-clinic']) {
     it(`${clientId}: auth code + PKCE + OTP -> tokens`, async () => {
       const phone = randomPhone();
       const r = await login(h, { clientId, phone, name: 'Test User' });
@@ -219,5 +219,22 @@ describe('RP-initiated logout and passkey flag', () => {
     expect(o.challenge).toBeTruthy();
     const bad = await a.b.req(`${h.issuer}/interaction/${uid}/passkey/verify`, { method: 'POST', json: { id: 'x', rawId: 'x', type: 'public-key', response: {}, clientExtensionResults: {} } });
     expect(bad.status).toBe(400);
+  });
+});
+
+describe('kiorly-team staff-app client', () => {
+  it('is registered as a public PKCE client with the staff-app redirects only', () => {
+    const c = cfg.clients.find((x) => x.clientId === 'kiorly-team')!;
+    expect(c).toMatchObject({ type: 'public', pkce: 'S256', applicationType: 'native' });
+    expect(c.environments.local.redirectUris).toEqual(['kiorlyteam://auth/callback', 'exp+kiorly-team://auth/callback', 'http://localhost:8082/auth/callback']);
+  });
+  it('accepts each registered redirect and rejects an unregistered one', async () => {
+    for (const redirect_uri of ['exp+kiorly-team://auth/callback', 'http://localhost:8082/auth/callback']) {
+      const { challenge } = pkce();
+      const r = await new Browser().req(`${h.issuer}/auth?${new URLSearchParams({ client_id: 'kiorly-team', response_type: 'code', scope: 'openid', redirect_uri, code_challenge: challenge, code_challenge_method: 'S256', state: 's' })}`);
+      expect(r.headers.get('location') ?? '', redirect_uri).toMatch(/\/interaction\//);
+    }
+    const bad = await new Browser().req(`${h.issuer}/auth?${new URLSearchParams({ client_id: 'kiorly-team', response_type: 'code', scope: 'openid', redirect_uri: 'kiorlywork://auth/callback', code_challenge: pkce().challenge, code_challenge_method: 'S256' })}`);
+    expect(bad.headers.get('location') ?? '').not.toContain('/interaction/');
   });
 });

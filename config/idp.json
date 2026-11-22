@@ -167,6 +167,24 @@
       }
     },
     {
+      "clientId": "kiorly-team",
+      "name": "Kiorly Team (staff app, Expo; bundle com.kiorly.team)",
+      "$comment": "Public PKCE native client for the Kiorly Team staff app (founder decision 23 Nov 2026). Local redirects: native scheme kiorlyteam, the Expo dev-client scheme exp+kiorly-team, and Expo web on :8082. No back-channel URI: the staff app holds no server session; products revoke through their own session APIs. Staging/production registration is TODO_NEEDS_HUMAN (Cognito app client + final redirect URIs).",
+      "type": "public",
+      "grantTypes": ["authorization_code", "refresh_token"],
+      "scopes": ["openid", "profile", "phone", "kx", "kx_org", "offline_access"],
+      "pkce": "S256",
+      "applicationType": "native",
+      "environments": {
+        "local": {
+          "redirectUris": ["kiorlyteam://auth/callback", "exp+kiorly-team://auth/callback", "http://localhost:8082/auth/callback"],
+          "postLogoutRedirectUris": ["kiorlyteam://auth/logout", "exp+kiorly-team://auth/logout", "http://localhost:8082/"]
+        },
+        "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [] },
+        "production": { "redirectUris": ["TODO_NEEDS_HUMAN: Cognito app client kiorly-team, intended kiorlyteam://auth/callback"], "postLogoutRedirectUris": [] }
+      }
+    },
+    {
       "clientId": "kiorex-passport-web",
       "name": "Kiorex Passport (self-service web)",
       "type": "public",

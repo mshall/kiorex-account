@@ -39,7 +39,7 @@ Kiorex Passport (user-facing name; host `account.kiorex.com`; technical name `ki
 | **Claims** | `sub phone_number phone_number_verified name locale kx_roles` (+ `sid`, `acr`, `amr`); never clinical data or addresses |
 | **Login** | Phone OTP (WhatsApp, SMS fallback; mocked), passkeys, TOTP for privileged roles |
 | **OTP limits** | 5 sends per phone per hour, 20 per IP per hour, 5 attempts then 15 min lockout |
-| **Clients** | `kiorex-web`, `kiorex-ops`, `kiorex-mobile` (public); `kiorly-clinic` (confidential); `kiorex-passport-web` (UI) |
+| **Clients** | `kiorex-web`, `kiorex-ops`, `kiorex-mobile`, `kiorly-team` (public); `kiorly-clinic` (confidential); `kiorex-passport-web` (UI) |
 | **Messaging** | Mocked: codes and invitations land in the dev inbox (`GET /dev/inbox`) |
 | **Standing rule** | No tax-authority anything; no clinical data in identity (ADR-013) |
 
