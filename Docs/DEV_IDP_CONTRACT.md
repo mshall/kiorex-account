@@ -7,6 +7,7 @@ Moved out of the README to keep the landing page short. Dev-only values; product
 - Clients: `kiorex-web` (public, `http://localhost:5180/auth/callback`), `kiorex-ops` (public, `http://localhost:5181/auth/callback`),
   `kiorex-mobile` (public, `kiorex://auth/callback`, `http://localhost:8081/auth/callback`),
   `kiorly-clinic` (confidential, dev secret in the workspace `INTEGRATION.md`, `http://localhost:5174/auth/kiorex/callback`).
+- Planned, not yet registered (NEEDS_HUMAN): public PKCE client `kiorly-team` for the Kiorly Team staff app, redirect `kiorlyteam://auth/callback` (founder decision 23 Nov 2026; the earlier `kiorly-work`/`kiorlywork` and `kiorly-app` names are retired). Register it with the final bundle id `com.kiorly.team`.
 - Access token: RS256 JWT, `aud=kiorex-api`, <= 15 min, claims `sub phone_number phone_number_verified name locale kx_roles` (+ `sid`). Refresh 30 d, rotating with reuse detection. No clinical data.
 - Seed users: `+201000000001` Amira, `+201000000002` Hassan (patients), `+201000000099` ops (`ops_admin`, `super_admin`). OTP `000000` is accepted only for these numbers when `NODE_ENV!=production`; other codes are printed to the console.
 - Back-channel logout to `http://localhost:4000/api/v1/auth/backchannel-logout` and `http://localhost:3010/api/v1/auth/kiorex/backchannel-logout`; events `session.revoked`, `subject.deleted` (logout token `events` carries the standard URI plus `https://schemas.kiorex.com/event/<event>`). Verify in products with `@kiorex/backchannel`.
