@@ -39,23 +39,53 @@ export function parseTo(search: string, pathname = '/signin'): CardKey | null {
   return (CARD_KEYS as string[]).includes(v) ? (v as CardKey) : null;
 }
 
-export type Decision =
-  | { kind: 'route'; card: Card; reason: 'single' | 'deeplink' }
-  | { kind: 'picker'; cards: Card[]; last: CardKey | null }
-  | { kind: 'empty' }
-  | { kind: 'missing'; wanted: CardKey; cards: Card[] };
+/**
+ * "Your workspaces" hint after a Passport sign-in (ADR-038): when the person has EXACTLY ONE workspace and it is not the product they chose,
+ * Home shows a gentle hint with both options instead of blocking. Anything else (none, several, or the chosen one) opens the chosen product.
+ */
+export function workspaceHint(cards: Card[], chosen: CardKey): Card | null {
+  return cards.length === 1 && cards[0]!.key !== chosen ? cards[0]! : null;
+}
 
-/** `switching` = the person came from "Switch workspace": always show the picker (never auto-route). */
-export function decide(cards: Card[], opts: { to: CardKey | null; last: CardKey | null; switching?: boolean }): Decision {
-  if (opts.to && !opts.switching) {
-    const hit = cards.find((c) => c.key === opts.to);
-    return hit ? { kind: 'route', card: hit, reason: 'deeplink' } : { kind: 'missing', wanted: opts.to, cards };
+/** Remembered tile: only a known key is accepted. A deep link (`?to=`, `/signin/<product>`) wins over the remembered tile, the default is Clinic. */
+export function initialTile(to: CardKey | null, last: unknown): CardKey { return to ?? ((CARD_KEYS as string[]).includes(String(last)) ? (last as CardKey) : 'clinic'); }
+
+export type SignInMethod = 'passport' | 'password';
+export const parseMethod = (v: unknown): SignInMethod => (v === 'password' ? 'password' : 'passport');
+
+/** Lab has no passwords (dev sign-in = organisation slug + e-mail, same as the mobile screen); Clinic, Nurse and Pharmacy use e-mail + password. */
+export const needsOrg = (k: CardKey): boolean => k === 'lab';
+
+export type HandoffResult =
+  | { kind: 'redirect'; url: string; fallback: boolean }
+  | { kind: 'error'; code: 'invalid' | 'rateLimited' | 'network' | 'notAllowed' | 'passwordDisabled' | 'server' };
+
+/**
+ * Turns the product's `POST /auth/handoff/login` answer into where the browser goes. The product's own redirectUrl is used only when it points
+ * at the product origin from Home's domain table; otherwise Home builds `<product>/login?handoff=<code>&from=kiorly-home[&edition=NURSE]` itself.
+ * The code never leaves this function except inside that URL; it is not logged.
+ */
+export function handoffRedirect(key: CardKey, productBase: string, status: number, body: unknown): HandoffResult {
+  const base = productBase.replace(/\/+$/, '');
+  const b = (body && typeof body === 'object' ? body : {}) as { status?: string; code?: string; reason?: string; redirectUrl?: string | null; errorCode?: string; message?: unknown };
+  if (status >= 200 && status < 300) {
+    const ed = PRODUCTS[key].edition;
+    if (b.status === 'FALLBACK') {
+      const q = new URLSearchParams({ from: 'kiorly-home', reason: /^[a-z_]{2,32}$/.test(b.reason ?? '') ? b.reason! : 'other' }); if (ed) q.set('edition', ed);
+      return { kind: 'redirect', url: `${base}/login?${q}`, fallback: true };
+    }
+    if (b.status === 'OK' && typeof b.code === 'string' && /^[A-Za-z0-9_-]{20,128}$/.test(b.code)) {
+      const q = new URLSearchParams({ handoff: b.code, from: 'kiorly-home' }); if (ed) q.set('edition', ed);
+      return { kind: 'redirect', url: `${base}/login?${q}`, fallback: false };
+    }
+    return { kind: 'error', code: 'server' };
   }
-  if (cards.length === 0) return { kind: 'empty' };
-  if (cards.length === 1 && !opts.switching) return { kind: 'route', card: cards[0]!, reason: 'single' };
-  const last = opts.last && cards.some((c) => c.key === opts.last) ? opts.last : null;
-  const sorted = last ? [cards.find((c) => c.key === last)!, ...cards.filter((c) => c.key !== last)] : cards;
-  return { kind: 'picker', cards: sorted, last };
+  const code = b.errorCode ?? (b as { code?: string }).code;
+  if (status === 429) return { kind: 'error', code: 'rateLimited' };
+  if (status === 403 && code === 'HANDOFF_ORIGIN_NOT_ALLOWED') return { kind: 'error', code: 'notAllowed' };
+  if (status === 404 && code === 'LOCAL_LOGIN_DISABLED') return { kind: 'error', code: 'passwordDisabled' };
+  if (status === 400 || status === 401 || status === 403 || status === 404) return { kind: 'error', code: 'invalid' };
+  return { kind: 'error', code: 'server' };
 }
 
 /** Where Home sends the browser. The product completes its OWN silent Passport code flow (the SSO session already exists). */

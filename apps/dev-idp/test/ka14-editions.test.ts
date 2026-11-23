@@ -34,7 +34,7 @@ describe('KA-09 Rev 2.3 role hints and nurse client config', () => {
     const clients = cfg.clients.filter((c) => c.clientId.startsWith('kiorly-') && c.clientId !== 'kiorly-team' && c.clientId !== 'kiorly-home' && !c.clientId.endsWith('-web')); // kiorly (staff app, final name), legacy kiorly-team and the Pharmacy/Lab staff-web clients are separate public clients
     expect(clients.map((c) => c.clientId)).toEqual(['kiorly-clinic']); // no separate nurse client / audience (ADR-031)
     const c = clients[0];
-    expect(c.environments.local.redirectUris).toEqual(['http://localhost:5174/auth/kiorex/callback']);
+    expect(c.environments.local.redirectUris).toEqual(['http://localhost:5174/auth/kiorex/callback', 'http://localhost:5184/auth/kiorex/callback']); // :5184 = dev fallback when another checkout owns :5174
     const prod = (c.environments as Record<string, { redirectUris: string[] }>).production.redirectUris;
     expect(prod).toContain('https://app.kiorly.com/auth/kiorex/callback');
     expect(prod).toContain('https://nurse.kiorly.com/auth/kiorex/callback'); // founder domain table (config/domains.json, ADR-038)

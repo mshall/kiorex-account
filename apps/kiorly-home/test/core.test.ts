@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { decide, parseTo, productEntryUrl, signupUrl, toCards, type ApiWorkspace, PRODUCTS, CARD_KEYS } from '../src/core';
+import { handoffRedirect, initialTile, needsOrg, parseMethod, parseTo, productEntryUrl, signupUrl, toCards, workspaceHint, type ApiWorkspace, PRODUCTS, CARD_KEYS } from '../src/core';
 import { DICT } from '../src/i18n';
 
 const w = (product: ApiWorkspace['product'], edition: ApiWorkspace['edition'], org: string, role = 'owner'): ApiWorkspace =>
@@ -14,20 +14,56 @@ describe('toCards', () => {
   });
 });
 
-describe('decide', () => {
+describe('workspaceHint (gentle hint, never a block)', () => {
   const one = toCards([w('lab', null, 'l')]);
   const many = toCards([w('clinic', 'CLINIC', 'a'), w('pharmacy', null, 'p'), w('lab', null, 'l')]);
-  it('exactly one workspace skips the picker', () => expect(decide(one, { to: null, last: null })).toMatchObject({ kind: 'route', reason: 'single', card: { key: 'lab' } }));
-  it('several workspaces show the picker with the last used first', () => {
-    const d = decide(many, { to: null, last: 'lab' });
-    expect(d.kind).toBe('picker');
-    if (d.kind === 'picker') { expect(d.cards.map((c) => c.key)).toEqual(['lab', 'clinic', 'pharmacy']); expect(d.last).toBe('lab'); }
+  it('exactly one workspace that is not the chosen tile gives a hint', () => expect(workspaceHint(one, 'clinic')?.key).toBe('lab'));
+  it('exactly one workspace that IS the chosen tile gives no hint', () => expect(workspaceHint(one, 'lab')).toBeNull());
+  it('several workspaces or none never hint (the chosen product just opens)', () => { expect(workspaceHint(many, 'nurse')).toBeNull(); expect(workspaceHint([], 'clinic')).toBeNull(); });
+  it('Nurse is a different tile from Clinic for the hint', () => expect(workspaceHint(toCards([w('clinic', 'NURSE', 'n')]), 'clinic')?.key).toBe('nurse'));
+});
+
+describe('tile and method defaults', () => {
+  it('deep link wins over the remembered tile; junk is ignored; default is Clinic', () => {
+    expect(initialTile('pharmacy', 'lab')).toBe('pharmacy'); expect(initialTile(null, 'lab')).toBe('lab'); expect(initialTile(null, 'evil')).toBe('clinic'); expect(initialTile(null, null)).toBe('clinic');
   });
-  it('a stale last-used value is ignored', () => { const d = decide(many, { to: null, last: 'nurse' }); expect(d).toMatchObject({ kind: 'picker', last: null }); });
-  it('no workspace shows Create or join', () => expect(decide([], { to: null, last: null }).kind).toBe('empty'));
-  it('deep link bypasses the picker', () => expect(decide(many, { to: 'pharmacy', last: 'lab' })).toMatchObject({ kind: 'route', reason: 'deeplink', card: { key: 'pharmacy' } }));
-  it('deep link to a product the person is not in', () => expect(decide(one, { to: 'clinic', last: null })).toMatchObject({ kind: 'missing', wanted: 'clinic' }));
-  it('"Switch workspace" always shows the picker, even with one workspace', () => expect(decide(one, { to: null, last: null, switching: true }).kind).toBe('picker'));
+  it('Passport is the default method; only an explicit password choice flips it', () => {
+    expect(parseMethod(null)).toBe('passport'); expect(parseMethod('junk')).toBe('passport'); expect(parseMethod('password')).toBe('password'); expect(parseMethod('passport')).toBe('passport');
+  });
+  it('only Lab asks for an organisation (no password)', () => expect(CARD_KEYS.filter(needsOrg)).toEqual(['lab']));
+});
+
+describe('handoffRedirect (password handoff answer -> where the browser goes)', () => {
+  const CODE = 'Zm9vYmFyYmF6cXV4MTIzNDU2Nzg5MGFiY2RlZmdoaWo';
+  it('OK: <product>/login?handoff=<code>&from=kiorly-home, Nurse adds edition NURSE', () => {
+    const r = handoffRedirect('pharmacy', 'http://localhost:5192/', 200, { status: 'OK', code: CODE, redirectUrl: 'https://evil.example/x' });
+    expect(r).toEqual({ kind: 'redirect', fallback: false, url: `http://localhost:5192/login?handoff=${CODE}&from=kiorly-home` });
+    const n = handoffRedirect('nurse', 'https://nurse.kiorly.com', 200, { status: 'OK', code: CODE });
+    expect(n.kind === 'redirect' && new URL(n.url).searchParams.get('edition')).toBe('NURSE');
+    expect(n.kind === 'redirect' && new URL(n.url).origin).toBe('https://nurse.kiorly.com');
+  });
+  it('the product-supplied redirectUrl is never trusted: the URL is always built on the domain-table origin', () => {
+    const r = handoffRedirect('lab', 'https://lab.kiorly.com', 200, { status: 'OK', code: CODE, redirectUrl: 'https://evil.example/login' });
+    expect(r.kind === 'redirect' && new URL(r.url).origin).toBe('https://lab.kiorly.com');
+  });
+  it('FALLBACK (second factor, expired password, org picker) goes to the product login with a flag and NO code', () => {
+    const r = handoffRedirect('clinic', 'http://localhost:5174', 200, { status: 'FALLBACK', reason: 'mfa' });
+    expect(r).toEqual({ kind: 'redirect', fallback: true, url: 'http://localhost:5174/login?from=kiorly-home&reason=mfa' });
+    const o = handoffRedirect('nurse', 'http://localhost:5174', 200, { status: 'FALLBACK', reason: 'Bad Reason!' });
+    expect(o.kind === 'redirect' && o.url).toBe('http://localhost:5174/login?from=kiorly-home&reason=other&edition=NURSE');
+  });
+  it('a malformed success answer is an error, never a silent redirect', () => {
+    for (const body of [null, {}, { status: 'OK' }, { status: 'OK', code: 'short' }, { status: 'OK', code: 'a b'.repeat(10) }]) expect(handoffRedirect('clinic', 'http://x', 200, body)).toEqual({ kind: 'error', code: 'server' });
+  });
+  it('errors map to stable codes', () => {
+    expect(handoffRedirect('clinic', 'http://x', 401, { message: 'Invalid credentials' })).toEqual({ kind: 'error', code: 'invalid' });
+    expect(handoffRedirect('pharmacy', 'http://x', 401, { code: 'BAD_CREDENTIALS' })).toEqual({ kind: 'error', code: 'invalid' });
+    expect(handoffRedirect('lab', 'http://x', 401, { code: 'LOGIN_FAILED' })).toEqual({ kind: 'error', code: 'invalid' });
+    expect(handoffRedirect('clinic', 'http://x', 429, {})).toEqual({ kind: 'error', code: 'rateLimited' });
+    expect(handoffRedirect('clinic', 'http://x', 403, { errorCode: 'HANDOFF_ORIGIN_NOT_ALLOWED' })).toEqual({ kind: 'error', code: 'notAllowed' });
+    expect(handoffRedirect('pharmacy', 'http://x', 404, { code: 'LOCAL_LOGIN_DISABLED' })).toEqual({ kind: 'error', code: 'passwordDisabled' });
+    expect(handoffRedirect('clinic', 'http://x', 500, {})).toEqual({ kind: 'error', code: 'server' });
+  });
 });
 
 describe('urls', () => {

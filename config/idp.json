@@ -222,7 +222,7 @@
     {
       "clientId": "kiorly-clinic",
       "name": "Kiorly Clinic + Kiorly Nurse (provider SSO, KCV-201 seam; ONE client, edition-aware, aud=kiorly-clinic for both editions, KX-04 Rev 2.3)",
-      "$comment": "Kiorly Nurse is an edition of Kiorly Clinic (ADR-031): same OIDC client, same audience. Local dev: the Nurse edition runs on the same Kiorly web, http://localhost:5174 (CLAUDE.md), so no extra local redirect URI is needed. Production nurse.kiorly.com URIs are TODO_NEEDS_HUMAN (KX-19 domain confirmation).",
+      "$comment": "Kiorly Nurse is an edition of Kiorly Clinic (ADR-031): same OIDC client, same audience. Local dev: the Nurse edition runs on the same Kiorly web, http://localhost:5174 (CLAUDE.md), so no extra local redirect URI is needed. The :5184 entries are the DEV FALLBACK for when another checkout owns :5174 (this workspace then runs its Clinic web on :5184 and its Clinic API on :3011). Production nurse.kiorly.com URIs are TODO_NEEDS_HUMAN (KX-19 domain confirmation).",
       "type": "confidential",
       "grantTypes": ["authorization_code", "refresh_token"],
       "scopes": ["openid", "profile", "phone", "kx", "kx_org", "offline_access"],
@@ -232,8 +232,8 @@
       "environments": {
         "local": {
           "clientSecret": "dev-kiorly-clinic-secret",
-          "redirectUris": ["http://localhost:5174/auth/kiorex/callback"],
-          "postLogoutRedirectUris": ["http://localhost:5174/", "http://localhost:5194/signin", "http://127.0.0.1:5194/signin"],
+          "redirectUris": ["http://localhost:5174/auth/kiorex/callback", "http://localhost:5184/auth/kiorex/callback"],
+          "postLogoutRedirectUris": ["http://localhost:5174/", "http://localhost:5184/", "http://localhost:5194/signin", "http://127.0.0.1:5194/signin"],
           "backchannelLogoutUri": "http://localhost:3010/api/v1/auth/kiorex/backchannel-logout"
         },
         "staging": {"redirectUris": ["https://clinic.staging.kiorly.com/auth/kiorex/callback", "https://nurse.staging.kiorly.com/auth/kiorex/callback"], "postLogoutRedirectUris": ["https://clinic.staging.kiorly.com/", "https://nurse.staging.kiorly.com/", "https://www.staging.kiorly.com/signin"], "backchannelLogoutUri": "https://api.clinic.staging.kiorly.com/api/v1/auth/kiorex/backchannel-logout"},

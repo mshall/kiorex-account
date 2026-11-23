@@ -16,6 +16,10 @@ const issuer = `http://localhost:${port}`;
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const cfg = structuredClone(loadIdpConfig());
 for (const c of cfg.clients) delete c.environments.local.backchannelLogoutUri;
+// Home runs on its own e2e port (the shared dev Home keeps :5194), so register that origin for the kiorly-home client
+const homePort = process.env.KX_HOME_E2E_PORT ?? '5195';
+const home = cfg.clients.find((c) => c.clientId === 'kiorly-home')!.environments.local;
+home.redirectUris.push(`http://localhost:${homePort}/signin/callback`); home.postLogoutRedirectUris.push(`http://localhost:${homePort}/signin`);
 const runtime = { ...runtimeFromEnv(cfg, { PORT: String(port), ISSUER: issuer, KX_DB_SCHEMA: schema, NODE_ENV: 'test', KX_FAKE_UPSTREAM_PORT: '0' }), passkeysEnabled: false, providerSsoEnabled: false };
 const pool = createPool(runtime.databaseUrl, schema);
 await dropSchema(pool, schema).catch(() => undefined);
