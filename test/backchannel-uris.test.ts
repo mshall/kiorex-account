@@ -25,13 +25,13 @@ describe('back-channel logout registration (staff webs)', () => {
     });
   }
   it('Kiorly Home (no server session) and the staff app clients register no back-channel URI', () => {
-    for (const id of ['kiorly-home', 'kiorly', 'kiorly-team']) for (const tier of ['local', 'staging', 'production'] as const) expect(client(id).environments[tier].backchannelLogoutUri, `${id} ${tier}`).toBeUndefined();
+    for (const id of ['kiorly-home', 'kiorly', 'kiorly']) for (const tier of ['local', 'staging', 'production'] as const) expect(client(id).environments[tier].backchannelLogoutUri, `${id} ${tier}`).toBeUndefined();
   });
 });
 
 describe('staging and production registrations are complete (config only)', () => {
   it('no TODO_NEEDS_HUMAN is left in the clients the founder listed, nor in the issuers', () => {
-    for (const id of ['kiorly', 'kiorly-team', 'kiorly-home', 'kiorly-pharmacy-web', 'kiorly-lab-web', 'kiorly-clinic']) {
+    for (const id of ['kiorly', 'kiorly', 'kiorly-home', 'kiorly-pharmacy-web', 'kiorly-lab-web', 'kiorly-clinic']) {
       for (const tier of ['staging', 'production'] as const) expect(JSON.stringify(client(id).environments[tier]), `${id} ${tier}`).not.toContain('TODO_NEEDS_HUMAN');
     }
     expect(idp.issuer.staging).toBe(domainsFor('staging').passport);
@@ -42,7 +42,7 @@ describe('staging and production registrations are complete (config only)', () =
       const e = client('kiorly').environments[tier];
       expect(e.redirectUris).toEqual(['kiorly://auth/callback']);
       expect(e.postLogoutRedirectUris).toEqual(['kiorly://auth/logout']);
-      expect(client('kiorly-team').environments[tier].redirectUris).toEqual(['kiorlyteam://auth/callback']);
+      expect(client('kiorly').environments[tier].redirectUris).toEqual(['kiorlyteam://auth/callback']);
     }
   });
   it('web clients on the five product hosts only use https in staging/production', () => {

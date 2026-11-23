@@ -185,7 +185,7 @@
       }
     },
     {
-      "clientId": "kiorly-team",
+      "clientId": "kiorly",
       "name": "Kiorly Team (LEGACY staff app client, superseded by kiorly)",
       "$comment": "LEGACY (kept additive, 23 Nov 2026): the previous staff-app name Kiorly Team, now final-renamed Kiorly (client kiorly). Local redirects: native scheme kiorlyteam, the Expo dev-client scheme exp+kiorly-team, and Expo web on :8082. No back-channel URI: the staff app holds no server session; products revoke through their own session APIs. Staging/production use the same native schemes (config only; the Cognito app client is created from this entry, store/bundle ids per Docs/NEEDS_HUMAN.md).",
       "type": "public",
@@ -195,8 +195,8 @@
       "applicationType": "native",
       "environments": {
         "local": {
-          "redirectUris": ["kiorlyteam://auth/callback", "exp+kiorly-team://auth/callback", "http://localhost:8082/auth/callback"],
-          "postLogoutRedirectUris": ["kiorlyteam://auth/logout", "exp+kiorly-team://auth/logout", "http://localhost:8082/"]
+          "redirectUris": ["kiorlyteam://auth/callback", "exp+kiorly://auth/callback", "http://localhost:8082/auth/callback"],
+          "postLogoutRedirectUris": ["kiorlyteam://auth/logout", "exp+kiorly://auth/logout", "http://localhost:8082/"]
         },
         "staging": { "redirectUris": ["kiorlyteam://auth/callback"], "postLogoutRedirectUris": ["kiorlyteam://auth/logout"] },
         "production": { "redirectUris": ["kiorlyteam://auth/callback"], "postLogoutRedirectUris": ["kiorlyteam://auth/logout"] }

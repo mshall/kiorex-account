@@ -123,7 +123,7 @@ const REDIRECTS: Record<string, string> = {
   'kiorex-ops': 'http://localhost:5181/auth/callback',
   'kiorex-mobile': 'kiorex://auth/callback',
   kiorly: 'kiorly://auth/callback',
-  'kiorly-team': 'kiorlyteam://auth/callback',
+  'kiorly': 'kiorlyteam://auth/callback',
   'kiorly-clinic': 'http://localhost:5174/auth/kiorex/callback',
   'kiorly-pharmacy-web': 'http://localhost:5192/auth/callback',
   'kiorly-lab-web': 'http://localhost:5193/auth/callback',
