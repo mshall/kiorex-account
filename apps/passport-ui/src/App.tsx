@@ -17,14 +17,15 @@ import { PrivacyPage } from './pages/Privacy';
 import { AppsPage } from './pages/Apps';
 import { StepUpPage } from './pages/StepUp';
 
-type Theme = 'system' | 'light' | 'dark';
+type Theme = 'light' | 'dark' | 'system';
+/** LIGHT is the default (founder, 24 Nov 2026). Only an explicit Dark / System choice is stored (`kx-theme`, per origin) and restored; the boot script in the HTML shell applies it before first paint. */
 function useTheme(): [Theme, (t: Theme) => void] {
-  const [theme, setTheme] = useState<Theme>(() => { try { const v = localStorage.getItem('kx-theme'); return v === 'light' || v === 'dark' ? v : 'system'; } catch { return 'system'; } });
-  useEffect(() => {
-    const h = document.documentElement;
-    h.dataset.theme = theme === 'system' ? 'auto' : theme; // 'auto' = follow the OS (tokens.css)
-    try { if (theme === 'system') localStorage.removeItem('kx-theme'); else localStorage.setItem('kx-theme', theme); } catch { /* ignore */ }
-  }, [theme]);
+  const [theme, setThemeState] = useState<Theme>(() => { try { const v = localStorage.getItem('kx-theme'); return v === 'dark' || v === 'system' ? v : 'light'; } catch { return 'light'; } });
+  const setTheme = (next: Theme) => {
+    setThemeState(next);
+    document.documentElement.dataset.theme = next === 'system' ? 'auto' : next; // 'auto' = follow the OS (tokens.css)
+    try { localStorage.setItem('kx-theme', next); } catch { /* storage blocked: applies to this visit only */ }
+  };
   return [theme, setTheme];
 }
 
@@ -40,7 +41,7 @@ function Toolbar() {
     <div className="toolbar">
       <label className="sr-only" htmlFor="kx-theme">{t('app.theme')}</label>
       <select id="kx-theme" value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
-        <option value="system">{t('theme.system')}</option><option value="light">{t('theme.light')}</option><option value="dark">{t('theme.dark')}</option>
+        <option value="light">{t('theme.light')}</option><option value="dark">{t('theme.dark')}</option><option value="system">{t('theme.system')}</option>
       </select>
       <button type="button" className="btn btn-ghost" lang={lang === 'ar' ? 'en' : 'ar'} onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}>{lang === 'ar' ? 'English' : 'العربية'}</button>
     </div>

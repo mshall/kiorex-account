@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { DICT, LangCtx, initialLang, useT, type Lang } from './i18n';
-import { CARD_KEYS, PRODUCTS, decide, parseTo, productEntryUrl, signupUrl, toCards, type Card, type CardKey, type Decision } from './core';
+import { CARD_KEYS, DEFAULT_THEME, PRODUCTS, THEME_KEY, decide, parseTheme, parseTo, productEntryUrl, signupUrl, toCards, type Card, type CardKey, type Decision, type Theme } from './core';
 import { fetchWorkspaces, handleCallback, hasSession, signOut, startLogin, Unauthorized } from './oidc';
 import { ENV } from './env';
 
@@ -10,7 +10,6 @@ const DevTestUsers = import.meta.env.DEV && import.meta.env.VITE_DEV_TEST_USERS 
 const LAST = 'kh.last';
 const readLast = (): CardKey | null => { try { const v = localStorage.getItem(LAST); return (CARD_KEYS as string[]).includes(v ?? '') ? (v as CardKey) : null; } catch { return null; } };
 const writeLast = (k: CardKey) => { try { localStorage.setItem(LAST, k); } catch { /* ignore */ } };
-type Theme = 'auto' | 'light' | 'dark';
 const KIOREX_URL = (import.meta.env.VITE_KIOREX_URL as string | undefined) ?? 'https://www.kiorex.com';
 const isDark = (theme: Theme) => theme === 'dark' || (theme === 'auto' && typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches);
 
@@ -26,11 +25,13 @@ function Lockup({ k, lang, dark, height = 44 }: { k: CardKey | 'kiorex'; lang: L
 
 export function App() {
   const [lang, setLang] = useState<Lang>(initialLang);
-  const [theme, setTheme] = useState<Theme>(() => { try { return (localStorage.getItem('kh.theme') as Theme) || 'auto'; } catch { return 'auto'; } });
+  const [theme, setThemeState] = useState<Theme>(() => { try { return parseTheme(localStorage.getItem(THEME_KEY)); } catch { return DEFAULT_THEME; } });
+  // only an explicit choice is stored; light is the default and nothing is written on a plain visit
+  const setTheme = (next: Theme) => { setThemeState(next); try { localStorage.setItem(THEME_KEY, next); } catch { /* storage blocked: applies to this visit only */ } };
   const [, tick] = useState(0);
   useEffect(() => { const el = document.documentElement; el.lang = lang; el.dir = lang === 'ar' ? 'rtl' : 'ltr'; try { localStorage.setItem('kh.lang', lang); } catch { /* ignore */ } }, [lang]);
   useEffect(() => {
-    document.documentElement.dataset.theme = theme; try { localStorage.setItem('kh.theme', theme); } catch { /* ignore */ }
+    document.documentElement.dataset.theme = theme;
     const mq = matchMedia('(prefers-color-scheme: dark)'); const f = () => tick((n) => n + 1); mq.addEventListener('change', f); return () => mq.removeEventListener('change', f);
   }, [theme]);
   const t = DICT[lang];
@@ -84,7 +85,7 @@ function Shell({ lang, setLang, theme, setTheme, dark }: { lang: Lang; setLang: 
           <button type="button" className="ghost" onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')} lang={lang === 'ar' ? 'en' : 'ar'}>{t.language}</button>
           <label className="sel"><span className="sr">{t.theme}</span>
             <select value={theme} onChange={(e) => setTheme(e.target.value as Theme)} aria-label={t.theme}>
-              <option value="auto">{t.themeAuto}</option><option value="light">{t.themeLight}</option><option value="dark">{t.themeDark}</option>
+              <option value="light">{t.themeLight}</option><option value="dark">{t.themeDark}</option><option value="auto">{t.themeAuto}</option>
             </select></label>
           {signedIn ? <button type="button" className="ghost" onClick={out}>{t.signOut}</button> : null}
         </div>

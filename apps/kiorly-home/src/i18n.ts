@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 
 export type Lang = 'ar' | 'en';
 const en = {
-  appName: 'Kiorly', skip: 'Skip to content', language: 'العربية', theme: 'Theme', themeLight: 'Light', themeDark: 'Dark', themeAuto: 'Auto',
+  appName: 'Kiorly', skip: 'Skip to content', language: 'العربية', theme: 'Theme', themeLight: 'Light', themeDark: 'Dark', themeAuto: 'System',
   signInTitle: 'Sign in to Kiorly', signInLede: 'One sign-in for Kiorly Clinic, Nurse, Pharmacy and Lab. You use Kiorex Passport: a code to your phone, or a passkey.',
   signInBtn: 'Sign in with Kiorex Passport', signInNote: 'After you sign in we show the workspaces you belong to. Each product stays a separate app.',
   patientNote: 'Looking for patient booking? That stays on Kiorex.', patientLink: 'Go to Kiorex',
@@ -20,7 +20,7 @@ const en = {
   blurb: { clinic: 'Appointments, records, billing and your team.', nurse: 'Home visits, routes and care plans for nurses and agencies.', pharmacy: 'Dispensing, inventory and prescriptions.', lab: 'Orders, results and quality control.' },
 };
 const ar: typeof en = {
-  appName: 'كيورلي', skip: 'تخطي إلى المحتوى', language: 'English', theme: 'المظهر', themeLight: 'فاتح', themeDark: 'داكن', themeAuto: 'تلقائي',
+  appName: 'كيورلي', skip: 'تخطي إلى المحتوى', language: 'English', theme: 'المظهر', themeLight: 'فاتح', themeDark: 'داكن', themeAuto: 'النظام',
   signInTitle: 'تسجيل الدخول إلى كيورلي', signInLede: 'تسجيل دخول واحد لكيورلي للعيادات والتمريض والصيدليات والمعامل. تستخدم كيوريكس باسبورت: رمز على هاتفك أو مفتاح مرور.',
   signInBtn: 'تسجيل الدخول بكيوريكس باسبورت', signInNote: 'بعد تسجيل الدخول نعرض لك مساحات العمل التي تنتمي إليها. كل منتج يظل تطبيقًا منفصلًا.',
   patientNote: 'تبحث عن حجز المرضى؟ هذا يبقى على كيوريكس.', patientLink: 'الذهاب إلى كيوريكس',

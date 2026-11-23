@@ -58,3 +58,12 @@ describe('i18n', () => {
     for (const k of CARD_KEYS) expect(DICT.en.product[k]).toMatch(/^Kiorly .* by Kiorex$/);
   });
 });
+
+describe('theme: light is the default, an explicit choice is kept', () => {
+  it('falls back to light for nothing / garbage and keeps light, dark and the explicit System (auto) choice', async () => {
+    const { DEFAULT_THEME, parseTheme } = await import('../src/core');
+    expect(DEFAULT_THEME).toBe('light');
+    for (const v of [null, undefined, '', 'purple', 1]) expect(parseTheme(v)).toBe('light');
+    expect(parseTheme('dark')).toBe('dark'); expect(parseTheme('auto')).toBe('auto'); expect(parseTheme('light')).toBe('light');
+  });
+});

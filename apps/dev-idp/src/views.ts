@@ -69,7 +69,13 @@ let cssCache: string | undefined;
 const css = () => (cssCache ??= `${brandAsset('tokens.css')}
 ${brandAsset('fonts.css')}
 :root{--kx-field:#64748B;--kx-err-fg:#8A1F11}
-@media (prefers-color-scheme:dark){:root{--kx-field:#7C84B0;--kx-err-fg:#FCA5A5}}
+/* LIGHT is the default; dark applies only for an explicit Dark choice (data-theme=dark) or the explicit System choice (data-theme=auto) */
+:root[data-theme=dark]{--kx-field:#7C84B0;--kx-err-fg:#FCA5A5}
+@media (prefers-color-scheme:dark){:root[data-theme=auto]{--kx-field:#7C84B0;--kx-err-fg:#FCA5A5}}
+.brand img.logo-dark{display:none}
+:root[data-theme=dark] .brand img.logo-light{display:none}:root[data-theme=dark] .brand img.logo-dark{display:block}
+@media (prefers-color-scheme:dark){:root[data-theme=auto] .brand img.logo-light{display:none}:root[data-theme=auto] .brand img.logo-dark{display:block}}
+.theme-sel{display:inline-flex;align-items:center;gap:6px;margin:0;font-weight:400;font-size:.78rem}.theme-sel select{width:auto;min-height:36px;padding:2px 8px;border-radius:var(--kx-radius-md);font-size:.78rem}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;color:var(--kx-text);font-family:var(--kx-font);line-height:1.6;
@@ -100,19 +106,23 @@ code{font-family:var(--kx-font-mono)}
 ${DEV_CSS}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}`);
 
-const LOCK = `<picture><source srcset="/static/brand/passport-lockup-inverse.svg" media="(prefers-color-scheme: dark)"><img src="/static/brand/passport-lockup.svg" alt="Kiorex Passport"></picture>`;
+const LOCK = `<img class="logo-light" src="/static/brand/passport-lockup.svg" alt="Kiorex Passport"><img class="logo-dark" src="/static/brand/passport-lockup-inverse.svg" alt="" aria-hidden="true">`;
+/** Applied before first paint: LIGHT unless the user explicitly chose Dark or System (localStorage `kx-theme`, shared with the account pages on this origin). */
+export const THEME_BOOT = `try{var t=localStorage.getItem('kx-theme');document.documentElement.dataset.theme=t==='dark'?'dark':t==='system'?'auto':'light';}catch(e){}`;
+const THEME_WIRE = `(function(){var s=document.getElementById('kx-theme-select');if(!s)return;var t='light';try{var v=localStorage.getItem('kx-theme');if(v==='dark'||v==='system')t=v}catch(e){}s.value=t;s.addEventListener('change',function(){var v=s.value;document.documentElement.dataset.theme=v==='dark'?'dark':v==='system'?'auto':'light';try{localStorage.setItem('kx-theme',v)}catch(e){}})})();`;
+const themeSelect = (lang: Lang) => { const l = lang === 'ar' ? { n: 'المظهر', l: 'فاتح', d: 'داكن', s: 'حسب النظام' } : { n: 'Theme', l: 'Light', d: 'Dark', s: 'System' }; return `<label class="theme-sel" for="kx-theme-select"><span>${l.n}</span><select id="kx-theme-select" aria-label="${l.n}"><option value="light">${l.l}</option><option value="dark">${l.d}</option><option value="system">${l.s}</option></select></label>`; };
 const SHIELD = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>`;
 
 export function page(lang: Lang, title: string, body: string, opts: { langSwitchHref?: string; script?: string } = {}): string {
   const tx = T[lang];
   const secure = lang === 'ar' ? 'اتصال آمن بحساب كيوريكس باسبورت' : 'Secure sign-in with your Kiorex Passport';
-  return `<!doctype html><html lang="${lang}" dir="${lang === 'ar' ? 'rtl' : 'ltr'}" data-theme="auto"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>${esc(title)} - Kiorex Passport</title>
+  return `<!doctype html><html lang="${lang}" dir="${lang === 'ar' ? 'rtl' : 'ltr'}" data-theme="light"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>${esc(title)} - Kiorex Passport</title><script>${THEME_BOOT}</script>
 <link rel="icon" href="/static/brand/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png"><style>${css()}</style></head><body><main class="card">
 <div class="brand">${LOCK}</div><div class="secure">${SHIELD}<span>${esc(secure)}</span></div>
 ${body}
-<div class="foot"><span>${esc(tx.devNote)}</span>${opts.langSwitchHref ? `<a href="${esc(opts.langSwitchHref)}" hreflang="${lang === 'ar' ? 'en' : 'ar'}">${esc(tx.lang)}</a>` : ''}</div>
-</main>${opts.script ? `<script src="/static/simplewebauthn-browser.js"></script><script>${opts.script}</script>` : ''}</body></html>`;
+<div class="foot"><span>${esc(tx.devNote)}</span>${themeSelect(lang)}${opts.langSwitchHref ? `<a href="${esc(opts.langSwitchHref)}" hreflang="${lang === 'ar' ? 'en' : 'ar'}">${esc(tx.lang)}</a>` : ''}</div>
+</main><script>${THEME_WIRE}</script>${opts.script ? `<script src="/static/simplewebauthn-browser.js"></script><script>${opts.script}</script>` : ''}</body></html>`;
 }
 
 export const err = (msg: string) => (msg ? `<div class="error" role="alert">${esc(msg)}</div>` : '');

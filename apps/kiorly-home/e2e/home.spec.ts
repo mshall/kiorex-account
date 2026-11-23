@@ -128,3 +128,20 @@ test('Arabic is RTL and dark theme applies', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect((await new AxeBuilder({ page }).analyze()).violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? ''))).toEqual([]);
 });
+
+test.describe('theme: light by default, an explicit choice is remembered', () => {
+  test.use({ colorScheme: 'dark' }); // an OS in dark mode must NOT turn the page dark
+  test('light on a first visit even when the OS is dark; Dark is stored and restored on reload; System is explicit', async ({ page }) => {
+    await page.goto('/signin');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    expect(await page.evaluate(() => localStorage.getItem('kh.theme'))).toBeNull(); // nothing is stored for a plain visit
+    await page.getByLabel('Theme').selectOption('dark');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.getByLabel('Theme')).toHaveValue('dark');
+    await page.getByLabel('Theme').selectOption('auto');
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'auto');
+  });
+});

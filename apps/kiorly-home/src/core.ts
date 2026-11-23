@@ -66,3 +66,9 @@ export function productEntryUrl(card: Pick<Card, 'key' | 'url'>): string {
   return `${card.url}/login?${q}`;
 }
 export const signupUrl = (key: CardKey, baseUrl: string): string => `${baseUrl.replace(/\/+$/, '')}${PRODUCTS[key].signupPath}`;
+
+/** Theme: LIGHT is the default (founder, 24 Nov 2026), never "follow the system". `auto` is the explicit "System" choice. Only an explicit choice is stored (`kh.theme`). */
+export type Theme = 'light' | 'dark' | 'auto';
+export const DEFAULT_THEME: Theme = 'light';
+export const THEME_KEY = 'kh.theme';
+export const parseTheme = (v: unknown): Theme => (v === 'dark' || v === 'auto' || v === 'light' ? v : DEFAULT_THEME);

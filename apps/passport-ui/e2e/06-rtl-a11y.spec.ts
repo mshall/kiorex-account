@@ -28,7 +28,7 @@ const PAGES = ['/account', '/account/security', '/account/family', '/account/lin
 for (const [lang, scheme] of [['ar', 'light'], ['ar', 'dark'], ['en', 'light'], ['en', 'dark']] as const) {
   test(`Passport pages: ${lang} / ${scheme}: dir, no overflow, axe clean`, async ({ browser }) => {
     const ctx = await browser.newContext({ colorScheme: scheme, locale: lang === 'ar' ? 'ar-EG' : 'en-GB' });
-    await ctx.addInitScript((l) => { try { localStorage.setItem('kx-lang', l); } catch { /* ignore */ } }, lang);
+    await ctx.addInitScript(([l, th]) => { try { localStorage.setItem('kx-lang', l!); localStorage.setItem('kx-theme', th!); } catch { /* ignore */ } }, [lang, scheme]); // light is the default: dark is an explicit stored choice
     const page = await ctx.newPage();
 
     // signed-out landing
@@ -93,7 +93,7 @@ test('IdP sign-in pages (server-rendered): phone, code, passkey offer, TOTP: RTL
   await resetRateLimits();
   for (const [lang, scheme] of [['ar', 'light'], ['ar', 'dark'], ['en', 'dark']] as const) {
     const ctx = await browser.newContext({ colorScheme: scheme, locale: lang === 'ar' ? 'ar-EG' : 'en-GB' });
-    await ctx.addInitScript((l) => { try { localStorage.setItem('kx-lang', l); } catch { /* ignore */ } }, lang);
+    await ctx.addInitScript(([l, th]) => { try { localStorage.setItem('kx-lang', l!); localStorage.setItem('kx-theme', th!); } catch { /* ignore */ } }, [lang, scheme]); // light is the default: dark is an explicit stored choice
     const page = await ctx.newPage();
     await page.goto('/account');
     await page.getByRole('button', { name: lang === 'ar' ? 'تسجيل الدخول' : 'Sign in' }).click();
@@ -117,6 +117,7 @@ test('IdP sign-in pages (server-rendered): phone, code, passkey offer, TOTP: RTL
   }
   // TOTP page (ops account)
   const ctx = await browser.newContext({ colorScheme: 'dark', locale: 'ar-EG' });
+  await ctx.addInitScript(() => { try { localStorage.setItem('kx-theme', 'dark'); } catch { /* ignore */ } });
   const page = await ctx.newPage();
   await page.goto('/account');
   await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
@@ -132,6 +133,7 @@ test('IdP sign-in pages (server-rendered): phone, code, passkey offer, TOTP: RTL
 
 test('open dialogs (act-as, confirm, step-up) are accessible, trap focus and close with Escape (ar / dark)', async ({ browser }) => {
   const ctx = await browser.newContext({ colorScheme: 'dark', locale: 'ar-EG' });
+  await ctx.addInitScript(() => { try { localStorage.setItem('kx-theme', 'dark'); } catch { /* ignore */ } });
   const page = await ctx.newPage();
   await signIn(page, randomPhone(), { name: 'منى' });
   await seedContent(page);
@@ -147,5 +149,26 @@ test('open dialogs (act-as, confirm, step-up) are accessible, trap focus and clo
   await page.getByRole('button', { name: 'إزالة صلاحيتي' }).click();
   await axe(page, 'confirm dialog');
   await page.keyboard.press('Escape');
+  await ctx.close();
+});
+
+test('theme: light by default even on a dark OS; an explicit Dark choice is stored per origin and restored on reload (account pages and IdP pages)', async ({ browser }) => {
+  const ctx = await browser.newContext({ colorScheme: 'dark', locale: 'en-GB' });
+  await ctx.addInitScript(() => { try { localStorage.setItem('kx-lang', 'en'); } catch { /* ignore */ } });
+  const page = await ctx.newPage();
+  await page.goto('/account');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  expect(await page.evaluate(() => localStorage.getItem('kx-theme'))).toBeNull(); // nothing stored for a plain visit
+  await page.getByLabel('Theme').selectOption('dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  // the server-rendered IdP page on the same origin picks the choice up before first paint
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.waitForURL(/\/interaction\//);
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.locator('#kx-theme-select').selectOption('system');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'auto');
   await ctx.close();
 });
