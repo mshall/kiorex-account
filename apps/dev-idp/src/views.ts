@@ -202,11 +202,15 @@ document.getElementById('pk-add').addEventListener('click',async()=>{
 <form id="finish" method="post" action="/interaction/${esc(uid)}/finish"><button class="secondary" type="submit">${x.passkeySkip}</button></form>`, { script });
 }
 
-export function logoutPage(lang: Lang, formHtml: string): string {
+export function logoutPage(lang: Lang, formHtml: string, auto = false): string {
   const x = t(lang);
   // oidc-provider renders only the <form id="op.logoutForm"> (with its CSRF input); the confirm / cancel buttons are ours.
-  return page(lang, x.logoutTitle, `<h1>${x.logoutTitle}</h1>${formHtml}
-<button autofocus type="submit" form="op.logoutForm" name="logout" value="yes">${x.logoutYes}</button>
-<button class="secondary" type="submit" form="op.logoutForm">${x.logoutNo}</button>`);
+  // `auto` (a verified id_token_hint: the user already pressed Sign out inside the app) confirms at once, so "Stay signed in"
+  // can never log the user out of the app while the Passport session survives. Without JS the buttons below remain.
+  const buttons = `<button autofocus type="submit" form="op.logoutForm" name="logout" value="yes">${x.logoutYes}</button>
+<button class="secondary" type="submit" form="op.logoutForm">${x.logoutNo}</button>`;
+  if (!auto) return page(lang, x.logoutTitle, `<h1>${x.logoutTitle}</h1>${formHtml}${buttons}`);
+  const script = `var f=document.getElementById('op.logoutForm');if(f){var i=document.createElement('input');i.type='hidden';i.name='logout';i.value='yes';f.appendChild(i);f.submit();}`;
+  return page(lang, x.logoutTitle, `<h1>${lang === 'ar' ? 'جارٍ تسجيل الخروج…' : 'Signing you out…'}</h1>${formHtml}<noscript>${buttons}</noscript>`).replace('</body>', `<script>${script}</script></body>`);
 }
 export const loggedOutPage = (lang: Lang) => page(lang, t(lang).loggedOut, `<h1>${t(lang).loggedOut}</h1><a class="btn secondary" href="/account">${lang === 'ar' ? 'العودة إلى كيوريكس باسبورت' : 'Back to Kiorex Passport'}</a>`);

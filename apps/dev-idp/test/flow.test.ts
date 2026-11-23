@@ -189,6 +189,18 @@ describe('RP-initiated logout and passkey flag', () => {
     expect(got.sid).toBe(decodeJwt(r.tokens.id_token).sid);
   });
 
+  it('a hinted logout page confirms itself (no "Stay signed in" trap); without a hint the confirm buttons stay', async () => {
+    const r = await login(h, { phone: randomPhone(), clientId: 'kiorex-web' });
+    const q = new URLSearchParams({ id_token_hint: r.tokens.id_token, post_logout_redirect_uri: 'http://localhost:5180/', state: 'x' });
+    const hinted = await (await r.b.req(`${h.issuer}/session/end?${q}`)).text();
+    expect(hinted).toContain("f.submit()");
+    expect(hinted).toContain('name="logout"');
+    const r2 = await login(h, { phone: randomPhone(), clientId: 'kiorex-web' });
+    const plain = await (await r2.b.req(`${h.issuer}/session/end`)).text();
+    expect(plain).not.toContain('f.submit()');
+    expect(plain).toContain('value="yes"');
+  });
+
   it('passkey registration is behind flag account.passkeys', async () => {
     const off = await startHarness({ passkeys: false });
     try {

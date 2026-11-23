@@ -107,7 +107,8 @@ export function createProvider({ cfg, pool, accounts, key, issuer, orgClaims }: 
         enabled: true,
         logoutSource: async (ctx, form) => {
           ctx.type = 'html';
-          ctx.body = logoutPage(langOf(ctx as never), form);
+          const hinted = typeof (ctx as { oidc?: { params?: { id_token_hint?: unknown } } }).oidc?.params?.id_token_hint === 'string';
+          ctx.body = logoutPage(langOf(ctx as never), form, hinted);
         },
         postLogoutSuccessSource: async (ctx) => {
           ctx.type = 'html';
