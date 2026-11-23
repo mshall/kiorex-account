@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview --port 5194 --strictPort",
     "check:bundle": "node scripts/check-no-dev-test-users.mjs",
-    "test:e2e": "playwright test -c e2e/playwright.config.ts"
+    "test:e2e": "playwright test -c e2e/playwright.config.ts",
+    "test:e2e:real": "playwright test -c e2e/playwright.real.config.ts"
   },
   "dependencies": { "react": "^19.3.1", "react-dom": "^19.3.1" }
 }

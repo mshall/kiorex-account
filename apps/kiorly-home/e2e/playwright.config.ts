@@ -9,7 +9,7 @@ const HOME = 5194;
  * the test asserts WHERE Home sends the browser without depending on another team's in-flight product work. System Chrome, no downloads.
  */
 export default defineConfig({
-  testDir: '.', testMatch: /.*\.spec\.ts/, timeout: 60_000, expect: { timeout: 10_000 }, fullyParallel: false, workers: 1, reporter: [['list']], outputDir: './.results',
+  testDir: '.', testMatch: /^(?!.*\.real\.).*\.spec\.ts$/, timeout: 60_000, expect: { timeout: 10_000 }, fullyParallel: false, workers: 1, reporter: [['list']], outputDir: './.results',
   use: { baseURL: `http://localhost:${HOME}`, channel: 'chrome', trace: 'retain-on-failure', screenshot: 'only-on-failure', timezoneId: 'Africa/Cairo', locale: 'en-US' },
   projects: [{ name: 'desktop', use: { ...devices['Desktop Chrome'], channel: 'chrome' } }],
   webServer: [
