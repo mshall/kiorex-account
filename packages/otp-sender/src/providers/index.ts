@@ -5,3 +5,7 @@ export * from './mapping-types.js';
 export * from './sms.mapping.js';
 export * from './whatsapp.mapping.js';
 export * from './real-adapters.js';
+export * from './email.mapping.js';
+export * from './whatsapp.meta.mapping.js';
+export * from './sms.twilio.mapping.js';
+export * from './email.ses.mapping.js';

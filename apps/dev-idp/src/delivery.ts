@@ -1,4 +1,4 @@
-import { maskPhone, MESSAGING_MAPPINGS, messagingKindOf, providerEnv, type StatusEvent, type StatusState } from '@kiorex/otp-sender';
+import { maskPhone, mappingFor, messagingKindOf, providerEnv, type StatusEvent, type StatusState } from '@kiorex/otp-sender';
 import type { Pool } from './db.js';
 
 const ORDER: StatusState[] = ['QUEUED', 'SENT', 'DELIVERED', 'READ'];
@@ -38,8 +38,9 @@ export class DeliveryStatus {
   async handleWebhook(channel: string, raw: string, headers: Record<string, unknown>): Promise<{ applied: number; ignored: number } | null> {
     const kind = messagingKindOf(channel.toUpperCase());
     if (!kind) return null;
-    if (!MESSAGING_MAPPINGS[kind].verifyWebhook({ secret: providerEnv(kind, this.env).webhookSecret, rawBody: raw, headers })) return null;
-    return this.apply(MESSAGING_MAPPINGS[kind].parseStatusWebhook(raw));
+    const pe = providerEnv(kind, this.env); const mapping = mappingFor(kind, pe); // native vendor (Meta / Twilio) only when <KIND>_MODE=real and <KIND>_PROVIDER names it
+    if (!mapping.verifyWebhook({ secret: pe.webhookSecret, rawBody: raw, headers, publicUrl: pe.publicWebhookUrl })) return null;
+    return this.apply(mapping.parseStatusWebhook(raw));
   }
 
   async list(limit = 200): Promise<DeliveryRow[]> {

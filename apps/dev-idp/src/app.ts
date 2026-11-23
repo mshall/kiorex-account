@@ -165,7 +165,7 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
       const url = new URL(req.url ?? '/', rt.issuer);
       const p = url.pathname;
       try {
-        if (p === '/healthz') return send(res, 200, { status: 'ok', env: 'dev-only', issuer: rt.issuer, upstream_issuer: [...upstreams.values()][0]?.issuer ?? null });
+        if (p === '/healthz') return send(res, 200, { status: 'ok', env: 'dev-only', providers: { sms: providerEnv('SMS', env).mode, whatsapp: providerEnv('WHATSAPP', env).mode }, issuer: rt.issuer, upstream_issuer: [...upstreams.values()][0]?.issuer ?? null });
         // dev inbox / event outbox for E2E tests (mock messaging, CLAUDE.md founder decision); dev IdP never runs in production
         // provider delivery-status webhooks (SMS / WhatsApp): HMAC verified, idempotent, forward-only statuses; reachable in every mode
         if ((p === '/webhooks/sms' || p === '/webhooks/whatsapp') && req.method === 'POST') {
