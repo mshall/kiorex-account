@@ -167,9 +167,27 @@
       }
     },
     {
+      "clientId": "kiorly",
+      "name": "Kiorly (staff app, Expo; bundle com.kiorly.app)",
+      "$comment": "Public PKCE native client for the Kiorly staff app (final name, founder decision 23 Nov 2026; replaces the legacy client kiorly-team, which stays registered so installed dev builds keep working). Local redirects: native scheme kiorly, the Expo dev-client scheme exp+kiorly, and Expo web on :8082. No back-channel URI: the staff app holds no server session; products revoke through their own session APIs. Staging/production registration is TODO_NEEDS_HUMAN (Cognito app client + final redirect URIs).",
+      "type": "public",
+      "grantTypes": ["authorization_code", "refresh_token"],
+      "scopes": ["openid", "profile", "phone", "kx", "kx_org", "offline_access"],
+      "pkce": "S256",
+      "applicationType": "native",
+      "environments": {
+        "local": {
+          "redirectUris": ["kiorly://auth/callback", "exp+kiorly://auth/callback", "http://localhost:8082/auth/callback"],
+          "postLogoutRedirectUris": ["kiorly://auth/logout", "exp+kiorly://auth/logout", "http://localhost:8082/"]
+        },
+        "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [] },
+        "production": { "redirectUris": ["TODO_NEEDS_HUMAN: Cognito app client kiorly, intended kiorly://auth/callback"], "postLogoutRedirectUris": [] }
+      }
+    },
+    {
       "clientId": "kiorly-team",
-      "name": "Kiorly Team (staff app, Expo; bundle com.kiorly.team)",
-      "$comment": "Public PKCE native client for the Kiorly Team staff app (founder decision 23 Nov 2026). Local redirects: native scheme kiorlyteam, the Expo dev-client scheme exp+kiorly-team, and Expo web on :8082. No back-channel URI: the staff app holds no server session; products revoke through their own session APIs. Staging/production registration is TODO_NEEDS_HUMAN (Cognito app client + final redirect URIs).",
+      "name": "Kiorly Team (LEGACY staff app client, superseded by kiorly)",
+      "$comment": "LEGACY (kept additive, 23 Nov 2026): the previous staff-app name Kiorly Team, now final-renamed Kiorly (client kiorly). Local redirects: native scheme kiorlyteam, the Expo dev-client scheme exp+kiorly-team, and Expo web on :8082. No back-channel URI: the staff app holds no server session; products revoke through their own session APIs. Staging/production registration is TODO_NEEDS_HUMAN (Cognito app client + final redirect URIs).",
       "type": "public",
       "grantTypes": ["authorization_code", "refresh_token"],
       "scopes": ["openid", "profile", "phone", "kx", "kx_org", "offline_access"],

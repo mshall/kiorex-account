@@ -19,7 +19,7 @@ export async function readForm(req: IncomingMessage): Promise<Record<string, str
 }
 
 /**
- * Custom URL schemes of the registered native clients (kiorex://, kiorlyteam://, exp+kiorly-team://). CSP `form-action` also governs the
+ * Custom URL schemes of the registered native clients (kiorex://, kiorly://, exp+kiorly://, plus legacy kiorlyteam://, exp+kiorly-team://). CSP `form-action` also governs the
  * redirect chain that follows a form POST, and without these schemes iOS Safari / ASWebAuthenticationSession refuses the final
  * 302 to `kiorex://auth/callback` after "Not now"/Verify: the sign-in sheet then sits on the last screen and the app never gets its code.
  */
