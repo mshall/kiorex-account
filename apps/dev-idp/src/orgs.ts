@@ -3,6 +3,7 @@ import { ulid } from 'ulid';
 import { E164 } from '@kiorex/otp-sender';
 import type { Account } from './accounts.js';
 import { HttpError, type Ctx } from './services.js';
+import { deriveWorkspaces, type Workspace } from './workspaces.js';
 
 const COUNTRY = /^[A-Z]{2}$/;
 const MANAGER_HINTS = ['owner', 'admin'];
@@ -73,6 +74,16 @@ export class Orgs {
       `SELECT o.org_id, o.legal_name, o.country, o.edition, o.product_refs, m.id AS membership_id, m.role_hint, m.status, m.effective_from, m.expires_at
          FROM memberships m JOIN organizations o ON o.org_id=m.org_id WHERE m.sub=$1 ORDER BY m.created_at`, [sub]);
     return r.rows;
+  }
+
+  /** ADR-038 Kiorly Home: workspaces from ACTIVE, unexpired memberships of active organisations (no pending/ended; never reveals other people's orgs). */
+  async workspaces(sub: string): Promise<Workspace[]> {
+    const r = await this.c.pool.query(
+      `SELECT o.org_id, o.legal_name, o.edition, o.product_refs, m.role_hint
+         FROM memberships m JOIN organizations o ON o.org_id=m.org_id
+        WHERE m.sub=$1 AND m.status='active' AND o.status='active' AND m.effective_from <= $2 AND (m.expires_at IS NULL OR m.expires_at > $2) ORDER BY m.created_at`,
+      [sub, new Date(this.c.now() * 1000)]);
+    return deriveWorkspaces(r.rows, this.c.cfg);
   }
 
   private async myRole(orgId: string, sub: string): Promise<string> {

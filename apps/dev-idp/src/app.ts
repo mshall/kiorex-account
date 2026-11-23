@@ -78,6 +78,9 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
     // (and ignores) the logout token itself; the SPA notices a revoked session through a 401 on its next API call.
     passportClient.environments.local.backchannelLogoutUri ??= `${rt.issuer}/account/backchannel-logout`;
   }
+  // ADR-038: Kiorly Home is a server-less SPA too and calls GET /api/workspaces with its own access token, which needs the `sid` claim.
+  const homeClient = cfg.clients.find((c) => c.clientId === 'kiorly-home');
+  if (homeClient) homeClient.environments.local.backchannelLogoutUri ??= `${rt.issuer}/account/backchannel-logout`;
   setNativeFormActionSchemes(cfg.clients.flatMap((c) => [...c.environments.local.redirectUris, ...c.environments.local.postLogoutRedirectUris]));
   const seedUsers = o.seedUsers ?? loadSeedUsers();
   const testNumbers = seedUsers.map((u) => u.phone);

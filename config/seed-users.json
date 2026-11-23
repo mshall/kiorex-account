@@ -229,6 +229,24 @@
       ]
     },
     {
+      "sub": "01HZKXD0000000000000002031",
+      "phone": "+201000002031",
+      "name": "Demo Multi-Workspace Owner",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000002032",
+      "phone": "+201000002032",
+      "name": "Demo No-Workspace Newcomer",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
       "sub": "01HZKXD0000000000000009001",
       "phone": "+201000009001",
       "name": "Ops Admin Demo",

@@ -24,6 +24,7 @@ const clientSchema = z.object({
   mfaRequired: z.boolean().optional(),
   environments: z.looseObject({ local: envBlock }),
 });
+const productCfg = z.object({ refKey: z.string() });
 const idpSchema = z.object({
   issuer: z.looseObject({ local: z.string() }),
   defaultAudience: z.string(),
@@ -71,6 +72,11 @@ const idpSchema = z.object({
     maxDependantsPerGuardian: z.number(),
   }),
   orgs: z.object({ roleHints: z.array(z.string()), editions: z.array(z.string()).min(1), defaultEdition: z.string(), invitationTtlDays: z.number(), productRefKeys: z.array(z.string()) }),
+  /** ADR-038: Kiorly Home workspace catalogue (product URLs per environment; never secrets). */
+  workspaces: z.object({
+    defaultProduct: z.enum(['clinic', 'pharmacy', 'lab']),
+    products: z.object({ clinic: productCfg, pharmacy: productCfg, lab: productCfg }),
+  }).optional(),
   federation: z.object({
     flag: z.string(),
     upstreams: z.array(z.object({

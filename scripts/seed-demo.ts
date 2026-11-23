@@ -60,8 +60,8 @@ for (const g of demo.guardianLinks) {
 }
 for (const o of demo.organizations) {
   // edition (CLINIC | NURSE) is a display hint only (KA-14, ADR-031): Kiorly Nurse orgs show the Nurse edition in Passport
-  await q(`INSERT INTO organizations (org_id, legal_name, country, product_refs, edition, created_by) VALUES ($1,$2,$3,'{}',$4,$5)
-           ON CONFLICT (org_id) DO UPDATE SET legal_name=$2, edition=$4, status='active'`, [o.orgId, o.legalName, o.country, o.edition ?? 'CLINIC', o.owner]);
+  await q(`INSERT INTO organizations (org_id, legal_name, country, product_refs, edition, created_by) VALUES ($1,$2,$3,$6,$4,$5)
+           ON CONFLICT (org_id) DO UPDATE SET legal_name=$2, edition=$4, status='active', product_refs=$6`, [o.orgId, o.legalName, o.country, o.edition ?? 'CLINIC', o.owner, JSON.stringify(o.productRefs ?? {})]);
   for (const m of o.members) {
     const id = `demo_mem_${o.orgId}_${m.sub.slice(-4)}`;
     await q(`INSERT INTO memberships (id, org_id, sub, role_hint, invited_by) VALUES ($1,$2,$3,$4,$5)

@@ -96,8 +96,10 @@
         {
           "sub": "01HZKXD0000000000000003010",
           "role": "physiotherapist"
-        }
+        },
+        { "sub": "01HZKXD0000000000000002031", "role": "doctor" }
       ],
+      "productRefs": { "kiorly_clinic_tenant_id": "na" },
       "edition": "CLINIC"
     },
     {
@@ -109,8 +111,10 @@
         {
           "sub": "01HZKXD0000000000000002004",
           "role": "pharmacist"
-        }
+        },
+        { "sub": "01HZKXD0000000000000002031", "role": "pharmacist" }
       ],
+      "productRefs": { "kiorly_pharmacy_tenant_id": "org_demo_kiorly" },
       "edition": "CLINIC"
     },
     {
@@ -122,8 +126,10 @@
         {
           "sub": "01HZKXD0000000000000002005",
           "role": "lab_technician"
-        }
+        },
+        { "sub": "01HZKXD0000000000000002031", "role": "lab_technician" }
       ],
+      "productRefs": { "kiorly_lab_tenant_id": "demo-lab" },
       "edition": "CLINIC"
     },
     {

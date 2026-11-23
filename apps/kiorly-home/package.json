@@ -1,0 +1,15 @@
+{
+  "name": "@kiorex/kiorly-home",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Kiorly Home (ADR-038): the one web sign-in for the Kiorly provider products. Static Vite React app served at www.kiorly.com/signin (local http://localhost:5194/signin).",
+  "scripts": {
+    "dev": "vite --port 5194 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 5194 --strictPort",
+    "check:bundle": "node scripts/check-no-dev-test-users.mjs",
+    "test:e2e": "playwright test -c e2e/playwright.config.ts"
+  },
+  "dependencies": { "react": "^19.3.1", "react-dom": "^19.3.1" }
+}

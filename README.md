@@ -39,7 +39,7 @@ Kiorex Passport (user-facing name; host `account.kiorex.com`; technical name `ki
 | **Claims** | `sub phone_number phone_number_verified name locale kx_roles` (+ `sid`, `acr`, `amr`); never clinical data or addresses |
 | **Login** | Phone OTP (WhatsApp, SMS fallback; mocked), passkeys, TOTP for privileged roles |
 | **OTP limits** | 5 sends per phone per hour, 20 per IP per hour, 5 attempts then 15 min lockout |
-| **Clients** | `kiorex-web`, `kiorex-ops`, `kiorex-mobile`, `kiorly` (staff app; legacy `kiorly-team` kept) (public); `kiorly-clinic` (confidential); `kiorex-passport-web` (UI) |
+| **Clients** | `kiorex-web`, `kiorex-ops`, `kiorex-mobile`, `kiorly` (staff app; legacy `kiorly-team` kept), `kiorly-home` (Kiorly Home web sign-in, ADR-038) (public); `kiorly-clinic` (confidential); `kiorex-passport-web` (UI) |
 | **Messaging** | Mocked: codes and invitations land in the dev inbox (`GET /dev/inbox`) |
 | **Standing rule** | No tax-authority anything; no clinical data in identity (ADR-013) |
 
@@ -139,6 +139,9 @@ Real captures of the Passport web UI (synthetic data, English light theme, plus 
 | <img src="Docs/assets/shots/passport-05-family.jpg" alt="Family" width="260"> | <img src="Docs/assets/shots/passport-06-privacy.jpg" alt="Privacy" width="260"> | <img src="Docs/assets/shots/passport-07-orgs.jpg" alt="Organisations" width="260"> |
 
 <img src="Docs/assets/shots/passport-home-ar-dark.jpg" alt="Arabic dark theme" width="320">
+
+## Kiorly Home (ADR-038)
+`apps/kiorly-home` is the one web sign-in for the Kiorly provider products (`https://www.kiorly.com/signin`, local http://localhost:5194/signin): sign in with Passport, then pick a workspace (Clinic, Nurse, Pharmacy, Lab) from `GET /api/workspaces`. Domains for every environment live in `config/domains.json` ([Docs/DOMAINS.md](Docs/DOMAINS.md)); go-live checklist in [Docs/NEEDS_HUMAN.md](Docs/NEEDS_HUMAN.md). See [apps/kiorly-home/README.md](apps/kiorly-home/README.md).
 
 ## Quick start
 

@@ -164,6 +164,7 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
 
   // ---------------- KA-09 organisations & memberships ----------------
   if (p === '/api/orgs' && m === 'POST') return ok(201, await svc.orgs.create(await account(d, caller), await json(req)));
+  if (p === '/api/workspaces' && m === 'GET') return ok(200, { workspaces: await svc.orgs.workspaces(caller.sub) });
   if (p === '/api/orgs' && m === 'GET') return ok(200, { memberships: await svc.orgs.mine(caller.sub) });
   if (p === '/api/invitations' && m === 'GET') return ok(200, { invitations: await svc.orgs.pendingFor(await account(d, caller)) });
   if (s[0] === 'api' && s[1] === 'invitations' && s[2] && s[3] === 'accept' && m === 'POST') return ok(200, await svc.orgs.acceptById(await account(d, caller), s[2]));

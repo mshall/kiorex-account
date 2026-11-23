@@ -45,3 +45,7 @@ Known limits: Kiorex's provider sync and the Nurse-lab push-back call Kiorly Cli
 - **Invitations:** pending x2 (`demo-invite-nile-nurse`, `demo-invite-agency-nurse`), **consumed** (`demo-invite-consumed`), **expired** (`demo-invite-expired`), **revoked** (`demo-invite-revoked`). Ended membership: Youssef (`+201000001011`) at Nile Care.
 - **Account linking:** pending_review (ops queue), pending_verification, rejected (with reviewer note), cancelled.
 - **Security / step-up:** passkeys listed for Hoda and Ahmed Fawzy (synthetic, cannot sign in), security events (step-up success 3 min ago, step-up failed, session revoked), demo sessions for Hoda and Mahmoud; ops accounts need the TOTP step-up (see the root TEST_DATA.md).
+
+## Kiorly Home personas (ADR-038, DEV ONLY)
+OTP `000000`. `+201000002031` Demo Multi-Workspace Owner (member of Nile Care as doctor, Delta Pharmacy as pharmacist, Cairo Lab as lab technician: three workspaces, picker). `+201000002032` Demo No-Workspace Newcomer (no organisation: Create or join). One-workspace staff: `+201000002001` (Clinic), `+201000002004` (Pharmacy), `+201000002005` (Lab); `+201000003001` Mona (Nurse edition). Demo organisations carry `product_refs` (`kiorly_clinic_tenant_id=na`, `kiorly_pharmacy_tenant_id=org_demo_kiorly`, `kiorly_lab_tenant_id=demo-lab`) so the workspace endpoint derives the product.
+

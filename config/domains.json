@@ -1,0 +1,54 @@
+{
+  "$comment": "ADR-038: the ONE domain/URL table per environment (founder, 23 Nov 2026). Go-live is configuration only: every consumer (Kiorly Home, GET /api/workspaces, the Passport client registrations in idp.json, each product's CORS + OIDC redirect/post-logout allow-lists, cookie settings, app-link association files, OpenTofu tfvars) is DERIVED from this file or asserted against it by tests (apps/dev-idp/test/domains.test.ts). Products stay separate deployments and never import this file: they receive the same values through their own env (see Docs/DOMAINS.md). Staging hosts are placeholders until the founder confirms them; no host here is a deploy.",
+  "environments": {
+    "local": {
+      "passport": "http://localhost:4400",
+      "home": "http://localhost:5194",
+      "clinic": "http://localhost:5174",
+      "nurse": "http://localhost:5174",
+      "pharmacy": "http://localhost:5192",
+      "lab": "http://localhost:5193",
+      "api": { "clinic": "http://localhost:3010", "pharmacy": "http://localhost:3100", "lab": "http://localhost:3200" },
+      "aliases": { "clinic": ["http://127.0.0.1:5174"], "pharmacy": ["http://127.0.0.1:5192"], "lab": ["http://127.0.0.1:5193"], "home": ["http://127.0.0.1:5194"] },
+      "cookieDomain": null,
+      "secureCookies": false,
+      "sameSite": "Lax"
+    },
+    "staging": {
+      "passport": "https://account.staging.kiorex.com",
+      "home": "https://www.staging.kiorly.com",
+      "clinic": "https://clinic.staging.kiorly.com",
+      "nurse": "https://nurse.staging.kiorly.com",
+      "pharmacy": "https://pharmacy.staging.kiorly.com",
+      "lab": "https://lab.staging.kiorly.com",
+      "api": { "clinic": "https://api.clinic.staging.kiorly.com", "pharmacy": "https://api.pharmacy.staging.kiorly.com", "lab": "https://api.lab.staging.kiorly.com" },
+      "aliases": {},
+      "cookieDomain": null,
+      "secureCookies": true,
+      "sameSite": "Lax"
+    },
+    "production": {
+      "passport": "https://account.kiorex.com",
+      "home": "https://www.kiorly.com",
+      "apexRedirect": "https://kiorly.com",
+      "clinic": "https://clinic.kiorly.com",
+      "nurse": "https://nurse.kiorly.com",
+      "pharmacy": "https://pharmacy.kiorly.com",
+      "lab": "https://lab.kiorly.com",
+      "api": { "clinic": "https://api.clinic.kiorly.com", "pharmacy": "https://api.pharmacy.kiorly.com", "lab": "https://api.lab.kiorly.com" },
+      "aliases": { "clinic": ["https://app.kiorly.com"] },
+      "cookieDomain": null,
+      "secureCookies": true,
+      "sameSite": "Lax"
+    }
+  },
+  "cookiePolicy": "Session cookies are HOST-ONLY (cookieDomain null) so a product never shares a cookie with another product; Home and the products share nothing but the Passport SSO session on account.kiorex.com. Secure + HttpOnly + SameSite=Lax in staging/production (Lax is required so the top-level redirect back from Passport carries the session). Never set Domain=.kiorly.com.",
+  "hsts": "Send Strict-Transport-Security: max-age=31536000; includeSubDomains on every kiorly.com host at the CDN (add preload only after every subdomain is HTTPS). NEEDS_HUMAN to submit to the preload list.",
+  "frameAncestors": "Every product keeps frame-ancestors 'none' (clickjacking). The Passport pages likewise. Nothing embeds another product.",
+  "appLinks": {
+    "host": "home",
+    "iosBundleId": "com.kiorly.app",
+    "androidPackage": "com.kiorly.app",
+    "paths": ["/signin/*", "/open/*"]
+  }
+}

@@ -233,11 +233,11 @@
         "local": {
           "clientSecret": "dev-kiorly-clinic-secret",
           "redirectUris": ["http://localhost:5174/auth/kiorex/callback"],
-          "postLogoutRedirectUris": ["http://localhost:5174/"],
+          "postLogoutRedirectUris": ["http://localhost:5174/", "http://localhost:5194/signin", "http://127.0.0.1:5194/signin"],
           "backchannelLogoutUri": "http://localhost:3010/api/v1/auth/kiorex/backchannel-logout"
         },
-        "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" },
-        "production": { "redirectUris": ["https://app.kiorly.com/auth/kiorex/callback", "TODO_NEEDS_HUMAN: https://nurse.kiorly.com/auth/kiorex/callback (confirm host + path, KX-04 Rev 2.3, KX-23 KNED01)"], "postLogoutRedirectUris": ["https://app.kiorly.com/", "TODO_NEEDS_HUMAN: https://nurse.kiorly.com/"], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" }
+        "staging": {"redirectUris": ["https://clinic.staging.kiorly.com/auth/kiorex/callback", "https://nurse.staging.kiorly.com/auth/kiorex/callback"], "postLogoutRedirectUris": ["https://clinic.staging.kiorly.com/", "https://nurse.staging.kiorly.com/", "https://www.staging.kiorly.com/signin"], "backchannelLogoutUri": "https://api.clinic.staging.kiorly.com/api/v1/auth/kiorex/backchannel-logout"},
+        "production": {"redirectUris": ["https://clinic.kiorly.com/auth/kiorex/callback", "https://nurse.kiorly.com/auth/kiorex/callback", "https://app.kiorly.com/auth/kiorex/callback"], "postLogoutRedirectUris": ["https://clinic.kiorly.com/", "https://nurse.kiorly.com/", "https://app.kiorly.com/", "https://www.kiorly.com/signin"], "backchannelLogoutUri": "https://api.clinic.kiorly.com/api/v1/auth/kiorex/backchannel-logout"}
       }
     },
     {
@@ -251,10 +251,10 @@
       "environments": {
         "local": {
           "redirectUris": ["http://localhost:5192/auth/callback", "http://127.0.0.1:5192/auth/callback"],
-          "postLogoutRedirectUris": ["http://localhost:5192/", "http://127.0.0.1:5192/"]
+          "postLogoutRedirectUris": ["http://localhost:5192/", "http://127.0.0.1:5192/", "http://localhost:5194/signin", "http://127.0.0.1:5194/signin"]
         },
-        "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [] },
-        "production": { "redirectUris": ["TODO_NEEDS_HUMAN: Pharmacy web production host (KX-19), path /auth/callback"], "postLogoutRedirectUris": [] }
+        "staging": {"redirectUris": ["https://pharmacy.staging.kiorly.com/auth/callback"], "postLogoutRedirectUris": ["https://pharmacy.staging.kiorly.com/", "https://www.staging.kiorly.com/signin"]},
+        "production": {"redirectUris": ["https://pharmacy.kiorly.com/auth/callback"], "postLogoutRedirectUris": ["https://pharmacy.kiorly.com/", "https://www.kiorly.com/signin"]}
       }
     },
     {
@@ -268,12 +268,38 @@
       "environments": {
         "local": {
           "redirectUris": ["http://localhost:5193/auth/callback", "http://127.0.0.1:5193/auth/callback"],
-          "postLogoutRedirectUris": ["http://localhost:5193/", "http://127.0.0.1:5193/"]
+          "postLogoutRedirectUris": ["http://localhost:5193/", "http://127.0.0.1:5193/", "http://localhost:5194/signin", "http://127.0.0.1:5194/signin"]
         },
-        "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [] },
-        "production": { "redirectUris": ["TODO_NEEDS_HUMAN: Lab web production host (KX-19), path /auth/callback"], "postLogoutRedirectUris": [] }
+        "staging": {"redirectUris": ["https://lab.staging.kiorly.com/auth/callback"], "postLogoutRedirectUris": ["https://lab.staging.kiorly.com/", "https://www.staging.kiorly.com/signin"]},
+        "production": {"redirectUris": ["https://lab.kiorly.com/auth/callback"], "postLogoutRedirectUris": ["https://lab.kiorly.com/", "https://www.kiorly.com/signin"]}
+      }
+    },
+    {
+      "clientId": "kiorly-home",
+      "name": "Kiorly Home (one web sign-in for Kiorly Clinic, Nurse, Pharmacy and Lab)",
+      "$comment": "ADR-038. Public SPA client (code + PKCE S256) at kiorly.com/signin (alias app.kiorly.com): signs the person in to Passport, calls GET /api/workspaces with its own access token, then redirects to the chosen product, which completes its OWN silent code flow against the Passport session. Never used by the products. Local dev port 5194, route /signin. Production URIs are TODO_NEEDS_HUMAN (domain/DNS and the production Passport client).",
+      "type": "public",
+      "grantTypes": ["authorization_code"],
+      "scopes": ["openid", "profile", "phone", "kx", "kx_org"],
+      "pkce": "S256",
+      "environments": {
+        "local": {
+          "redirectUris": ["http://localhost:5194/signin/callback", "http://127.0.0.1:5194/signin/callback"],
+          "postLogoutRedirectUris": ["http://localhost:5194/signin", "http://127.0.0.1:5194/signin"]
+        },
+        "staging": {"redirectUris": ["https://www.staging.kiorly.com/signin/callback"], "postLogoutRedirectUris": ["https://www.staging.kiorly.com/signin"]},
+        "production": {"redirectUris": ["https://www.kiorly.com/signin/callback"], "postLogoutRedirectUris": ["https://www.kiorly.com/signin"]}
       }
     }
   ],
+  "workspaces": {
+    "$comment": "ADR-038 / GET /api/workspaces. Product URLs are NOT here: they come from config/domains.json per environment (override KX_WORKSPACE_URL_<PRODUCT|NURSE>). Nurse is an EDITION of Clinic (ADR-031): same app, edition NURSE, host nurse.<domain>. Source today: Passport organisation memberships (product from product_refs, default clinic); the Passport-to-staff links in the product APIs become the authoritative source (seam documented in KX-08).",
+    "defaultProduct": "clinic",
+    "products": {
+      "clinic": { "refKey": "kiorly_clinic_tenant_id" },
+      "pharmacy": { "refKey": "kiorly_pharmacy_tenant_id" },
+      "lab": { "refKey": "kiorly_lab_tenant_id" }
+    }
+  },
   "flags": { "account.passkeys": true, "account.provider_sso": true }
 }
