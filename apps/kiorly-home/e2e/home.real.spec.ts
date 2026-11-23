@@ -43,6 +43,8 @@ function trackPrompts(page: Page) {
   page.on('request', (r) => { if (r.method() === 'POST' && /\/interaction\/[^/]+\/(phone|verify)$/.test(new URL(r.url()).pathname)) posts.push(new URL(r.url()).pathname.split('/').pop()!); });
   return posts;
 }
+/** Desktop (>= 1024px) shows the dev panel as a collapsed drawer: open it before using a chip. */
+async function openDev(page: Page) { await page.locator('[data-dev-test-users]').waitFor({ state: 'attached' }); const t = page.getByTestId('dev-toggle'); if (await t.isVisible() && (await t.getAttribute('aria-expanded')) !== 'true') await t.click(); }
 const sh = (sql: string) => execFileSync('/Users/postgres/bin/psql', ['-h', '127.0.0.1', '-p', '5433', '-U', 'postgres', '-d', 'kiorly', '-tAc', sql], { env: { ...process.env, PGPASSWORD: 'postgres' } }).toString().trim();
 
 for (const c of CASES) {
@@ -51,7 +53,9 @@ for (const c of CASES) {
     page.on('request', (r) => { if (r.url().endsWith('/auth/handoff/exchange')) exchange.push(JSON.parse(r.postData() ?? '{}').code); });
     await page.goto('/signin');
     await page.getByTestId(`product-${c.tile}`).click();
+    await openDev(page);
     await page.locator(`[data-dev-test-users] [data-email="${c.email}"]${c.org ? `[data-org="${c.org}"]` : ''}`).click(); // dev panel fills the form (password method)
+    { const tg = page.getByTestId('dev-toggle'); if (await tg.isVisible()) await tg.click(); } // close the drawer so it does not cover the form
     await expect(page.getByTestId('signin-email')).toHaveValue(c.email);
     if (c.org) await expect(page.getByTestId('signin-org')).toHaveValue(c.org); else await expect(page.getByTestId('signin-password')).not.toHaveValue('');
     await page.getByTestId('signin-submit').click();
@@ -72,6 +76,7 @@ for (const c of CASES) {
     await page.goto('/signin');
     await page.getByTestId(`product-${c.tile}`).click();
     await expect(page.getByTestId('signin-method-passport')).toHaveAttribute('aria-selected', 'true');
+    await openDev(page);
     await page.locator(`[data-dev-test-users] [data-phone="${c.phone}"]`).click();
     await page.waitForURL(/\/interaction\//);
     const code = page.locator('#code');
@@ -149,6 +154,7 @@ test('a product login opened with ?sso=passport starts Passport by itself; ?hand
 test('sign-out from Home ends the Passport session shared with the products', async ({ page }) => {
   await page.goto('/signin');
   await page.getByTestId('product-pharmacy').click();
+  await openDev(page);
   await page.locator('[data-dev-test-users] [data-phone="+201000002004"]').click();
   await page.waitForURL(/\/interaction\//);
   const code = page.locator('#code');
@@ -163,3 +169,17 @@ test('sign-out from Home ends the Passport session shared with the products', as
   await page.waitForURL(/\/interaction\//);
   await expect(page.locator('#phone')).toBeVisible(); // asked for the phone again: the SSO session is gone
 });
+
+/** Real-stack layout smoke across the viewport matrix: no horizontal overflow, product chosen + both methods usable, desktop split panel at >= 1024. */
+for (const [w, h] of [[360, 740], [768, 1024], [1024, 768], [1440, 900], [1920, 1080]] as const) {
+  test(`layout ${w}x${h}: no horizontal overflow, split panel only on desktop, both methods visible`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    await page.goto('/signin');
+    await expect(page.getByTestId('signin-passport')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expect(page.getByTestId('brand-pane')).toBeVisible({ visible: w >= 1024 });
+    await page.getByTestId('signin-method-password').click();
+    await expect(page.getByTestId('signin-email')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+}

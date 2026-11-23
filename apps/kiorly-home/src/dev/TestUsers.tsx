@@ -1,10 +1,11 @@
+import { useState } from 'react';
 import { useT } from '../i18n';
 import { PRODUCTS, needsOrg, type CardKey } from '../core';
 import { PASSPORT_PERSONAS, PASSWORD_PERSONAS, type PasswordPersona } from './personas';
 
 const L = {
-  en: { title: 'Test users (dev only)', hint: 'Local development only. Synthetic data.', passport: 'Kiorex Passport (phone, dev code 000000)', passportHint: 'Click a user to start the Passport sign-in with the phone filled in.', password: (p: string) => `${p}: password logins`, passwordHint: 'Click a user to fill the form; then press Sign in.', labHint: 'Lab has no passwords: organisation + e-mail.' },
-  ar: { title: 'مستخدمو الاختبار (للتطوير فقط)', hint: 'للتطوير المحلي فقط. بيانات تجريبية.', passport: 'كيوريكس باسبورت (الهاتف، رمز التطوير 000000)', passportHint: 'اضغط على مستخدم لبدء الدخول عبر باسبورت بالهاتف مملوءًا.', password: (p: string) => `${p}: حسابات كلمة المرور`, passwordHint: 'اضغط على مستخدم لملء النموذج ثم اضغط دخول.', labHint: 'المعمل بلا كلمات مرور: المؤسسة والبريد.' },
+  en: { title: 'Test users (dev only)', hint: 'Local development only. Synthetic data.', passport: 'Kiorex Passport (phone, dev code 000000)', passportHint: 'Click a user to start the Passport sign-in with the phone filled in.', password: (p: string) => `${p}: password logins`, passwordHint: 'Click a user to fill the form; then press Sign in.', labHint: 'Lab has no passwords: organisation + e-mail.', show: 'Show', hide: 'Hide' },
+  ar: { title: 'مستخدمو الاختبار (للتطوير فقط)', hint: 'للتطوير المحلي فقط. بيانات تجريبية.', passport: 'كيوريكس باسبورت (الهاتف، رمز التطوير 000000)', passportHint: 'اضغط على مستخدم لبدء الدخول عبر باسبورت بالهاتف مملوءًا.', password: (p: string) => `${p}: حسابات كلمة المرور`, passwordHint: 'اضغط على مستخدم لملء النموذج ثم اضغط دخول.', labHint: 'المعمل بلا كلمات مرور: المؤسسة والبريد.', show: 'إظهار', hide: 'إخفاء' },
 } as const;
 
 /**
@@ -15,10 +16,15 @@ const L = {
 export default function TestUsers({ tile, onPassport, onFill }: { tile: CardKey; onPassport: (phone: string, tile: CardKey) => void; onFill: (p: PasswordPersona) => void }) {
   const { lang, t: tt } = useT(); const t = L[lang];
   const list = PASSWORD_PERSONAS[tile];
+  const [open, setOpen] = useState(false); // desktop drawer state; below 1024px the panel is always shown inline
   const groups = [...new Set(list.map((u) => u.group))];
   return (
-    <section className="dev" data-dev-test-users aria-labelledby="dev-h">
-      <h2 id="dev-h"><span className="tag">DEV</span> {t.title}</h2>
+    <section className="dev" data-dev-test-users data-open={open ? 'true' : 'false'} aria-labelledby="dev-h">
+      <div className="dev-head">
+        <h2 id="dev-h"><span className="tag">DEV</span> <span className="dev-title">{t.title}</span></h2>
+        <button type="button" className="dev-toggle" aria-expanded={open} aria-controls="dev-body" data-testid="dev-toggle" onClick={() => setOpen((o) => !o)}>{open ? t.hide : t.show}</button>
+      </div>
+      <div id="dev-body" className="dev-body">
       <p>{t.hint}</p>
       <h3>{t.passport}</h3>
       <p className="dim">{t.passportHint}</p>
@@ -39,6 +45,7 @@ export default function TestUsers({ tile, onPassport, onFill }: { tile: CardKey;
           </ul>
         </div>
       ))}
+      </div>
     </section>
   );
 }

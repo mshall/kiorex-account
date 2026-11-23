@@ -20,6 +20,9 @@ const en = {
   product: { clinic: 'Kiorly Clinic by Kiorex', nurse: 'Kiorly Nurse by Kiorex', pharmacy: 'Kiorly Pharmacy by Kiorex', lab: 'Kiorly Lab by Kiorex' },
   short: { clinic: 'Kiorly Clinic', nurse: 'Kiorly Nurse', pharmacy: 'Kiorly Pharmacy', lab: 'Kiorly Lab' },
   tile: { clinic: 'Clinic', nurse: 'Nurse', pharmacy: 'Pharmacy', lab: 'Lab' },
+  paneHeadline: 'One sign-in for your whole workplace', paneSub: 'Open the product your team works in, with a single secure account.',
+  hl: { clinic: 'Appointments, records and billing', nurse: 'Home visits and field care', pharmacy: 'Dispensing, stock and sales', lab: 'Orders, results and reports' },
+  paneTrust: 'Secure sign-in with Kiorex Passport', byKiorex: 'by Kiorex',
 };
 const ar: typeof en = {
   appName: 'كيورلي', skip: 'تخطي إلى المحتوى', language: 'English', theme: 'المظهر', themeLight: 'فاتح', themeDark: 'داكن', themeAuto: 'النظام',
@@ -40,6 +43,9 @@ const ar: typeof en = {
   product: { clinic: 'كيورلي للعيادات من كيوريكس', nurse: 'كيورلي للتمريض من كيوريكس', pharmacy: 'كيورلي للصيدليات من كيوريكس', lab: 'كيورلي لاب من كيوريكس' },
   short: { clinic: 'كيورلي للعيادات', nurse: 'كيورلي للتمريض', pharmacy: 'كيورلي للصيدليات', lab: 'كيورلي لاب' },
   tile: { clinic: 'العيادة', nurse: 'التمريض', pharmacy: 'الصيدلية', lab: 'المعمل' },
+  paneHeadline: 'تسجيل دخول واحد لكل مكان عملك', paneSub: 'افتح المنتج الذي يعمل به فريقك بحساب واحد آمن.',
+  hl: { clinic: 'المواعيد والملفات والفواتير', nurse: 'الزيارات المنزلية والرعاية الميدانية', pharmacy: 'الصرف والمخزون والمبيعات', lab: 'الطلبات والنتائج والتقارير' },
+  paneTrust: 'تسجيل دخول آمن عبر كيوريكس باسبورت', byKiorex: 'من كيوريكس',
 };
 export const DICT = { en, ar };
 export type Dict = typeof en;

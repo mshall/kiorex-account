@@ -35,12 +35,23 @@ test.beforeEach(async ({ page, context }) => {
   await fetch(`${IDP}/dev/reset-rate-limits`, { method: 'POST' });
 });
 
+/** The dev panel is a collapsed drawer on desktop (>= 1024px) and always open inline below; open it when the toggle is visible. */
+async function openDev(page: Page) {
+  await page.locator('[data-dev-test-users]').waitFor({ state: 'attached' }); // lazy chunk
+  const t = page.getByTestId('dev-toggle');
+  if (await t.isVisible() && (await t.getAttribute('aria-expanded')) !== 'true') await t.click();
+}
+async function closeDev(page: Page) {
+  const t = page.getByTestId('dev-toggle');
+  if (await t.isVisible() && (await t.getAttribute('aria-expanded')) === 'true') await t.click();
+}
 const tile = (page: Page, k: string) => page.getByTestId(`product-${k}`);
 const fillPassword = async (page: Page, email: string, password: string) => { await page.getByTestId('signin-method-password').click(); await page.getByTestId('signin-email').fill(email); await page.getByTestId('signin-password').fill(password); };
 
 /** Real Passport sign-in through Home's dev "Test users" panel (login_hint), finishing the dev code if the IdP did not auto-submit it. */
 async function passportSignIn(page: Page, phone: string, path = '/signin') {
   await page.goto(path);
+  await openDev(page);
   await page.locator(`[data-dev-test-users] [data-phone="${phone}"]`).click();
   await page.waitForURL(/\/interaction\//);
   const code = page.locator('#code');
@@ -61,7 +72,9 @@ test.describe('layout parity with the Kiorly mobile sign-in', () => {
     await expect(page.getByTestId('brand-lockup')).toContainText('Kiorly');
     await expect(page.getByTestId('brand-lockup').locator('img')).toHaveAttribute('src', /kiorex-mark-inverse\.svg/);
     await expect(page.getByTestId('lang-ar')).toBeVisible(); await expect(page.getByTestId('lang-en')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByTestId('brand-tagline')).toHaveText('One sign-in for Clinic, Nurse, Pharmacy and Lab');
+    await expect(page.getByTestId('brand-tagline')).toHaveText('One sign-in for Clinic, Nurse, Pharmacy and Lab'); // shown on phone and tablet
+    await expect(page.getByTestId('brand-pane').getByRole('heading', { level: 2 })).toHaveText('One sign-in for your whole workplace'); // desktop split panel (1280 default viewport)
+    await expect(page.getByTestId('brand-pane')).toContainText('Secure sign-in with Kiorex Passport');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Sign in');
     await expect(page.getByText('Choose your workplace product')).toBeVisible();
     await expect(page.locator('[data-tile]')).toHaveText(['Clinic', 'Nurse', 'Pharmacy', 'Lab']);
@@ -239,15 +252,22 @@ test.describe('dev "Test users (dev only)" panel', () => {
   test('lists the Passport personas and the password personas of the chosen tile (Clinic 21, Nurse 5, Pharmacy 15, Lab 27) and fills the form', async ({ page }) => {
     await page.goto('/signin');
     const panel = page.locator('[data-dev-test-users]');
+    await expect(page.getByTestId('dev-toggle')).toHaveAttribute('aria-expanded', 'false'); // collapsed drawer on desktop
+    await openDev(page);
     await expect(panel).toContainText('Test users (dev only)');
     await expect(panel.locator('[data-phone]')).toHaveCount(6);
+    await closeDev(page);
     for (const [k, n] of [['clinic', 21], ['nurse', 5], ['pharmacy', 15], ['lab', 27]] as const) { await tile(page, k).click(); await expect(panel.locator('[data-email]')).toHaveCount(n); }
     await tile(page, 'lab').click();
+    await openDev(page);
     await panel.locator('[data-email="signatory@chain-lab.test"]').click();
+    await closeDev(page);
     await expect(page.getByTestId('signin-method-password')).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByTestId('signin-email')).toHaveValue('signatory@chain-lab.test'); await expect(page.getByTestId('signin-org')).toHaveValue('chain-lab');
     await tile(page, 'pharmacy').click();
+    await openDev(page);
     await panel.locator('[data-email="cashier@demo.kiorly.local"]').click();
+    await closeDev(page);
     await expect(page.getByTestId('signin-email')).toHaveValue('cashier@demo.kiorly.local'); await expect(page.getByTestId('signin-password')).toHaveValue('Demo@12345');
   });
 });
@@ -258,6 +278,7 @@ test.describe('Arabic, theme, accessibility, responsive', () => {
     await page.getByTestId('lang-ar').click();
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('تسجيل الدخول');
+    await expect(page.getByTestId('brand-pane').getByRole('heading', { level: 2 })).toHaveText('تسجيل دخول واحد لكل مكان عملك');
     await expect(page.getByTestId('brand-tagline')).toHaveText('تسجيل دخول واحد للعيادة والتمريض والصيدلية والمعمل');
     await expect(page.locator('[data-tile]')).toHaveText(['العيادة', 'التمريض', 'الصيدلية', 'المعمل']);
     await expect(page.getByTestId('signin-passport')).toHaveText('الدخول عبر كيوريكس باسبورت');
@@ -268,8 +289,8 @@ test.describe('Arabic, theme, accessibility, responsive', () => {
     ['light passport', async (_p: Page) => {}],
     ['light password (Clinic)', async (p: Page) => { await p.getByTestId('signin-method-password').click(); }],
     ['light password (Lab)', async (p: Page) => { await tile(p, 'lab').click(); await p.getByTestId('signin-method-password').click(); }],
-    ['dark password', async (p: Page) => { await p.getByLabel('Theme').selectOption('dark'); await p.getByTestId('signin-method-password').click(); }],
-    ['arabic dark', async (p: Page) => { await p.getByTestId('lang-ar').click(); await p.getByLabel('المظهر').selectOption('dark'); }],
+    ['dark password', async (p: Page) => { await p.getByTestId('theme-dark').click(); await p.getByTestId('signin-method-password').click(); }],
+    ['arabic dark', async (p: Page) => { await p.getByTestId('lang-ar').click(); await p.getByTestId('theme-dark').click(); }],
     ['arabic with error', async (p: Page) => { await p.getByTestId('lang-ar').click(); await p.getByTestId('signin-method-password').click(); await p.getByTestId('signin-email').fill('a@b.co'); await p.getByTestId('signin-password').fill('x'); await p.getByTestId('signin-submit').click(); }],
   ] as const) {
     test(`axe: no serious or critical violations (${name})`, async ({ page }) => {
@@ -290,8 +311,27 @@ test.describe('Arabic, theme, accessibility, responsive', () => {
       }
       const boxes = await page.locator('[data-tile]').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), h: r.height }; }));
       expect(new Set(boxes.map((b) => b.y)).size).toBe(2); expect(boxes.every((b) => b.h >= 44)).toBe(true);
-      for (const sel of ['[data-testid=signin-method-passport]', '[data-testid=lang-en]', '[data-testid=signin-submit]']) expect((await page.locator(sel).boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      for (const sel of ['[data-testid=signin-method-passport]', '[data-testid=signin-submit]']) expect((await page.locator(sel).boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      for (const sel of ['[data-testid=lang-en]', '[data-testid=theme-dark]']) expect((await page.locator(sel).boundingBox())!.height).toBeGreaterThanOrEqual(40);
     });
+  });
+
+  test('theme and language are icon controls: aria-labelled in both languages, 40px targets, arrow keys move the choice, Esc leaves the group', async ({ page }) => {
+    await page.goto('/signin');
+    const group = page.getByRole('radiogroup', { name: 'Theme' });
+    await expect(group.getByRole('radio')).toHaveCount(3);
+    await expect(page.getByRole('radio', { name: 'Light' })).toHaveAttribute('aria-checked', 'true');
+    for (const k of ['light', 'dark', 'auto', 'lang-ar', 'lang-en']) { const id = k.startsWith('lang') ? k : `theme-${k}`; expect((await page.getByTestId(id).boundingBox())!.height).toBeGreaterThanOrEqual(40); }
+    await page.getByTestId('theme-light').focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByTestId('theme-dark')).toHaveAttribute('aria-checked', 'true'); await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await page.keyboard.press('End'); await expect(page.getByTestId('theme-auto')).toBeFocused();
+    await page.keyboard.press('Escape'); await expect(page.getByTestId('theme-auto')).not.toBeFocused();
+    await page.getByTestId('theme-light').click();
+    await page.getByTestId('lang-ar').click();
+    await expect(page.getByRole('radiogroup', { name: 'المظهر' })).toBeVisible();
+    await expect(page.getByRole('radio', { name: 'داكن' })).toBeVisible();
+    await expect(page.getByTestId('lang-ar')).toHaveAttribute('aria-pressed', 'true');
   });
 
   test.describe('theme: light by default, an explicit choice is remembered', () => {
@@ -300,12 +340,12 @@ test.describe('Arabic, theme, accessibility, responsive', () => {
       await page.goto('/signin');
       await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
       expect(await page.evaluate(() => localStorage.getItem('kh.theme'))).toBeNull(); // nothing is stored for a plain visit
-      await page.getByLabel('Theme').selectOption('dark');
+      await page.getByTestId('theme-dark').click();
       await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
       await page.reload();
       await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-      await expect(page.getByLabel('Theme')).toHaveValue('dark');
-      await page.getByLabel('Theme').selectOption('auto');
+      await expect(page.getByTestId('theme-dark')).toHaveAttribute('aria-checked', 'true');
+      await page.getByTestId('theme-auto').click();
       await page.reload();
       await expect(page.locator('html')).toHaveAttribute('data-theme', 'auto');
     });

@@ -15,6 +15,91 @@ const write = (k: string, v: string) => { try { localStorage.setItem(k, v); } ca
 const KIOREX_URL = (import.meta.env.VITE_KIOREX_URL as string | undefined) ?? 'https://www.kiorex.com';
 const isDark = (theme: Theme) => theme === 'dark' || (theme === 'auto' && typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches);
 
+/** Reactive CSS media query (layout decisions that change the DOM: where the theme control lives, dev drawer behaviour). */
+function useMedia(q: string): boolean {
+  const [m, setM] = useState(() => (typeof matchMedia !== 'undefined' ? matchMedia(q).matches : false));
+  useEffect(() => { const mq = matchMedia(q); const f = () => setM(mq.matches); f(); mq.addEventListener('change', f); return () => mq.removeEventListener('change', f); }, [q]);
+  return m;
+}
+
+const HL_ACCENT: Record<CardKey, string> = { clinic: '#2DD4BF', nurse: '#FB7185', pharmacy: '#4ADE80', lab: '#A78BFA' };
+
+/** lucide-react glyphs (Sun, Moon, Monitor, Globe), inlined so Home stays dependency free. */
+const G = ({ children }: { children: ReactNode }) => <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{children}</svg>;
+const THEME_ICON: Record<Theme, ReactNode> = {
+  light: <G><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2m-7.07-15.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></G>,
+  dark: <G><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></G>,
+  auto: <G><rect width="20" height="14" x="2" y="3" rx="2" /><path d="M8 21h8M12 17v4" /></G>,
+};
+const GlobeIcon = () => <G><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20" /></G>;
+
+/** Roving-tabindex radiogroup helper: arrows (RTL aware) move and select, Home/End jump, Esc leaves the group. */
+function useRoving<T extends string>(items: T[], value: T, onPick: (v: T) => void, prefix: string) {
+  return (e: KeyboardEvent<HTMLElement>) => {
+    const rtl = document.documentElement.dir === 'rtl'; const i = items.indexOf(value);
+    const d = e.key === 'ArrowRight' ? (rtl ? -1 : 1) : e.key === 'ArrowLeft' ? (rtl ? 1 : -1) : e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+    let next: T | undefined;
+    if (d) next = items[(i + d + items.length) % items.length]; else if (e.key === 'Home') next = items[0]; else if (e.key === 'End') next = items[items.length - 1];
+    else if (e.key === 'Escape') { (document.activeElement as HTMLElement | null)?.blur(); return; }
+    if (!next) return; e.preventDefault(); onPick(next);
+    requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-testid="${prefix}${next}"]`)?.focus());
+  };
+}
+
+/** Theme: three icon buttons (Sun / Moon / Monitor), the active one highlighted; an explicit choice persists, light stays the default. */
+function ThemeControl({ theme, setTheme }: { theme: Theme; setTheme: (t: Theme) => void }) {
+  const { t } = useT();
+  const items: Theme[] = ['light', 'dark', 'auto'];
+  const label: Record<Theme, string> = { light: t.themeLight, dark: t.themeDark, auto: t.themeAuto };
+  const onKey = useRoving(items, theme, setTheme, 'theme-');
+  return (
+    <div className="ictl" role="radiogroup" aria-label={t.theme} data-testid="theme-select" onKeyDown={onKey}>
+      {items.map((k) => (
+        <button key={k} type="button" role="radio" aria-checked={theme === k} aria-label={label[k]} title={label[k]} tabIndex={theme === k ? 0 : -1} className={theme === k ? 'ib on' : 'ib'} data-testid={`theme-${k}`} onClick={() => setTheme(k)}>{THEME_ICON[k]}</button>
+      ))}
+    </div>
+  );
+}
+
+/** Language: globe + a two-state AR / EN toggle (the current language is marked; RTL-safe). */
+function LangControl({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
+  const { t } = useT();
+  const items: Lang[] = ['ar', 'en'];
+  const onKey = useRoving(items, lang, setLang, 'lang-');
+  return (
+    <div className="ictl lang" role="group" aria-label={t.langToggle} onKeyDown={onKey}>
+      <span className="gl"><GlobeIcon /></span>
+      {items.map((l) => (
+        <button key={l} type="button" className={lang === l ? 'ib txt on' : 'ib txt'} aria-pressed={lang === l} aria-label={l === 'ar' ? 'ع, العربية' : 'EN, English'} title={l === 'ar' ? 'العربية' : 'English'} tabIndex={lang === l ? 0 : -1} lang={l} data-testid={`lang-${l}`} onClick={() => setLang(l)}>{l === 'ar' ? 'ع' : 'EN'}</button>
+      ))}
+    </div>
+  );
+}
+
+/** Desktop-only branded panel (>= 1024px): headline, the four products, trust line, pulse motif. Purely decorative copy; no controls. */
+function BrandPane() {
+  const { t } = useT();
+  return (
+    <aside className="brandpane" aria-labelledby="bp-h" data-testid="brand-pane">
+      <div className="bp-inner">
+        <h2 id="bp-h" className="bp-head">{t.paneHeadline}</h2>
+        <p className="bp-sub">{t.paneSub}</p>
+        <ul className="hl" aria-label={t.tagline}>
+          {CARD_KEYS.map((k) => (
+            <li key={k} style={{ ['--acc' as string]: HL_ACCENT[k] }}>
+              <span className="hico"><Icon k={k} /></span>
+              <span className="htxt"><strong>{t.short[k]}</strong><span className="hdesc">{t.hl[k]}</span></span>
+            </li>
+          ))}
+        </ul>
+        <p className="bp-trust"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6z" /><path d="M9 12l2 2 4-4" /></svg>{t.paneTrust}</p>
+      </div>
+      <svg className="bp-pulse" viewBox="0 0 640 120" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path pathLength="1" d="M0 84H210l18-2 14-44 18 84 18-66 14 28H640" /></svg>
+      <p className="bp-by">{t.byKiorex}</p>
+    </aside>
+  );
+}
+
 type View = { s: 'form' } | { s: 'callback' } | { s: 'error' } | { s: 'opening'; key: CardKey } | { s: 'hint'; chosen: CardKey; card: Card } | { s: 'signingOut' };
 
 /** 24x24 stroke icons, the same shapes as the Kiorly app's tiles (stethoscope, heart for Nurse, pill, flask). */
@@ -59,6 +144,10 @@ function Shell({ lang, setLang, theme, setTheme, dark }: { lang: Lang; setLang: 
   const [name, setName] = useState<string | null>(null);
   const ran = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  // Sensible autofocus: only where a hardware keyboard is likely (desktop, fine pointer) so phones do not pop their keyboard; never steals focus from the method tabs on keyboard use.
+  const [focusEmail, setFocusEmail] = useState(() => parseMethod(read(METHOD)) === 'password');
+  useEffect(() => { if (focusEmail && method === 'password' && view.s === 'form' && matchMedia('(min-width: 1024px) and (pointer: fine)').matches) emailRef.current?.focus(); setFocusEmail(false); }, [focusEmail, method, view.s]);
   useEffect(() => { if (view.s !== 'form') heading.current?.focus(); }, [view.s]);
   const choose = (k: CardKey) => { setTile(k); setError(null); };
   const chooseMethod = (m: SignInMethod) => { setMethodState(m); setError(null); };
@@ -83,6 +172,7 @@ function Shell({ lang, setLang, theme, setTheme, dark }: { lang: Lang; setLang: 
   const signedIn = hasSession();
   useEffect(() => { try { const idt = sessionStorage.getItem('kh.idt'); if (idt) setName((JSON.parse(atob(idt.split('.')[1]!.replace(/-/g, '+').replace(/_/g, '/'))) as { name?: string }).name ?? null); } catch { /* ignore */ } }, [view.s]);
 
+  const wide = useMedia('(min-width: 768px)');
   const lab = needsOrg(tile);
   const valid = email.includes('@') && (lab ? org.trim().length > 1 : password.length > 0);
   const submit = async (e: FormEvent) => {
@@ -106,12 +196,8 @@ function Shell({ lang, setLang, theme, setTheme, dark }: { lang: Lang; setLang: 
             <span className="appname">{t.appName}</span>
           </a>
           <div className="tools">
-            <div className="langs" role="group" aria-label={t.langToggle}>
-              {(['ar', 'en'] as Lang[]).map((l) => (
-                <button key={l} type="button" className={lang === l ? 'pill on' : 'pill'} aria-pressed={lang === l} aria-label={l === 'ar' ? 'ع, العربية' : 'EN, English'} lang={l} data-testid={`lang-${l}`} onClick={() => setLang(l)}>{l === 'ar' ? 'ع' : 'EN'}</button>
-              ))}
-            </div>
-
+            <LangControl lang={lang} setLang={setLang} />
+            {wide ? <ThemeControl theme={theme} setTheme={setTheme} /> : null}
             {signedIn && view.s === 'form' ? <button type="button" className="pill ghosty" onClick={out}>{t.signOut}</button> : null}
           </div>
         </div>
@@ -127,8 +213,8 @@ function Shell({ lang, setLang, theme, setTheme, dark }: { lang: Lang; setLang: 
               {switching ? <p className="note" data-testid="switch-note">{t.switchNote}{name ? ` ${t.signedInAs(name)}.` : ''}</p> : null}
               <TileGrid tile={tile} onChoose={choose} />
               {tile === 'nurse' ? <p className="note" data-testid="nurse-hint">{t.nurseHint}</p> : null}
-              <MethodTabs method={method} onChange={chooseMethod} />
-              {error ? <p className="error" role="alert" data-testid="signin-error">{error}</p> : null}
+              <MethodTabs method={method} onChange={(m, byPointer) => { chooseMethod(m); if (byPointer && m === 'password') setFocusEmail(true); }} />
+              {error ? <p className="error" id="signin-err" role="alert" data-testid="signin-error">{error}</p> : null}
               {method === 'passport' ? (
                 <div role="tabpanel" id="panel-passport" aria-labelledby="tab-passport" className="panel-body" data-testid="signin-passport-panel">
                   <button type="button" className="btn primary lg" data-testid="signin-passport" onClick={() => begin()}>{t.signInBtn}</button>
@@ -136,10 +222,10 @@ function Shell({ lang, setLang, theme, setTheme, dark }: { lang: Lang; setLang: 
                 </div>
               ) : (
                 <form role="tabpanel" id="panel-password" aria-labelledby="tab-password" className="panel-body" data-testid="signin-password-panel" onSubmit={(e) => void submit(e)} noValidate>
-                  <label className="field"><span>{t.email}</span><input type="email" inputMode="email" autoComplete="username" autoCapitalize="none" spellCheck={false} required value={email} onChange={(e) => setEmail(e.target.value)} data-testid="signin-email" /></label>
+                  <label className="field"><span>{t.email}</span><input ref={emailRef} type="email" name="email" inputMode="email" enterKeyHint="next" autoComplete="username" autoCapitalize="none" spellCheck={false} required aria-invalid={error ? true : undefined} aria-describedby={error ? 'signin-err' : undefined} value={email} onChange={(e) => setEmail(e.target.value)} data-testid="signin-email" /></label>
                   {lab
-                    ? <label className="field"><span>{t.org}</span><input type="text" autoCapitalize="none" spellCheck={false} required placeholder={t.orgHint} value={org} onChange={(e) => setOrg(e.target.value)} data-testid="signin-org" /></label>
-                    : <label className="field"><span>{t.password}</span><input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} data-testid="signin-password" /></label>}
+                    ? <label className="field"><span>{t.org}</span><input type="text" name="organization" enterKeyHint="go" autoComplete="organization" autoCapitalize="none" spellCheck={false} required aria-invalid={error ? true : undefined} aria-describedby={error ? 'signin-err' : undefined} placeholder={t.orgHint} value={org} onChange={(e) => setOrg(e.target.value)} data-testid="signin-org" /></label>
+                    : <label className="field"><span>{t.password}</span><input type="password" name="password" enterKeyHint="go" autoComplete="current-password" required aria-invalid={error ? true : undefined} aria-describedby={error ? 'signin-err' : undefined} value={password} onChange={(e) => setPassword(e.target.value)} data-testid="signin-password" /></label>}
                   <button type="submit" className="btn primary lg" disabled={!valid || busy} data-testid="signin-submit">{busy ? t.submitting : t.submit}</button>
                 </form>
               )}
@@ -155,12 +241,10 @@ function Shell({ lang, setLang, theme, setTheme, dark }: { lang: Lang; setLang: 
         {view.s === 'hint' ? <Hint heading={heading} chosen={view.chosen} card={view.card} lang={lang} dark={dark} open={openProduct} out={out} name={name} /> : null}
       </main>
       <footer className="foot">
-        <label className="sel"><span>{t.theme}</span>
-              <select value={theme} onChange={(e) => setTheme(e.target.value as Theme)} aria-label={t.theme} data-testid="theme-select">
-                <option value="light">{t.themeLight}</option><option value="dark">{t.themeDark}</option><option value="auto">{t.themeAuto}</option>
-              </select></label>
+        {wide ? null : <ThemeControl theme={theme} setTheme={setTheme} />}
         <span>{t.patientNote} <a href={KIOREX_URL}>{t.patientLink}</a></span>
       </footer>
+      <BrandPane />
     </div>
   );
 }
@@ -187,14 +271,14 @@ function TileGrid({ tile, onChoose }: { tile: CardKey; onChoose: (k: CardKey) =>
   );
 }
 
-function MethodTabs({ method, onChange }: { method: SignInMethod; onChange: (m: SignInMethod) => void }) {
+function MethodTabs({ method, onChange }: { method: SignInMethod; onChange: (m: SignInMethod, byPointer?: boolean) => void }) {
   const { t } = useT();
   const items: Array<[SignInMethod, string]> = [['passport', t.methodPassport], ['password', t.methodPassword]];
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); const n = method === 'passport' ? 'password' : 'passport'; onChange(n); requestAnimationFrame(() => document.getElementById(`tab-${n}`)?.focus()); } };
   return (
     <div className="seg" role="tablist" aria-label={t.method} data-testid="signin-method" onKeyDown={onKey}>
       {items.map(([m, label]) => (
-        <button key={m} type="button" role="tab" id={`tab-${m}`} aria-selected={method === m} aria-controls={`panel-${m}`} tabIndex={method === m ? 0 : -1} className={method === m ? 'on' : ''} data-testid={`signin-method-${m}`} onClick={() => onChange(m)}>{label}</button>
+        <button key={m} type="button" role="tab" id={`tab-${m}`} aria-selected={method === m} aria-controls={`panel-${m}`} tabIndex={method === m ? 0 : -1} className={method === m ? 'on' : ''} data-testid={`signin-method-${m}`} onClick={(e) => onChange(m, e.detail > 0)}>{label}</button>
       ))}
     </div>
   );
