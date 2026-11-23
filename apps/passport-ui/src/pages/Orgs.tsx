@@ -3,7 +3,7 @@ import { useApp } from '../app-context';
 import { useI18n, type TKey } from '../i18n';
 import { ApiError, type Membership, type OrgMember, type PendingInvitation, type SentInvitation } from '../api';
 import { Alert, Async, Badge, Button, Card, ConfirmDialog, Empty, Field, Ltr, useAction, useAsync, useToast } from '../ui';
-import { E164, fmtDate, normPhone } from '../util';
+import { E164, fmtDate, MARKETS, normPhone, shouldShowMarketSelector } from '../util';
 import { useRoute } from '../router';
 
 const hint = (t: (k: TKey) => string, r: string) => { const k = `org.hint.${r}` as TKey; const v = t(k); return v === k ? r : v; };
@@ -159,7 +159,7 @@ function CreateOrg({ onCreated }: { onCreated: () => void }) {
   const { t, err } = useI18n();
   const toast = useToast();
   const { busy, run } = useAction();
-  const [name, setName] = useState(''); const [country, setCountry] = useState('EG'); const [msg, setMsg] = useState('');
+  const [name, setName] = useState(''); const [country, setCountry] = useState(MARKETS[0] ?? 'EG'); const [msg, setMsg] = useState('');
   const editions = meta?.orgs.editions ?? ['CLINIC', 'NURSE'];
   const [edition, setEdition] = useState(meta?.orgs.default_edition ?? 'CLINIC');
   const submit = () => {
@@ -171,7 +171,7 @@ function CreateOrg({ onCreated }: { onCreated: () => void }) {
       {msg ? <Alert kind="error">{msg}</Alert> : null}
       <form onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
         <Field label={t('org.create.name')}>{(p) => <input {...p} name="org-name" maxLength={120} autoComplete="organization" value={name} onChange={(e) => setName(e.target.value)} />}</Field>
-        <Field label={t('org.create.country')}>{(p) => <input {...p} name="org-country" maxLength={2} dir="ltr" autoComplete="country" value={country} onChange={(e) => setCountry(e.target.value.toUpperCase())} />}</Field>
+        {shouldShowMarketSelector(MARKETS) ? (<Field label={t('org.create.country')}>{(p) => <input {...p} name="org-country" maxLength={2} dir="ltr" autoComplete="country" value={country} onChange={(e) => setCountry(e.target.value.toUpperCase())} />}</Field>) : null}
         <Field label={t('org.edition.create')} hint={t('org.edition.note')}>{(p) => <select {...p} name="org-edition" value={edition} onChange={(e) => setEdition(e.target.value)}>{editions.map((e) => <option key={e} value={e}>{editionName(t, e)}</option>)}</select>}</Field>
         <Button type="submit" busy={busy} disabled={!name.trim()}>{t('org.create.submit')}</Button>
       </form>

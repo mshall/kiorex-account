@@ -55,3 +55,12 @@ export function b64u(a: Uint8Array): string {
 export async function sha256b64u(s: string): Promise<string> {
   return b64u(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))));
 }
+
+/** Markets that are live, from config (`VITE_MARKETS`, comma list, default `EG`). Egypt is the only launch market (founder, 23 Nov 2026). */
+export function configuredMarkets(raw?: string | null): string[] {
+  const list = (raw ?? '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+  return list.length ? list : ['EG'];
+}
+/** Single rule for every country/market selector: shown only when more than one market is live; with one market the value is fixed. */
+export const shouldShowMarketSelector = (markets: readonly string[]): boolean => markets.length > 1;
+export const MARKETS: string[] = configuredMarkets((import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_MARKETS);

@@ -39,3 +39,15 @@ describe('util', () => {
     expect(await sha256b64u('abc')).toBe('ungWv48Bz-pBQUDeXa4iI7ADYaOWF3qctBD_YfIAFa0');
   });
 });
+
+import { configuredMarkets, shouldShowMarketSelector } from '../src/util';
+describe('market selector rule', () => {
+  it('defaults to Egypt only and hides the selector', () => {
+    expect(configuredMarkets(undefined)).toEqual(['EG']);
+    expect(configuredMarkets('')).toEqual(['EG']);
+    expect(shouldShowMarketSelector(configuredMarkets('eg'))).toBe(false);
+  });
+  it('shows the selector only with more than one market', () => {
+    expect(shouldShowMarketSelector(configuredMarkets('EG, SA'))).toBe(true);
+  });
+});
