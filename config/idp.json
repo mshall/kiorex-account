@@ -3,7 +3,7 @@
   "schemaVersion": 1,
   "issuer": {
     "local": "http://localhost:4400",
-    "staging": "TODO_NEEDS_HUMAN: https://account.staging.kiorex.com (domain per KX-19)",
+    "staging": "https://account.staging.kiorex.com",
     "production": "https://account.kiorex.com"
   },
   "resourceServers": [
@@ -169,7 +169,7 @@
     {
       "clientId": "kiorly",
       "name": "Kiorly (staff app, Expo; bundle com.kiorly.app)",
-      "$comment": "Public PKCE native client for the Kiorly staff app (final name, founder decision 23 Nov 2026; replaces the legacy client kiorly-team, which stays registered so installed dev builds keep working). Local redirects: native scheme kiorly, the Expo dev-client scheme exp+kiorly, and Expo web on :8082. No back-channel URI: the staff app holds no server session; products revoke through their own session APIs. Staging/production registration is TODO_NEEDS_HUMAN (Cognito app client + final redirect URIs).",
+      "$comment": "Public PKCE native client for the Kiorly staff app (final name, founder decision 23 Nov 2026; replaces the legacy client kiorly-team, which stays registered so installed dev builds keep working). Local redirects: native scheme kiorly, the Expo dev-client scheme exp+kiorly, and Expo web on :8082. No back-channel URI: the staff app holds no server session; products revoke through their own session APIs. Staging/production use the same native schemes (config only; the Cognito app client is created from this entry, store/bundle ids per Docs/NEEDS_HUMAN.md).",
       "type": "public",
       "grantTypes": ["authorization_code", "refresh_token"],
       "scopes": ["openid", "profile", "phone", "kx", "kx_org", "offline_access"],
@@ -180,14 +180,14 @@
           "redirectUris": ["kiorly://auth/callback", "exp+kiorly://auth/callback", "http://localhost:8082/auth/callback"],
           "postLogoutRedirectUris": ["kiorly://auth/logout", "exp+kiorly://auth/logout", "http://localhost:8082/"]
         },
-        "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [] },
-        "production": { "redirectUris": ["TODO_NEEDS_HUMAN: Cognito app client kiorly, intended kiorly://auth/callback"], "postLogoutRedirectUris": [] }
+        "staging": { "redirectUris": ["kiorly://auth/callback"], "postLogoutRedirectUris": ["kiorly://auth/logout"] },
+        "production": { "redirectUris": ["kiorly://auth/callback"], "postLogoutRedirectUris": ["kiorly://auth/logout"] }
       }
     },
     {
       "clientId": "kiorly-team",
       "name": "Kiorly Team (LEGACY staff app client, superseded by kiorly)",
-      "$comment": "LEGACY (kept additive, 23 Nov 2026): the previous staff-app name Kiorly Team, now final-renamed Kiorly (client kiorly). Local redirects: native scheme kiorlyteam, the Expo dev-client scheme exp+kiorly-team, and Expo web on :8082. No back-channel URI: the staff app holds no server session; products revoke through their own session APIs. Staging/production registration is TODO_NEEDS_HUMAN (Cognito app client + final redirect URIs).",
+      "$comment": "LEGACY (kept additive, 23 Nov 2026): the previous staff-app name Kiorly Team, now final-renamed Kiorly (client kiorly). Local redirects: native scheme kiorlyteam, the Expo dev-client scheme exp+kiorly-team, and Expo web on :8082. No back-channel URI: the staff app holds no server session; products revoke through their own session APIs. Staging/production use the same native schemes (config only; the Cognito app client is created from this entry, store/bundle ids per Docs/NEEDS_HUMAN.md).",
       "type": "public",
       "grantTypes": ["authorization_code", "refresh_token"],
       "scopes": ["openid", "profile", "phone", "kx", "kx_org", "offline_access"],
@@ -198,8 +198,8 @@
           "redirectUris": ["kiorlyteam://auth/callback", "exp+kiorly-team://auth/callback", "http://localhost:8082/auth/callback"],
           "postLogoutRedirectUris": ["kiorlyteam://auth/logout", "exp+kiorly-team://auth/logout", "http://localhost:8082/"]
         },
-        "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [] },
-        "production": { "redirectUris": ["TODO_NEEDS_HUMAN: Cognito app client kiorly-team, intended kiorlyteam://auth/callback"], "postLogoutRedirectUris": [] }
+        "staging": { "redirectUris": ["kiorlyteam://auth/callback"], "postLogoutRedirectUris": ["kiorlyteam://auth/logout"] },
+        "production": { "redirectUris": ["kiorlyteam://auth/callback"], "postLogoutRedirectUris": ["kiorlyteam://auth/logout"] }
       }
     },
     {
@@ -243,7 +243,7 @@
     {
       "clientId": "kiorly-pharmacy-web",
       "name": "Kiorly Pharmacy staff web",
-      "$comment": "Staff web, OIDC authorization code + PKCE (S256), public client. The browser only redirects; the product API redeems the code server-side (POST /api/v1/auth/oidc/exchange) because the IdP token endpoint is not CORS-enabled, and returns the RP-initiated logout URL (id_token_hint) the web navigates to on sign-out; the registered post-logout URI is the web root. No back-channel URI: the product session is a short signed session ended by sign-out. Staging/production registration is TODO_NEEDS_HUMAN.",
+      "$comment": "Staff web, OIDC authorization code + PKCE (S256), public client. The browser only redirects; the product API redeems the code server-side (POST /api/v1/auth/oidc/exchange) because the IdP token endpoint is not CORS-enabled, and returns the RP-initiated logout URL (id_token_hint) the web navigates to on sign-out; the registered post-logout URI is the web root. Back-channel logout: Passport POSTs a signed logout_token to <product API>/api/v1/auth/oidc/backchannel-logout when a session is revoked (account page, admin, sign-out elsewhere) or the account is deleted; the API ends the matching web session (sid) at once. The web session also has a short max age (OIDC_SESSION_MAX_AGE_SECONDS, default 1 h) as a fallback. Staging/production registration is config only (Docs/NEEDS_HUMAN.md).",
       "type": "public",
       "grantTypes": ["authorization_code"],
       "scopes": ["openid", "profile", "phone"],
@@ -251,16 +251,17 @@
       "environments": {
         "local": {
           "redirectUris": ["http://localhost:5192/auth/callback", "http://127.0.0.1:5192/auth/callback"],
-          "postLogoutRedirectUris": ["http://localhost:5192/", "http://127.0.0.1:5192/", "http://localhost:5194/signin", "http://127.0.0.1:5194/signin"]
+          "postLogoutRedirectUris": ["http://localhost:5192/", "http://127.0.0.1:5192/", "http://localhost:5194/signin", "http://127.0.0.1:5194/signin"],
+          "backchannelLogoutUri": "http://localhost:3100/api/v1/auth/oidc/backchannel-logout"
         },
-        "staging": {"redirectUris": ["https://pharmacy.staging.kiorly.com/auth/callback"], "postLogoutRedirectUris": ["https://pharmacy.staging.kiorly.com/", "https://www.staging.kiorly.com/signin"]},
-        "production": {"redirectUris": ["https://pharmacy.kiorly.com/auth/callback"], "postLogoutRedirectUris": ["https://pharmacy.kiorly.com/", "https://www.kiorly.com/signin"]}
+        "staging": {"redirectUris": ["https://pharmacy.staging.kiorly.com/auth/callback"], "postLogoutRedirectUris": ["https://pharmacy.staging.kiorly.com/", "https://www.staging.kiorly.com/signin"], "backchannelLogoutUri": "https://api.pharmacy.staging.kiorly.com/api/v1/auth/oidc/backchannel-logout"},
+        "production": {"redirectUris": ["https://pharmacy.kiorly.com/auth/callback"], "postLogoutRedirectUris": ["https://pharmacy.kiorly.com/", "https://www.kiorly.com/signin"], "backchannelLogoutUri": "https://api.pharmacy.kiorly.com/api/v1/auth/oidc/backchannel-logout"}
       }
     },
     {
       "clientId": "kiorly-lab-web",
       "name": "Kiorly Lab staff web",
-      "$comment": "Staff web, OIDC authorization code + PKCE (S256), public client. The browser only redirects; the product API redeems the code server-side (POST /api/v1/auth/oidc/exchange) because the IdP token endpoint is not CORS-enabled, and returns the RP-initiated logout URL (id_token_hint) the web navigates to on sign-out; the registered post-logout URI is the web root. No back-channel URI: the product session is a short signed session ended by sign-out. Staging/production registration is TODO_NEEDS_HUMAN.",
+      "$comment": "Staff web, OIDC authorization code + PKCE (S256), public client. The browser only redirects; the product API redeems the code server-side (POST /api/v1/auth/oidc/exchange) because the IdP token endpoint is not CORS-enabled, and returns the RP-initiated logout URL (id_token_hint) the web navigates to on sign-out; the registered post-logout URI is the web root. Back-channel logout: Passport POSTs a signed logout_token to <product API>/api/v1/auth/oidc/backchannel-logout when a session is revoked (account page, admin, sign-out elsewhere) or the account is deleted; the API ends the matching web session (sid) at once. The web session also has a short max age (OIDC_SESSION_MAX_AGE_SECONDS, default 1 h) as a fallback. Staging/production registration is config only (Docs/NEEDS_HUMAN.md).",
       "type": "public",
       "grantTypes": ["authorization_code"],
       "scopes": ["openid", "profile", "phone"],
@@ -268,10 +269,11 @@
       "environments": {
         "local": {
           "redirectUris": ["http://localhost:5193/auth/callback", "http://127.0.0.1:5193/auth/callback"],
-          "postLogoutRedirectUris": ["http://localhost:5193/", "http://127.0.0.1:5193/", "http://localhost:5194/signin", "http://127.0.0.1:5194/signin"]
+          "postLogoutRedirectUris": ["http://localhost:5193/", "http://127.0.0.1:5193/", "http://localhost:5194/signin", "http://127.0.0.1:5194/signin"],
+          "backchannelLogoutUri": "http://localhost:3200/api/v1/auth/oidc/backchannel-logout"
         },
-        "staging": {"redirectUris": ["https://lab.staging.kiorly.com/auth/callback"], "postLogoutRedirectUris": ["https://lab.staging.kiorly.com/", "https://www.staging.kiorly.com/signin"]},
-        "production": {"redirectUris": ["https://lab.kiorly.com/auth/callback"], "postLogoutRedirectUris": ["https://lab.kiorly.com/", "https://www.kiorly.com/signin"]}
+        "staging": {"redirectUris": ["https://lab.staging.kiorly.com/auth/callback"], "postLogoutRedirectUris": ["https://lab.staging.kiorly.com/", "https://www.staging.kiorly.com/signin"], "backchannelLogoutUri": "https://api.lab.staging.kiorly.com/api/v1/auth/oidc/backchannel-logout"},
+        "production": {"redirectUris": ["https://lab.kiorly.com/auth/callback"], "postLogoutRedirectUris": ["https://lab.kiorly.com/", "https://www.kiorly.com/signin"], "backchannelLogoutUri": "https://api.lab.kiorly.com/api/v1/auth/oidc/backchannel-logout"}
       }
     },
     {
