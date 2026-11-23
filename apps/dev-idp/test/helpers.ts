@@ -125,6 +125,8 @@ const REDIRECTS: Record<string, string> = {
   kiorly: 'kiorly://auth/callback',
   'kiorly-team': 'kiorlyteam://auth/callback',
   'kiorly-clinic': 'http://localhost:5174/auth/kiorex/callback',
+  'kiorly-pharmacy-web': 'http://localhost:5192/auth/callback',
+  'kiorly-lab-web': 'http://localhost:5193/auth/callback',
 };
 
 export async function startAuth(h: Harness, o: LoginOpts) {

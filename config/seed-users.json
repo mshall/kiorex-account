@@ -184,6 +184,51 @@
       ]
     },
     {
+      "sub": "01HZKXD0000000000000002006",
+      "phone": "+201000002006",
+      "name": "Dr Nadia Fouad",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000002007",
+      "phone": "+201000002007",
+      "name": "Demo Pharmacy Owner",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000002008",
+      "phone": "+201000002008",
+      "name": "Omar Cashier",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000002009",
+      "phone": "+201000002009",
+      "name": "Dr Salma (Lab signatory)",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
+      "sub": "01HZKXD0000000000000002010",
+      "phone": "+201000002010",
+      "name": "Demo Lab Owner",
+      "locale": "en",
+      "roles": [
+        "patient"
+      ]
+    },
+    {
       "sub": "01HZKXD0000000000000009001",
       "phone": "+201000009001",
       "name": "Ops Admin Demo",

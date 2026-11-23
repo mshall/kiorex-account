@@ -189,6 +189,29 @@ describe('RP-initiated logout and passkey flag', () => {
     expect(got.sid).toBe(decodeJwt(r.tokens.id_token).sid);
   });
 
+  for (const [clientId, origin] of [['kiorly-pharmacy-web', 'http://localhost:5192/'], ['kiorly-lab-web', 'http://localhost:5193/'], ['kiorly-clinic', 'http://localhost:5174/']] as const) {
+    it(`${clientId}: product web sign-out (id_token_hint + registered post-logout URI) ends the Passport session, so no silent re-sign-in`, async () => {
+      const scope = clientId === 'kiorly-clinic' ? undefined : 'openid profile phone';
+      const r = await login(h, { phone: randomPhone(), clientId, scope });
+      expect(decodeJwt(r.tokens.id_token).aud).toBe(clientId);
+      const q = new URLSearchParams({ id_token_hint: r.tokens.id_token, post_logout_redirect_uri: origin, state: 'x' });
+      const page = await (await r.b.req(`${h.issuer}/session/end?${q}`)).text();
+      expect(page).toContain('f.submit()'); // auto-confirmed because the hint proves the app holds the id token
+      const xsrf = page.match(/name="xsrf" value="([^"]+)"/)![1];
+      const action = page.match(/action="([^"]+)"/)![1];
+      const out = await r.b.req(action.startsWith('http') ? action : `${h.issuer}${action}`, { method: 'POST', form: { xsrf, logout: 'yes' } });
+      expect(out.status).toBe(303);
+      expect(out.headers.get('location')).toContain(origin);
+      // the Passport session is gone: authorizing again needs the OTP login again (no interaction-free code)
+      const again = await startAuth(h, { phone: randomPhone(), clientId, scope, browser: r.b });
+      expect(new URL(again.url).pathname).toMatch(/^\/interaction\//);
+      // an unregistered post-logout URI is refused (open-redirect guard)
+      const r2 = await login(h, { phone: randomPhone(), clientId, scope });
+      const bad = new URLSearchParams({ id_token_hint: r2.tokens.id_token, post_logout_redirect_uri: 'http://evil.example/', state: 'x' });
+      expect((await r2.b.req(`${h.issuer}/session/end?${bad}`)).status).toBeGreaterThanOrEqual(400);
+    });
+  }
+
   it('a hinted logout page confirms itself (no "Stay signed in" trap); without a hint the confirm buttons stay', async () => {
     const r = await login(h, { phone: randomPhone(), clientId: 'kiorex-web' });
     const q = new URLSearchParams({ id_token_hint: r.tokens.id_token, post_logout_redirect_uri: 'http://localhost:5180/', state: 'x' });

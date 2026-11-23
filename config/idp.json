@@ -239,6 +239,40 @@
         "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" },
         "production": { "redirectUris": ["https://app.kiorly.com/auth/kiorex/callback", "TODO_NEEDS_HUMAN: https://nurse.kiorly.com/auth/kiorex/callback (confirm host + path, KX-04 Rev 2.3, KX-23 KNED01)"], "postLogoutRedirectUris": ["https://app.kiorly.com/", "TODO_NEEDS_HUMAN: https://nurse.kiorly.com/"], "backchannelLogoutUri": "TODO_NEEDS_HUMAN" }
       }
+    },
+    {
+      "clientId": "kiorly-pharmacy-web",
+      "name": "Kiorly Pharmacy staff web",
+      "$comment": "Staff web, OIDC authorization code + PKCE (S256), public client. The browser only redirects; the product API redeems the code server-side (POST /api/v1/auth/oidc/exchange) because the IdP token endpoint is not CORS-enabled, and returns the RP-initiated logout URL (id_token_hint) the web navigates to on sign-out; the registered post-logout URI is the web root. No back-channel URI: the product session is a short signed session ended by sign-out. Staging/production registration is TODO_NEEDS_HUMAN.",
+      "type": "public",
+      "grantTypes": ["authorization_code"],
+      "scopes": ["openid", "profile", "phone"],
+      "pkce": "S256",
+      "environments": {
+        "local": {
+          "redirectUris": ["http://localhost:5192/auth/callback", "http://127.0.0.1:5192/auth/callback"],
+          "postLogoutRedirectUris": ["http://localhost:5192/", "http://127.0.0.1:5192/"]
+        },
+        "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [] },
+        "production": { "redirectUris": ["TODO_NEEDS_HUMAN: Pharmacy web production host (KX-19), path /auth/callback"], "postLogoutRedirectUris": [] }
+      }
+    },
+    {
+      "clientId": "kiorly-lab-web",
+      "name": "Kiorly Lab staff web",
+      "$comment": "Staff web, OIDC authorization code + PKCE (S256), public client. The browser only redirects; the product API redeems the code server-side (POST /api/v1/auth/oidc/exchange) because the IdP token endpoint is not CORS-enabled, and returns the RP-initiated logout URL (id_token_hint) the web navigates to on sign-out; the registered post-logout URI is the web root. No back-channel URI: the product session is a short signed session ended by sign-out. Staging/production registration is TODO_NEEDS_HUMAN.",
+      "type": "public",
+      "grantTypes": ["authorization_code"],
+      "scopes": ["openid", "profile", "phone"],
+      "pkce": "S256",
+      "environments": {
+        "local": {
+          "redirectUris": ["http://localhost:5193/auth/callback", "http://127.0.0.1:5193/auth/callback"],
+          "postLogoutRedirectUris": ["http://localhost:5193/", "http://127.0.0.1:5193/"]
+        },
+        "staging": { "redirectUris": ["TODO_NEEDS_HUMAN"], "postLogoutRedirectUris": [] },
+        "production": { "redirectUris": ["TODO_NEEDS_HUMAN: Lab web production host (KX-19), path /auth/callback"], "postLogoutRedirectUris": [] }
+      }
     }
   ],
   "flags": { "account.passkeys": true, "account.provider_sso": true }
