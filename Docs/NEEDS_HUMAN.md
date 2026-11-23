@@ -48,3 +48,16 @@ Real providers are wired in a dedicated pre-launch pass, staging first. Mock ada
 - Account merge: a resolution can leave an org without an owner (not blocked); TOTP/other secrets of the merged account are not transferred; only identity data moves (products merge their own patient records).
 - TOTP secrets are stored in clear in the dev DB (dev IdP only); production MFA lives in the managed IdP. Dev inbox stores OTP codes and invitation tokens in clear (mock messaging, dev only).
 - Step-up tokens come from `POST /api/step-up` (IdP-signed, same key), not from the standard `/auth?acr_values=` round trip; acr_values/max_age on `/auth` are not honoured by the dev provider.
+
+
+## Provider go-live checklist (config only: no code change)
+
+> OTP delivery is selected only by env (`packages/otp-sender`, same variable names as every repo). `WHATSAPP_MODE` / `SMS_MODE` default `mock` (dev log channel, **rejected in production**). `WHATSAPP_MODE=real` + `SMS_MODE=real` = WhatsApp first, SMS fallback (KA-02). The OTP Lambda throws at cold start with variable names only when a real kind is missing configuration; `/healthz` of the dev IdP reports `providers.{sms,whatsapp}` modes. Vendor wire formats are unit-tested against faked HTTP (`packages/otp-sender/test/vendors.test.ts`).
+
+| Provider | Config flip | Env vars (S = secret in Secrets Manager `kiorex/<env>/passport/...`) | Human steps |
+|---|---|---|---|
+| WhatsApp (Meta Cloud API) | `WHATSAPP_MODE=real`, `WHATSAPP_PROVIDER=meta` | `WHATSAPP_API_KEY` S, `WHATSAPP_SENDER_ID` (phone-number-id), `WHATSAPP_WEBHOOK_SECRET` S (app secret), `WHATSAPP_VERIFY_TOKEN` S; optional `WHATSAPP_API_URL`, `WHATSAPP_TEMPLATE_MAP` e.g. `{"kx_otp_ar":"<approved ar name>","kx_otp_en":"<approved en name>"}` | Meta business verification, **AUTHENTICATION templates** AR + EN (body `{{1}}` = code + copy-code button), webhook to the delivery endpoint, 24 h window irrelevant for authentication templates |
+| SMS (Twilio) | `SMS_MODE=real`, `SMS_PROVIDER=twilio` | `SMS_API_KEY` S (`<AccountSid>:<AuthToken>`), `SMS_SENDER_ID`, `SMS_WEBHOOK_PUBLIC_URL` | Egypt route + sender registration, SMS body wording (legal), anti-fraud / rate limits (SMS pumping) |
+| Neutral gateway (any vendor) | `<KIND>_MODE=real` without `<KIND>_PROVIDER` | `<KIND>_API_URL`, `<KIND>_API_KEY` S, `<KIND>_SENDER_ID`, `<KIND>_WEBHOOK_SECRET` S | add a mapping file (`packages/otp-sender/src/providers/*.mapping.ts`) if the vendor is not neutral-compatible |
+
+Verify: request an OTP in staging, receive it on WhatsApp; block WhatsApp (invalid template map) and receive the SMS fallback; replay a delivery webhook (idempotent, forward-only status). **Unverified against live Meta/Twilio** (faked HTTP only).
