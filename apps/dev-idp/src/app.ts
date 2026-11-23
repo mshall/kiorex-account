@@ -25,7 +25,7 @@ import { Federation } from './federation.js';
 import { Scim } from './scim.js';
 import { FakeUpstreamIdp } from './fake-upstream.js';
 import type { Ctx } from './services.js';
-import { send, redirect, readBody } from './http.js';
+import { send, redirect, readBody, setNativeFormActionSchemes } from './http.js';
 import { HttpError } from './services.js';
 import { purgeExpired } from './adapter.js';
 import { PASSPORT_CLIENT_ID, handleAccountUi } from './account-ui.js';
@@ -78,6 +78,7 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
     // (and ignores) the logout token itself; the SPA notices a revoked session through a 401 on its next API call.
     passportClient.environments.local.backchannelLogoutUri ??= `${rt.issuer}/account/backchannel-logout`;
   }
+  setNativeFormActionSchemes(cfg.clients.flatMap((c) => [...c.environments.local.redirectUris, ...c.environments.local.postLogoutRedirectUris]));
   const seedUsers = o.seedUsers ?? loadSeedUsers();
   const testNumbers = seedUsers.map((u) => u.phone);
   const pool = createPool(rt.databaseUrl, rt.schema);
