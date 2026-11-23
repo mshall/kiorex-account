@@ -14,6 +14,7 @@ import type { Totp } from './totp.js';
 import type { Federation, FederatedResult } from './federation.js';
 import { HttpError } from './services.js';
 import { clearStates, getState, setState } from './istate.js';
+import { devAutoPhoneScript, devCodePanel, devPanel, devTestUsersEnabled, devTotpPanel, devUsers, isDevPhone } from './dev-test-users.js';
 
 export interface InteractionDeps {
   provider: Provider; accounts: Accounts; otp: OtpService; passkeys: Passkeys; audit: Audit;
@@ -83,7 +84,9 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
 
   const renderTotp = async (ff: FirstFactor, error?: string, status = 200) => {
     const enrol = (await d.totp.isEnrolled(ff.account.sub)) ? undefined : await d.totp.enrolStart(ff.account);
-    return send(res, status, totpPage(lang, uid, { error, enrol }));
+    let dev: string | undefined;
+    if (devTestUsersEnabled()) { const c = await d.totp.devCurrent(ff.account.sub); if (c) dev = devTotpPanel(lang, c); }
+    return send(res, status, totpPage(lang, uid, { error, enrol, dev }));
   };
 
   const finishLogin = async () => {
@@ -105,15 +108,24 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
   };
 
   /** After a first factor (and any required TOTP): offer passkey registration after phone OTP, else finish. */
-  const afterFactors = async (ff: FirstFactor) => {
+  const afterFactors = async (ff: FirstFactor, devSkipPasskey = false) => {
     if (needsMfa(ff) && !(await secondFactorDone(ff))) return renderTotp(ff);
-    if (ff.method === 'otp' && d.passkeysEnabled) return send(res, 200, passkeyPage(lang, uid));
+    if (ff.method === 'otp' && d.passkeysEnabled && !(devSkipPasskey && devTestUsersEnabled())) return send(res, 200, passkeyPage(lang, uid));
     return finishLogin();
+  };
+
+  const codeView = (phone: string, o: { error?: string; status?: number; auto?: boolean; headers?: Record<string, string> } = {}) => {
+    const u = devTestUsersEnabled() ? isDevPhone(phone) : undefined;
+    const dev = u ? devCodePanel(lang, { auto: !!o.auto && !o.error, name: u.name, uid }) : undefined;
+    return send(res, o.status ?? 200, codePage(lang, uid, maskPhone(phone), { error: o.error, dev }), o.headers ?? {});
   };
 
   const phoneView = async (o: { error?: string; phone?: string; name?: string } = {}, status = 200) => {
     const fedPending = await getState(d.pool, uid, 'fed_pending');
-    return send(res, status, phonePage(lang, uid, { ...o, passkeyLogin: d.passkeysEnabled, federation: d.federation.available(), fedLinkNotice: !!fedPending }));
+    const on = devTestUsersEnabled();
+    const hint = on && !o.error ? isDevPhone(String(details.params.login_hint ?? '')) : undefined;
+    const dev = on ? devPanel(lang, devUsers()) + (hint ? devAutoPhoneScript(uid) : '') : undefined;
+    return send(res, status, phonePage(lang, uid, { ...o, phone: o.phone ?? hint?.phone, passkeyLogin: d.passkeysEnabled, federation: d.federation.available(), fedLinkNotice: !!fedPending, dev }));
   };
 
   // ---- consent: first-party clients, auto-grant requested scopes/claims/resources ----
@@ -140,7 +152,7 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
     if (ff) return afterFactors(ff);
     const ch = await d.otp.latest(uid);
     if (ch && !ch.locked && !ch.consumed_at && ch.expires_at.getTime() > Date.now()) {
-      return send(res, 200, codePage(lang, uid, maskPhone(ch.phone)));
+      return codeView(ch.phone);
     }
     return phoneView();
   }
@@ -179,7 +191,7 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
       return phoneView({ error: errorText(lang, r.reason), phone, name: form.name }, status);
     }
     await d.audit.record('otp.sent', null, { phone: maskPhone(phone) });
-    return send(res, 200, codePage(lang, uid, maskPhone(phone)));
+    return codeView(phone, { auto: form.dev_auto === '1' });
   }
 
   if (isPost && action === 'resend') {
@@ -187,10 +199,9 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
     if (!ch) return back();
     const r = await d.otp.send({ interactionUid: uid, phone: ch.phone, ip, locale: lang, name: ch.name });
     if (!r.ok) {
-      return send(res, 429, codePage(lang, uid, maskPhone(ch.phone), { error: errorText(lang, r.reason) }),
-        r.retryAfterSeconds ? { 'retry-after': String(r.retryAfterSeconds) } : {});
+      return codeView(ch.phone, { error: errorText(lang, r.reason), status: 429, headers: r.retryAfterSeconds ? { 'retry-after': String(r.retryAfterSeconds) } : {} });
     }
-    return send(res, 200, codePage(lang, uid, maskPhone(ch.phone)));
+    return codeView(ch.phone);
   }
 
   if (isPost && action === 'change') {
@@ -205,11 +216,11 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
       const status = r.reason === 'locked' ? 429 : 400;
       await d.audit.record('otp.verify.failed', null, { reason: r.reason });
       if (!ch || r.reason === 'no_challenge') return phoneView({ error: errorText(lang, 'no_challenge') }, 400);
-      return send(res, status, codePage(lang, uid, maskPhone(ch.phone), { error: errorText(lang, r.reason, r.attemptsLeft) }));
+      return codeView(ch.phone, { error: errorText(lang, r.reason, r.attemptsLeft), status });
     }
     const ff = await firstFactor(); // creates the account on first verified phone
     if (!ff) return back();
-    return afterFactors(ff);
+    return afterFactors(ff, form.dev_auto === '1'); // dev quick-pick: no passkey offer
   }
 
   // KA-03/KA-10: TOTP challenge or first-time enrolment for privileged roles
@@ -227,7 +238,7 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
     if (!enrolled) await d.audit.record('totp.enrolled', ff.account.sub);
     await setState(d.pool, uid, 'totp', ff.account.sub, { step: r.step });
     await d.audit.record('totp.verified', ff.account.sub);
-    return afterFactors(ff);
+    return afterFactors(ff, form.dev_auto === '1');
   }
 
   if (isPost && action === 'finish') return finishLogin();

@@ -1,4 +1,4 @@
-import { generateSecret, generateURI, verifySync } from 'otplib';
+import { generateSecret, generateSync, generateURI, verifySync } from 'otplib';
 import type { Pool } from './db.js';
 import type { IdpConfig } from './config.js';
 import type { Account } from './accounts.js';
@@ -25,6 +25,13 @@ export class Totp {
     const r = await this.pool.query(`DELETE FROM totp_credentials WHERE sub=$1`, [sub]);
     await this.pool.query(`DELETE FROM totp_attempts WHERE key=$1`, [`sub:${sub}`]);
     return (r.rowCount ?? 0) > 0;
+  }
+
+  /** DEV ONLY (quick-pick panel on the dev IdP, never reachable in production): the current code and the seed of a stored credential. */
+  async devCurrent(sub: string): Promise<{ code: string; secret: string } | undefined> {
+    const row = (await this.pool.query(`SELECT secret FROM totp_credentials WHERE sub=$1`, [sub])).rows[0] as { secret: string } | undefined;
+    if (!row) return undefined;
+    return { secret: row.secret, code: generateSync({ secret: row.secret, strategy: 'totp', period: this.c.periodSeconds, digits: this.c.digits as 6, epoch: this.now() }) };
   }
 
   /** Starts (or resumes) enrolment. A confirmed credential is never replaced here. */

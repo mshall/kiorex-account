@@ -1,4 +1,5 @@
 import { brandAsset } from './config.js';
+import { DEV_CSS } from './dev-test-users.js';
 
 export type Lang = 'ar' | 'en';
 
@@ -96,6 +97,7 @@ a{color:var(--kx-link)}
 .code{letter-spacing:.5em;text-align:center;font-size:1.5rem;direction:ltr;font-variant-numeric:tabular-nums}
 .phone{direction:ltr;text-align:start}
 code{font-family:var(--kx-font-mono)}
+${DEV_CSS}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}`);
 
 const LOCK = `<picture><source srcset="/static/brand/passport-lockup-inverse.svg" media="(prefers-color-scheme: dark)"><img src="/static/brand/passport-lockup.svg" alt="Kiorex Passport"></picture>`;
@@ -133,7 +135,7 @@ const X2 = {
 } as const;
 export const t2 = (lang: Lang) => X2[lang];
 
-export function phonePage(lang: Lang, uid: string, o: { error?: string; phone?: string; name?: string; passkeyLogin?: boolean; federation?: Array<{ id: string; name: string }>; fedLinkNotice?: boolean } = {}): string {
+export function phonePage(lang: Lang, uid: string, o: { error?: string; phone?: string; name?: string; passkeyLogin?: boolean; federation?: Array<{ id: string; name: string }>; fedLinkNotice?: boolean; dev?: string } = {}): string {
   const x = t(lang); const y = t2(lang);
   const fed = (o.federation ?? []).map((u) => `<a class="btn secondary" data-federate="${esc(u.id)}" href="/interaction/${esc(uid)}/federate/${esc(u.id)}">${esc(y.fedWith(u.name))}</a>`).join('');
   const pk = o.passkeyLogin
@@ -156,12 +158,12 @@ document.getElementById('pk-login').addEventListener('click',async()=>{
 <label for="phone">${x.phone}</label><input id="phone" class="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required dir="ltr" aria-describedby="phone-hint" value="${esc(o.phone ?? '')}" placeholder="+201000000001">
 <div class="hint" id="phone-hint">${x.phoneHint}</div>
 <label for="name">${x.name}</label><input id="name" name="name" autocomplete="name" value="${esc(o.name ?? '')}">
-<button type="submit">${x.send}</button></form>${pk}${fed}`,
+<button type="submit">${x.send}</button></form>${pk}${fed}${o.dev ?? ''}`,
   { langSwitchHref: `/interaction/${uid}?lang=${lang === 'ar' ? 'en' : 'ar'}`, script });
 }
 
 /** KA-10: TOTP challenge, or first-time enrolment (secret shown) for privileged roles. */
-export function totpPage(lang: Lang, uid: string, o: { error?: string; enrol?: { secret: string; uri: string } } = {}): string {
+export function totpPage(lang: Lang, uid: string, o: { error?: string; enrol?: { secret: string; uri: string }; dev?: string } = {}): string {
   const y = t2(lang);
   const head = o.enrol
     ? `<h1>${y.totpEnrolTitle}</h1><p>${y.totpEnrolSub}</p><p>${y.totpKey}: <bdi dir="ltr" id="totp-secret"><code>${esc(o.enrol.secret)}</code></bdi></p><p class="hint"><bdi dir="ltr">${esc(o.enrol.uri)}</bdi></p>`
@@ -169,17 +171,17 @@ export function totpPage(lang: Lang, uid: string, o: { error?: string; enrol?: {
   return page(lang, y.totpTitle, `${head}${err(o.error ?? '')}
 <form method="post" action="/interaction/${esc(uid)}/totp"><input type="hidden" name="lang" value="${lang}">
 <label for="totp">${y.totpCode}</label><input id="totp" class="code" name="totp" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="6" required autofocus>
-<button type="submit">${y.totpGo}</button></form>`, { langSwitchHref: `/interaction/${uid}?lang=${lang === 'ar' ? 'en' : 'ar'}` });
+<button type="submit">${y.totpGo}</button></form>${o.dev ?? ''}`, { langSwitchHref: `/interaction/${uid}?lang=${lang === 'ar' ? 'en' : 'ar'}` });
 }
 
-export function codePage(lang: Lang, uid: string, maskedPhone: string, o: { error?: string } = {}): string {
+export function codePage(lang: Lang, uid: string, maskedPhone: string, o: { error?: string; dev?: string } = {}): string {
   const x = t(lang);
   return page(lang, x.codeTitle, `<h1>${x.codeTitle}</h1><p>${x.codeSub(`<bdi dir="ltr">${esc(maskedPhone)}</bdi>`)}</p>${err(o.error ?? '')}
 <form method="post" action="/interaction/${esc(uid)}/verify"><input type="hidden" name="lang" value="${lang}">
 <label for="code">${x.code}</label><input id="code" class="code" name="code" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="10" required autofocus>
 <button type="submit">${x.verify}</button></form>
 <form method="post" action="/interaction/${esc(uid)}/resend"><input type="hidden" name="lang" value="${lang}"><button class="secondary" type="submit">${x.resend}</button></form>
-<form method="post" action="/interaction/${esc(uid)}/change"><input type="hidden" name="lang" value="${lang}"><button class="secondary" type="submit">${x.change}</button></form>`,
+<form method="post" action="/interaction/${esc(uid)}/change"><input type="hidden" name="lang" value="${lang}"><button class="secondary" type="submit">${x.change}</button></form>${o.dev ?? ''}`,
   { langSwitchHref: `/interaction/${uid}?lang=${lang === 'ar' ? 'en' : 'ar'}` });
 }
 
