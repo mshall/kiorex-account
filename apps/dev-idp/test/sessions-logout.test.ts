@@ -89,7 +89,7 @@ describe('sessions API and back-channel logout (KA-05)', () => {
     const evts = h.received.filter((r) => r.event === 'subject.deleted');
     expect(evts).toHaveLength(9); // the Passport SPA endpoint is self-hosted and not observed by the test receiver
     expect(evts.every((e) => e.sub === sub && e.sid === undefined)).toBe(true);
-    expect(new Set(evts.map((e) => e.clientId))).toEqual(new Set(['kiorex-web', 'kiorex-ops', 'kiorex-mobile', 'kiorly', 'kiorly', 'kiorly-clinic', 'kiorly-pharmacy-web', 'kiorly-lab-web', 'kiorly-home']));
+    expect(new Set(evts.map((e) => e.clientId))).toEqual(new Set(['kiorex-web', 'kiorex-ops', 'kiorex-mobile', 'kiorly', 'kiorly-team', 'kiorly-clinic', 'kiorly-pharmacy-web', 'kiorly-lab-web', 'kiorly-home']));
 
     expect((await api(h, web.tokens.access_token, '/api/sessions')).status).toBe(401);
     const row = (await h.idp.pool.query(`SELECT * FROM accounts WHERE sub=$1`, [sub])).rows[0];

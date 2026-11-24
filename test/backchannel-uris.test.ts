@@ -42,7 +42,7 @@ describe('staging and production registrations are complete (config only)', () =
       const e = client('kiorly').environments[tier];
       expect(e.redirectUris).toEqual(['kiorly://auth/callback']);
       expect(e.postLogoutRedirectUris).toEqual(['kiorly://auth/logout']);
-      expect(client('kiorly').environments[tier].redirectUris).toEqual(['kiorlyteam://auth/callback']);
+      expect(client('kiorly-team').environments[tier].redirectUris).toEqual(['kiorlyteam://auth/callback']); // legacy client id, kept additive
     }
   });
   it('web clients on the five product hosts only use https in staging/production', () => {
