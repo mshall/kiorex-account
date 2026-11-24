@@ -29,3 +29,69 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+
+  # Production-bundle hygiene for Kiorly Home: no "Test users (dev only)" panel, no synthetic phones or dev OTP and no localhost URL in a production build (and the development build must contain the panel, so the check is not vacuous).
+  bundles:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run check:bundle -w @kiorex/kiorly-home
+
+  # Security and edge-case suites of the IdP on their own: rate limits, replay, step-up, session revocation, back-channel logout, CSP, guards (they also run inside `test`).
+  security-edge:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: kiorex_account
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5433/kiorex_account
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run apps/dev-idp/test/ratelimit.test.ts apps/dev-idp/test/guard.test.ts apps/dev-idp/test/csp-native.test.ts apps/dev-idp/test/ka10-stepup.test.ts apps/dev-idp/test/sessions-logout.test.ts apps/dev-idp/test/dev-test-users.test.ts apps/dev-idp/test/events-contract.test.ts
+
+  # Browser suites on throwaway IdP instances (own ports and schemas, system Chrome): Passport sign-in security UI and Kiorly Home (layout, RTL, axe).
+  browser:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: kiorex_account
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5433/kiorex_account
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Passport web UI (sign-in security)
+        run: npm run test:e2e -w @kiorex/passport-ui
+      - name: Kiorly Home (hermetic)
+        run: npm run test:e2e -w @kiorex/kiorly-home
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with: { name: playwright-results, path: "apps/*/e2e/.results", retention-days: 7 }
