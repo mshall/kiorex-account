@@ -2,7 +2,7 @@
   "$comment": "TEMPLATE (ADR-038). Serve unchanged at https://www.kiorly.com/.well-known/apple-app-site-association (Content-Type application/json, no redirect). Replace TODO_NEEDS_HUMAN_APPLE_TEAM_ID with the Apple Developer Team ID once the developer account exists (NEEDS_HUMAN). Remove this $comment key when publishing.",
   "applinks": {
     "details": [
-      { "appIDs": ["TODO_NEEDS_HUMAN_APPLE_TEAM_ID.com.kiorly.app"], "components": [{ "/": "/signin/*" }, { "/": "/open/*" }] }
+      { "appIDs": ["TODO_NEEDS_HUMAN_APPLE_TEAM_ID.com.kiorly.app"], "components": [{ "/": "/open/*" }] }
     ]
   }
 }

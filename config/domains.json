@@ -58,7 +58,7 @@
     "host": "home",
     "iosBundleId": "com.kiorly.app",
     "androidPackage": "com.kiorly.app",
-    "paths": ["/signin/*", "/open/*"],
+    "paths": ["/open/*"],
     "patient": {
       "$comment": "GRW-P1-H. The Kiorex patient app (com.kiorex.app). Only the patient host is associated; the app resolves a link by matching its path against a route table, so no URL-valued parameter is ever followed. The Apple Team ID and the Play signing SHA-256 are NEEDS_HUMAN (KX-19 section 04) and come from config at publish time (APPLE_TEAM_ID, ANDROID_SHA256_CERT_FINGERPRINTS), never from this file.",
       "host": "patient",

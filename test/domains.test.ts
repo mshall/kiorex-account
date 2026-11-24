@@ -91,7 +91,11 @@ describe('ADR-038 domain table (config/domains.json)', () => {
     expect(al[0]!.target.sha256_cert_fingerprints).toEqual(['TODO_NEEDS_HUMAN_SHA256_CERT_FINGERPRINT']);
     expect(DOMAINS.appLinks.patient.host).toBe('patient');
     expect(DOMAINS.appLinks.patient.androidPathPatterns.length).toBe(DOMAINS.appLinks.patient.iosPaths.length);
-    // the staff app association is untouched
-    expect(DOMAINS.appLinks).toMatchObject({ host: 'home', iosBundleId: 'com.kiorly.app', paths: ['/signin/*', '/open/*'] });
+    // the staff app association claims /open/* ONLY: a Passport redirect to the web callback /signin/callback must never be captured by the app on a phone
+    expect(DOMAINS.appLinks).toMatchObject({ host: 'home', iosBundleId: 'com.kiorly.app', paths: ['/open/*'] });
+    expect(JSON.stringify(DOMAINS.appLinks.paths)).not.toContain('signin');
+    const staffAasa = JSON.parse(readFileSync(new URL('../config/app-links/apple-app-site-association.json', import.meta.url), 'utf8'));
+    const comps = (staffAasa.applinks.details as Array<{ components: Array<{ '/': string }> }>).flatMap((d) => d.components.map((c) => c['/']));
+    expect(comps).toEqual(['/open/*']);
   });
 });
