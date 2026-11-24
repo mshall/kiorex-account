@@ -67,7 +67,7 @@ const L = {
 
 export const DEV_CSS = `
 .dev{margin-top:22px;border:1px dashed var(--kx-coral-500,#E8735E);border-radius:var(--kx-radius-lg,14px);padding:14px 14px 10px;background:color-mix(in srgb,var(--kx-surface) 94%,var(--kx-coral-500,#E8735E))}
-.dev h2{margin:0 0 4px;font-size:1rem;display:flex;align-items:center;gap:8px}.dev h2 .tag{font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--kx-coral-500,#E8735E);border-radius:999px;padding:1px 8px}
+.dev h2{margin:0 0 4px;font-size:1rem;display:flex;align-items:center;gap:8px}.dev h2 .tag{font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--kx-coral-950,#261826);background:var(--kx-coral-500,#E8735E);border-radius:999px;padding:1px 8px}
 .dev p{font-size:.8125rem;margin:0 0 10px;text-align:start}.dev h3{font-size:.8125rem;margin:12px 0 6px;color:var(--kx-text-muted)}
 .dev ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
 .dev button.chip{margin:0;min-height:48px;display:flex;flex-direction:column;align-items:flex-start;gap:0;text-align:start;padding:8px 12px;background:var(--kx-surface);color:var(--kx-text);border:1px solid var(--kx-border-strong);font-weight:500;width:100%}
