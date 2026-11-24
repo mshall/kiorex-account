@@ -85,11 +85,11 @@ describe('sessions API and back-channel logout (KA-05)', () => {
     expect(del.status).toBe(202);
     const body = await del.json();
     expect(body.event).toBe('subject.deleted');
-    expect(body.deliveries.length).toBe(10); // every registered client is notified (the harness gives every client except Passport web a receiver, kiorly, legacy kiorly-team and the Pharmacy/Lab staff webs and Kiorly Home included)
+    expect(body.deliveries.length).toBe(11); // every registered client is notified (the harness gives every client except Passport web a receiver, kiorly, legacy kiorly-team and the Pharmacy/Lab staff webs and Kiorly Home included)
     const evts = h.received.filter((r) => r.event === 'subject.deleted');
-    expect(evts).toHaveLength(9); // the Passport SPA endpoint is self-hosted and not observed by the test receiver
+    expect(evts).toHaveLength(10); // the Passport SPA endpoint is self-hosted and not observed by the test receiver
     expect(evts.every((e) => e.sub === sub && e.sid === undefined)).toBe(true);
-    expect(new Set(evts.map((e) => e.clientId))).toEqual(new Set(['kiorex-web', 'kiorex-ops', 'kiorex-mobile', 'kiorly', 'kiorly-team', 'kiorly-clinic', 'kiorly-pharmacy-web', 'kiorly-lab-web', 'kiorly-home']));
+    expect(new Set(evts.map((e) => e.clientId))).toEqual(new Set(['kiorex-web', 'kiorex-widget', 'kiorex-ops', 'kiorex-mobile', 'kiorly', 'kiorly-team', 'kiorly-clinic', 'kiorly-pharmacy-web', 'kiorly-lab-web', 'kiorly-home']));
 
     expect((await api(h, web.tokens.access_token, '/api/sessions')).status).toBe(401);
     const row = (await h.idp.pool.query(`SELECT * FROM accounts WHERE sub=$1`, [sub])).rows[0];

@@ -131,6 +131,23 @@
       }
     },
     {
+      "clientId": "kiorex-widget",
+      "name": "Kiorex booking widget (embedded; Passport opens in a popup from the widget host)",
+      "$comment": "GRW-P1-G: public PKCE client of the embeddable booking widget. The widget app runs on the widget host (domains.json `widget`: book.kiorex.com; local = the Kiorex API port) inside the provider's iframe and opens Passport in a POPUP; the popup returns to /v1/embed/auth/callback on that host, which hands the one-time code to the iframe. No refresh token (the access token lives in widget memory only), no back-channel URI (the widget holds no server session).",
+      "type": "public",
+      "grantTypes": ["authorization_code"],
+      "scopes": ["openid", "profile", "phone"],
+      "pkce": "S256",
+      "environments": {
+        "local": {
+          "redirectUris": ["http://localhost:4000/v1/embed/auth/callback"],
+          "postLogoutRedirectUris": []
+        },
+        "staging": { "redirectUris": ["https://book.staging.kiorex.com/v1/embed/auth/callback"], "postLogoutRedirectUris": [] },
+        "production": { "redirectUris": ["https://book.kiorex.com/v1/embed/auth/callback"], "postLogoutRedirectUris": [] }
+      }
+    },
+    {
       "clientId": "kiorex-ops",
       "name": "Kiorex ops console / super admin",
       "type": "public",
