@@ -48,9 +48,16 @@ async function authenticate(d: ApiDeps, req: IncomingMessage): Promise<Caller | 
     if (!jti || !sid || !clientId || !sub) return undefined;
     if (claims.act) return undefined; // guardian acting-as tokens are for products, never for the account self-service API
     const r = await d.pool.query(
-      `SELECT uid FROM oidc_payloads WHERE model='Session' AND expires_at > now()
+      `SELECT uid, payload->'authorizations'->$2->>'grantId' AS grant_id FROM oidc_payloads WHERE model='Session' AND expires_at > now()
          AND payload->>'accountId'=$1 AND payload->'authorizations'->$2->>'sid'=$3`, [sub, clientId, sid]);
     if (!r.rows[0]) return undefined;
+    // RFC 6749 section 4.1.2: a replayed authorization code destroys the grant it created (oidc-provider revokes it, refresh tokens go with it); an access token minted
+    // from that grant must stop working here too, so the grant has to be alive as well, not only the session.
+    const gid = r.rows[0].grant_id as string | null;
+    if (gid) {
+      const g = await d.pool.query(`SELECT 1 FROM oidc_payloads WHERE model='Grant' AND id=$1 AND (expires_at IS NULL OR expires_at > now())`, [gid]);
+      if (!g.rows[0]) return undefined;
+    }
     return { sub, sessionUid: r.rows[0].uid as string, jti, sid, clientId, acr: claims.acr, amr: claims.amr, authTime: claims.auth_time, scope: claims.scope, orgs: claims.kx_orgs };
   } catch {
     return undefined;

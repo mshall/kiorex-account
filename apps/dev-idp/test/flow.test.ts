@@ -67,8 +67,19 @@ describe('phone OTP login: every registered client', () => {
     expect(bad.status).toBe(400);
     const mk = (verifier: string) => fetch(`${h.issuer}/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ grant_type: 'authorization_code', client_id: 'kiorex-web', code, redirect_uri: a.redirectUri, code_verifier: verifier }) });
-    expect((await mk(a.verifier)).status).toBe(200);
+    const first = await mk(a.verifier);
+    expect(first.status).toBe(200);
+    const firstTokens = await first.json() as { access_token: string; refresh_token: string };
+    expect(firstTokens.refresh_token).toBeTruthy();
     expect((await mk(a.verifier)).status).toBe(400); // authorization codes are single-use
+    // RFC 6749 section 4.1.2: a replayed code means the code leaked, so what the FIRST redemption received is revoked as well (KX-PT replay containment):
+    // its refresh token no longer works, and its access token no longer opens the account API (that check is bound to the live grant / session).
+    const rt = await fetch(`${h.issuer}/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ grant_type: 'refresh_token', client_id: 'kiorex-web', refresh_token: firstTokens.refresh_token }) });
+    expect(rt.status).toBe(400);
+    expect((await rt.json() as { error: string }).error).toBe('invalid_grant');
+    const me = await fetch(`${h.issuer}/api/sessions`, { headers: { authorization: `Bearer ${firstTokens.access_token}` } });
+    expect(me.status).toBe(401);
   });
 
   it('seeded numbers accept 000000 (dev), other numbers do not', async () => {
