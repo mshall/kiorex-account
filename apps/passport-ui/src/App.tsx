@@ -4,9 +4,9 @@ import type { Auth, AuthConfig } from './auth';
 import { AppProvider, useApp } from './app-context';
 import { useI18n, type TKey } from './i18n';
 import { Link, navigate, useRoute } from './router';
-import { Loading, ToastProvider, Alert, Button } from './ui';
+import { Loading, ToastProvider, Alert, Button, PulseLine } from './ui';
 import { safeReturn } from './util';
-import { KiorexLogo, PulseLine } from './brand/components/web/KiorexLogo';
+import { KiorexLogo } from './brand/kiorex-logo/KiorexLogo.web';
 import { HomePage } from './pages/Home';
 import { SecurityPage } from './pages/Security';
 import { FamilyPage } from './pages/Family';
@@ -29,9 +29,9 @@ function useTheme(): [Theme, (t: Theme) => void] {
   return [theme, setTheme];
 }
 
-/** Kiorex Passport lockup (brand artwork); the inverse tone is swapped in by CSS in dark mode. */
-function Brand({ height = 40 }: { height?: number }) {
-  return <span className="brand"><KiorexLogo className="logo-light" variant="lockup" product="passport" tone="color" height={height} title="Kiorex Passport" /><KiorexLogo className="logo-dark" variant="lockup" product="passport" tone="inverse" height={height} title="" /></span>;
+/** KIOREX lockup (founder spec 25 Nov 2026), trimmed to its ink box (the viewBox carries the clear space). Colours follow html[data-theme] (dark / auto = OS). */
+function Brand({ height = 64 }: { height?: number }) {
+  return <span className="brand"><KiorexLogo variant="full" height={height} title="Kiorex Passport" style={{ margin: `${-0.2 * height}px ${-0.9654 * height}px ${-0.2 * height}px ${-0.1846 * height}px`, maxWidth: 'none' }} /></span>;
 }
 
 function Toolbar() {

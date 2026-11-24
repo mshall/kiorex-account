@@ -39,7 +39,7 @@ code, .secret { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; fon
 .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: saturate(1.4) blur(var(--kx-blur-md)); background: color-mix(in srgb, var(--kx-surface) 86%, transparent) !important; --gutter: max(1rem, calc((100% - 920px) / 2)); padding-inline: var(--gutter) !important; display: flex; align-items: center; gap: .75rem; padding: .6rem 1rem; background: var(--kx-surface); border-block-end: 1px solid var(--kx-border); flex-wrap: wrap; }
 .brand-link { display: inline-flex; margin-inline-end: auto; text-decoration: none; color: inherit; min-height: 44px; align-items: center; }
 .brand { display: inline-flex; align-items: center; gap: .6rem; }
-.brand svg { display: block; height: 40px; width: auto; }
+.brand svg { display: block; max-width: none; } /* the KIOREX logo carries its own height; its viewBox clear space is trimmed by margins in App.tsx */
 .toolbar { display: flex; align-items: center; gap: .5rem; }
 .tabs { display: flex; gap: .25rem; overflow-x: auto; padding: .4rem max(1rem, calc((100% - 920px) / 2)) 0; background: var(--kx-surface); border-block-end: 1px solid var(--kx-border); scrollbar-width: thin; }
 .tab { white-space: nowrap; padding: .7rem .9rem; min-height: 44px; display: inline-flex; align-items: center; color: var(--kx-text-muted); text-decoration: none; border-block-end: 3px solid transparent; font-weight: 500; }
@@ -163,8 +163,5 @@ legend { font-weight: 600; padding-inline: .3rem; }
 .signin .btn { min-width: 12rem; }
 .empty { padding: .75rem 0; }
 .hint.block { margin-top: .15rem; }
-.brand .logo-dark { display: none; }
-:root[data-theme="dark"] .brand .logo-light { display: none; } :root[data-theme="dark"] .brand .logo-dark { display: block; }
-@media (prefers-color-scheme: dark) { :root[data-theme="auto"] .brand .logo-light { display: none; } :root[data-theme="auto"] .brand .logo-dark { display: block; } }
 .hero .kx-pulse-draw { margin-inline: auto; }
 .hero svg[role="img"], .hero svg[aria-hidden] { display: block; margin: 0 auto .75rem; }

@@ -107,7 +107,7 @@ export function loadSeedUsers(file = path.join(REPO_ROOT, 'config/seed-users.jso
 /** Brand assets: tokens.css prefers ../_brand (workspace sibling, always fresh) and falls back to the committed copy (CI); everything else is the committed copy. */
 export const BRAND_FILES: Record<string, string> = {
   'tokens.css': 'text/css', 'fonts.css': 'text/css', 'kiorex-mark.svg': 'image/svg+xml', 'favicon.svg': 'image/svg+xml', 'favicon.ico': 'image/x-icon', 'apple-touch-icon.png': 'image/png',
-  'passport-lockup.svg': 'image/svg+xml', 'passport-lockup-inverse.svg': 'image/svg+xml',
+  'kiorex-logo-full.svg': 'image/svg+xml', 'kiorex-logo-full-dark.svg': 'image/svg+xml', 'fonts/PlusJakartaSans-SemiBold.woff2': 'font/woff2',
   'fonts/Jost_400Regular.ttf': 'font/ttf', 'fonts/Jost_500Medium.ttf': 'font/ttf', 'fonts/Jost_600SemiBold.ttf': 'font/ttf',
   'fonts/IBMPlexSansArabic_400Regular.ttf': 'font/ttf', 'fonts/IBMPlexSansArabic_600SemiBold.ttf': 'font/ttf',
 };

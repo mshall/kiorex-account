@@ -82,7 +82,7 @@ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:c
  background:radial-gradient(1100px 520px at 50% -12%,color-mix(in srgb,var(--kx-primary) 14%,transparent),transparent 70%),var(--kx-bg)}
 html[lang=ar] body{line-height:1.85}
 .card{width:100%;max-width:440px;background:var(--kx-surface);border:1px solid var(--kx-border);border-radius:var(--kx-radius-xl);padding:32px 28px 24px;box-shadow:var(--kx-shadow-3)}
-.brand{display:flex;justify-content:center;margin:0 0 22px}.brand img{height:40px;width:auto;display:block}
+.brand{display:flex;justify-content:center;margin:0 0 14px}.brand img{height:64px;width:auto;max-width:none;display:block;margin:-12.8px -61.8px -12.8px -11.8px}
 .secure{display:flex;align-items:center;justify-content:center;gap:6px;margin:-8px 0 20px;font-size:.8125rem;color:var(--kx-text-subtle)}
 .secure svg{flex:none}
 h1{font-size:1.5rem;letter-spacing:-.015em;margin:0 0 8px;line-height:1.25;text-align:center;font-weight:600}
@@ -106,7 +106,7 @@ code{font-family:var(--kx-font-mono)}
 ${DEV_CSS}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}`);
 
-const LOCK = `<img class="logo-light" src="/static/brand/passport-lockup.svg" alt="Kiorex Passport"><img class="logo-dark" src="/static/brand/passport-lockup-inverse.svg" alt="" aria-hidden="true">`;
+const LOCK = `<img class="logo-light" src="/static/brand/kiorex-logo-full.svg" alt="Kiorex Passport"><img class="logo-dark" src="/static/brand/kiorex-logo-full-dark.svg" alt="" aria-hidden="true">`;
 /** Applied before first paint: LIGHT unless the user explicitly chose Dark or System (localStorage `kx-theme`, shared with the account pages on this origin). */
 export const THEME_BOOT = `try{var t=localStorage.getItem('kx-theme');document.documentElement.dataset.theme=t==='dark'?'dark':t==='system'?'auto':'light';}catch(e){}`;
 const THEME_WIRE = `(function(){var s=document.getElementById('kx-theme-select');if(!s)return;var t='light';try{var v=localStorage.getItem('kx-theme');if(v==='dark'||v==='system')t=v}catch(e){}s.value=t;s.addEventListener('change',function(){var v=s.value;document.documentElement.dataset.theme=v==='dark'?'dark':v==='system'?'auto':'light';try{localStorage.setItem('kx-theme',v)}catch(e){}})})();`;

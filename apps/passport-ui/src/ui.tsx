@@ -1,7 +1,16 @@
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { useI18n, NEEDS_HUMAN_KEYS } from './i18n';
 import { ApiError } from './api';
-import { PulseLine } from './brand/components/web/KiorexLogo';
+
+/** The brand ECG pulse (the logo's own polyline, founder spec v2) drawing itself: loading and hero motif. `size` = rendered height in px. */
+export function PulseLine({ size = 24, loop = false, label = 'Loading' }: { size?: number; loop?: boolean; label?: string }) {
+  return (
+    <svg viewBox="20 45 110 33" width={size * (110 / 33)} height={size} role={label ? 'img' : undefined} aria-label={label || undefined} aria-hidden={label ? undefined : true} focusable="false">
+      <polyline points="24,65 64,65 68,61 72.5,51 77,79 81.5,57 85,65 126,65" fill="none" stroke="#E8735E" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"
+        className={loop ? 'kx-pulse-loop' : 'kx-pulse-draw'} style={{ ['--kx-pulse-len' as string]: 192 } as React.CSSProperties} />
+    </svg>
+  );
+}
 
 export function Button({ variant = 'primary', busy, children, className = '', ...rest }: { variant?: 'primary' | 'secondary' | 'danger' | 'ghost'; busy?: boolean } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return <button type="button" {...rest} disabled={rest.disabled || busy} aria-busy={busy || undefined} className={`btn btn-${variant} ${className}`}>{children}</button>;
