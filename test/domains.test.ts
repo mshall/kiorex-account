@@ -86,6 +86,10 @@ describe('ADR-038 domain table (config/domains.json)', () => {
     const paths = aasa.applinks.details[0]!.components.map((c) => c['/']);
     expect(paths).toEqual(DOMAINS.appLinks.patient.iosPaths);
     expect(paths).not.toContain('/*'); // never claim the whole host (the app would swallow every web page)
+    // GRW-P2-B3: the referral invite link (https://kiorex.com/{locale}/{cc}/invite/<code>, and the short /invite/<code>) opens the app; nothing broader
+    expect(paths).toEqual(expect.arrayContaining(['/ar/*/invite/*', '/en/*/invite/*', '/invite/*']));
+    expect(DOMAINS.appLinks.patient.androidPathPatterns).toEqual(expect.arrayContaining(['/ar/..*/invite/.*', '/en/..*/invite/.*', '/invite/.*']));
+    expect(DOMAINS.appLinks.patient.paths).toEqual(expect.arrayContaining(['/{locale}/{cc}/invite/*', '/invite/*']));
     const al = JSON.parse(readFileSync(new URL('assetlinks.kiorex.json', dir), 'utf8')) as Array<{ target: { package_name: string; sha256_cert_fingerprints: string[] } }>;
     expect(al[0]!.target.package_name).toBe(DOMAINS.appLinks.patient.androidPackage);
     expect(al[0]!.target.sha256_cert_fingerprints).toEqual(['TODO_NEEDS_HUMAN_SHA256_CERT_FINGERPRINT']);

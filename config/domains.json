@@ -65,9 +65,9 @@
       "iosBundleId": "com.kiorex.app",
       "androidPackage": "com.kiorex.app",
       "locales": ["ar", "en"],
-      "paths": ["/{locale}/{cc}/doctor/*", "/{locale}/{cc}/clinic/*", "/r/*", "/q/*", "/appointment/*", "/a/*"],
-      "iosPaths": ["/ar/*/doctor/*", "/en/*/doctor/*", "/ar/*/clinic/*", "/en/*/clinic/*", "/r/*", "/q/*", "/appointment/*", "/a/*"],
-      "androidPathPatterns": ["/ar/..*/doctor/.*", "/en/..*/doctor/.*", "/ar/..*/clinic/.*", "/en/..*/clinic/.*", "/r/.*", "/q/.*", "/appointment/.*", "/a/.*"]
+      "paths": ["/{locale}/{cc}/doctor/*", "/{locale}/{cc}/clinic/*", "/{locale}/{cc}/invite/*", "/invite/*", "/r/*", "/q/*", "/appointment/*", "/a/*"],
+      "iosPaths": ["/ar/*/doctor/*", "/en/*/doctor/*", "/ar/*/clinic/*", "/en/*/clinic/*", "/ar/*/invite/*", "/en/*/invite/*", "/invite/*", "/r/*", "/q/*", "/appointment/*", "/a/*"],
+      "androidPathPatterns": ["/ar/..*/doctor/.*", "/en/..*/doctor/.*", "/ar/..*/clinic/.*", "/en/..*/clinic/.*", "/ar/..*/invite/.*", "/en/..*/invite/.*", "/invite/.*", "/r/.*", "/q/.*", "/appointment/.*", "/a/.*"]
     }
   }
 }
