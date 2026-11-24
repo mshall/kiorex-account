@@ -61,17 +61,47 @@ function ThemeControl({ theme, setTheme }: { theme: Theme; setTheme: (t: Theme) 
   );
 }
 
-/** Language: globe + a two-state AR / EN toggle (the current language is marked; RTL-safe). */
+/** Language: ONE compact control. A globe button with the current code opens a small menu with العربية and English (current marked with a check).
+ *  Menu-button pattern: aria-haspopup/expanded, role=menu + menuitemradio, arrows/Home/End move, Esc / outside click / Tab close, focus returns to the button; anchored to the trailing edge so it flips in RTL. */
+const LANG_ITEMS: Array<{ code: Lang; name: string; short: string }> = [{ code: 'ar', name: 'العربية', short: 'AR' }, { code: 'en', name: 'English', short: 'EN' }];
 function LangControl({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
   const { t } = useT();
-  const items: Lang[] = ['ar', 'en'];
-  const onKey = useRoving(items, lang, setLang, 'lang-');
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null); const btn = useRef<HTMLButtonElement>(null); const items = useRef<Array<HTMLButtonElement | null>>([]);
+  const cur = LANG_ITEMS.find((l) => l.code === lang)!;
+  useEffect(() => {
+    if (!open) return;
+    const raf = requestAnimationFrame(() => items.current[LANG_ITEMS.findIndex((l) => l.code === lang)]?.focus());
+    const down = (e: PointerEvent) => { if (root.current && !root.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('pointerdown', down);
+    return () => { cancelAnimationFrame(raf); document.removeEventListener('pointerdown', down); };
+  }, [open, lang]);
+  const onMenuKey = (e: KeyboardEvent<HTMLElement>) => {
+    if (e.key === 'Escape') { e.preventDefault(); setOpen(false); btn.current?.focus(); return; }
+    if (e.key === 'Tab') { setOpen(false); return; }
+    const at = Math.max(0, items.current.findIndex((el) => el === document.activeElement)); const n = LANG_ITEMS.length;
+    const next = e.key === 'ArrowDown' ? (at + 1) % n : e.key === 'ArrowUp' ? (at - 1 + n) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
+    if (next >= 0) { e.preventDefault(); items.current[next]?.focus(); }
+  };
   return (
-    <div className="ictl lang" role="group" aria-label={t.langToggle} onKeyDown={onKey}>
-      <span className="gl"><GlobeIcon /></span>
-      {items.map((l) => (
-        <button key={l} type="button" className={lang === l ? 'ib txt on' : 'ib txt'} aria-pressed={lang === l} aria-label={l === 'ar' ? 'ع, العربية' : 'EN, English'} title={l === 'ar' ? 'العربية' : 'English'} tabIndex={lang === l ? 0 : -1} lang={l} data-testid={`lang-${l}`} onClick={() => setLang(l)}>{l === 'ar' ? 'ع' : 'EN'}</button>
-      ))}
+    <div className="lm" ref={root}>
+      <button ref={btn} type="button" className="lm-btn" data-testid="lang-menu" aria-haspopup="menu" aria-expanded={open} aria-controls={open ? 'lang-menu-list' : undefined}
+        aria-label={`${t.langToggle}: ${cur.short} · ${cur.name}`} title={`${t.langToggle}: ${cur.name}`} onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => { if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); setOpen(true); } }}>
+        <GlobeIcon /><span className="code" dir="ltr" aria-hidden="true">{cur.short}</span>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" className="chev"><path d="m6 9 6 6 6-6" /></svg>
+      </button>
+      {open ? (
+        <div id="lang-menu-list" role="menu" aria-label={t.langToggle} className="lm-list" onKeyDown={onMenuKey}>
+          {LANG_ITEMS.map((l, i) => (
+            <button key={l.code} ref={(el) => { items.current[i] = el; }} type="button" role="menuitemradio" aria-checked={lang === l.code} lang={l.code} tabIndex={-1} data-testid={`lang-${l.code}`}
+              className="lm-item" onClick={() => { setLang(l.code); setOpen(false); btn.current?.focus(); }}>
+              <span>{l.name}</span>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" style={{ opacity: lang === l.code ? 1 : 0 }}><path d="M5 12l5 5L19 7" /></svg>
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -191,9 +221,8 @@ function Shell({ lang, setLang, theme, setTheme, dark }: { lang: Lang; setLang: 
       <header className="band">
         <div className="band-row">
           <a className="lockup" href="/signin" aria-label={t.appName} data-testid="brand-lockup">
-            <img src={`/brand/kiorex-mark-inverse.svg`} alt="" width="52" height="35" />
-            <span className="rule" aria-hidden="true" />
-            <span className="appname">{t.appName}</span>
+            <img className="lk lk-c" src={`/brand/kiorly-lockup${lang === 'ar' ? '-ar' : ''}.svg`} alt="" height="40" />
+            <img className="lk lk-i" src={`/brand/kiorly-lockup${lang === 'ar' ? '-ar' : ''}-inverse.svg`} alt="" height="40" />
           </a>
           <div className="tools">
             <LangControl lang={lang} setLang={setLang} />
@@ -201,7 +230,6 @@ function Shell({ lang, setLang, theme, setTheme, dark }: { lang: Lang; setLang: 
             {signedIn && view.s === 'form' ? <button type="button" className="pill ghosty" onClick={out}>{t.signOut}</button> : null}
           </div>
         </div>
-        <hr className="hair" aria-hidden="true" />
         <p className="tagline" data-testid="brand-tagline">{t.tagline}</p>
       </header>
       <main id="main" className="main" aria-live="polite">

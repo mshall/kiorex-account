@@ -52,7 +52,7 @@ for (const [w, h] of MATRIX) {
         // the card has a comfortable width on desktop
         if (split) { const bw = (await page.locator('.signcard').boundingBox())!.width; expect(bw).toBeGreaterThanOrEqual(430); expect(bw).toBeLessThanOrEqual(570); }
         // theme and language controls live in the top bar from tablet width up; in the footer on phones
-        for (const id of ['theme-light', 'theme-dark', 'theme-auto', 'lang-ar', 'lang-en']) expect((await page.getByTestId(id).boundingBox())!.height).toBeGreaterThanOrEqual(40);
+        for (const id of ['theme-light', 'theme-dark', 'theme-auto', 'lang-menu']) expect((await page.getByTestId(id).boundingBox())!.height).toBeGreaterThanOrEqual(40);
         expect(blockers(await new AxeBuilder({ page }).analyze())).toEqual([]);
         await page.screenshot({ path: path.join(SHOTS, `${w}x${h}-${lang}-${theme}.png`) });
         // password method too (more fields on screen)
@@ -93,7 +93,7 @@ test.describe('keyboard, focus and form behaviour (desktop)', () => {
       order.push(await page.evaluate(() => { const e = document.activeElement as HTMLElement; const o = getComputedStyle(e); return `${e.getAttribute('data-testid') ?? e.className ?? e.tagName}|${o.outlineStyle}|${o.outlineWidth}`; }));
     }
     expect(order[0]).toMatch(/^skip/);
-    expect(order.slice(1, 5).map((x) => x.split('|')[0])).toEqual(['brand-lockup', 'lang-en', 'theme-light', 'product-clinic']);
+    expect(order.slice(1, 5).map((x) => x.split('|')[0])).toEqual(['brand-lockup', 'lang-menu', 'theme-light', 'product-clinic']);
     for (const o of order) { const [, style, width] = o.split('|'); expect(style).not.toBe('none'); expect(parseFloat(width!)).toBeGreaterThan(0); }
     // choosing Password with the pointer moves the caret into the email field (hardware keyboard likely on desktop)
     await page.getByTestId('signin-method-password').click();
