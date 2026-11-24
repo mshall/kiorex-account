@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEV_BYPASS_CODE, generateCode, hashCode, isDevBypass, newSalt, safeEqual, verifyCodeHash } from './core';
+import { DEV_BYPASS_CODE, generateCode, hashCode, isDevBypass, newSalt, safeEqual, verifyCodeHash } from '../src/core';
 
 /** Pentest 2026-11 regression tests: the OTP master code is a development convenience and must never exist in production. */
 describe('OTP dev bypass (security)', () => {
