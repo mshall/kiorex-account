@@ -1,0 +1,16 @@
+{
+  "$comment": "TEMPLATE (GRW-P1-H). Kiorex patient app. Serve unchanged at https://kiorex.com/.well-known/apple-app-site-association (Content-Type application/json, NO redirect, no .json extension). The Kiorex API renders this file from config (APPLE_TEAM_ID) at GET /.well-known/apple-app-site-association; replace TODO_NEEDS_HUMAN_APPLE_TEAM_ID once the Apple Developer account exists (NEEDS_HUMAN). Remove this $comment key when publishing. Only the listed paths open the app; the app itself ignores every URL-valued parameter.",
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["TODO_NEEDS_HUMAN_APPLE_TEAM_ID.com.kiorex.app"],
+        "components": [
+          { "/": "/ar/*/doctor/*" }, { "/": "/en/*/doctor/*" },
+          { "/": "/ar/*/clinic/*" }, { "/": "/en/*/clinic/*" },
+          { "/": "/r/*" }, { "/": "/q/*" },
+          { "/": "/appointment/*" }, { "/": "/a/*" }
+        ]
+      }
+    ]
+  }
+}

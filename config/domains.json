@@ -3,6 +3,9 @@
   "environments": {
     "local": {
       "passport": "http://localhost:4400",
+      "patient": "http://localhost:5180",
+      "link": "http://localhost:5174",
+      "widget": "http://localhost:4000",
       "home": "http://localhost:5194",
       "clinic": "http://localhost:5174",
       "nurse": "http://localhost:5174",
@@ -16,6 +19,9 @@
     },
     "staging": {
       "passport": "https://account.staging.kiorex.com",
+      "patient": "https://www.staging.kiorex.com",
+      "link": "https://staging.kiorly.link",
+      "widget": "https://book.staging.kiorex.com",
       "home": "https://www.staging.kiorly.com",
       "clinic": "https://clinic.staging.kiorly.com",
       "nurse": "https://nurse.staging.kiorly.com",
@@ -29,6 +35,9 @@
     },
     "production": {
       "passport": "https://account.kiorex.com",
+      "patient": "https://kiorex.com",
+      "link": "https://kiorly.link",
+      "widget": "https://book.kiorex.com",
       "home": "https://www.kiorly.com",
       "apexRedirect": "https://kiorly.com",
       "clinic": "https://clinic.kiorly.com",
@@ -49,6 +58,16 @@
     "host": "home",
     "iosBundleId": "com.kiorly.app",
     "androidPackage": "com.kiorly.app",
-    "paths": ["/signin/*", "/open/*"]
+    "paths": ["/signin/*", "/open/*"],
+    "patient": {
+      "$comment": "GRW-P1-H. The Kiorex patient app (com.kiorex.app). Only the patient host is associated; the app resolves a link by matching its path against a route table, so no URL-valued parameter is ever followed. The Apple Team ID and the Play signing SHA-256 are NEEDS_HUMAN (KX-19 section 04) and come from config at publish time (APPLE_TEAM_ID, ANDROID_SHA256_CERT_FINGERPRINTS), never from this file.",
+      "host": "patient",
+      "iosBundleId": "com.kiorex.app",
+      "androidPackage": "com.kiorex.app",
+      "locales": ["ar", "en"],
+      "paths": ["/{locale}/{cc}/doctor/*", "/{locale}/{cc}/clinic/*", "/r/*", "/q/*", "/appointment/*", "/a/*"],
+      "iosPaths": ["/ar/*/doctor/*", "/en/*/doctor/*", "/ar/*/clinic/*", "/en/*/clinic/*", "/r/*", "/q/*", "/appointment/*", "/a/*"],
+      "androidPathPatterns": ["/ar/..*/doctor/.*", "/en/..*/doctor/.*", "/ar/..*/clinic/.*", "/en/..*/clinic/.*", "/r/.*", "/q/.*", "/appointment/.*", "/a/.*"]
+    }
   }
 }

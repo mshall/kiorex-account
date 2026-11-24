@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { DOMAINS, TIERS, domainsFor, allOrigins } from '../config/domains.js';
 
 const idp = JSON.parse(readFileSync(new URL('../config/idp.json', import.meta.url), 'utf8')) as { clients: Array<{ clientId: string; environments: Record<string, { redirectUris: string[]; postLogoutRedirectUris: string[]; backchannelLogoutUri?: string }> }> };
-const ALLOWED_HOSTS = /^(www|clinic|nurse|pharmacy|lab|app|api\.clinic|api\.pharmacy|api\.lab)\.(staging\.)?kiorly\.com$|^kiorly\.com$|^account\.(staging\.)?kiorex\.com$/;
+const ALLOWED_HOSTS = /^(www|clinic|nurse|pharmacy|lab|app|api\.clinic|api\.pharmacy|api\.lab)\.(staging\.)?kiorly\.com$|^kiorly\.com$|^account\.(staging\.)?kiorex\.com$|^(www\.)?(staging\.)?kiorex\.com$|^book\.(staging\.)?kiorex\.com$|^(staging\.)?kiorly\.link$/;
 const host = (u: string) => new URL(u).hostname;
 
 describe('ADR-038 domain table (config/domains.json)', () => {
@@ -65,5 +65,33 @@ describe('ADR-038 domain table (config/domains.json)', () => {
     const al = readFileSync(new URL('assetlinks.json', dir), 'utf8');
     expect(al).toContain('com.kiorly.app'); expect(al).toContain('TODO_NEEDS_HUMAN_SHA256_CERT_FINGERPRINT');
     expect(DOMAINS.appLinks.host).toBe('home');
+  });
+
+  // GRW-P1-H: patient, link and widget hosts and the patient app-link association
+  it('patient, link and widget hosts exist in every environment, are unique per environment and HTTPS outside local', () => {
+    for (const tier of TIERS) {
+      const d = domainsFor(tier);
+      const hosts = [d.patient, d.link, d.widget];
+      for (const h of hosts) { expect(typeof h).toBe('string'); if (tier !== 'local') expect(h).toMatch(/^https:\/\//); }
+      expect(new Set(hosts).size).toBe(3);
+      if (tier !== 'local') expect(new Set(allOrigins(tier)).size, `${tier} origins unique`).toBe(allOrigins(tier).length); // local clinic and nurse share a dev server
+    }
+    expect(domainsFor('production')).toMatchObject({ patient: 'https://kiorex.com', link: 'https://kiorly.link', widget: 'https://book.kiorex.com' });
+  });
+  it('patient app-link templates carry placeholders, the patient bundle id and only allow-listed paths', () => {
+    const dir = new URL('../config/app-links/', import.meta.url);
+    const aasaRaw = readFileSync(new URL('apple-app-site-association.kiorex.json', dir), 'utf8');
+    const aasa = JSON.parse(aasaRaw) as { applinks: { details: Array<{ appIDs: string[]; components: Array<{ '/': string }> }> } };
+    expect(aasa.applinks.details[0]!.appIDs).toEqual(['TODO_NEEDS_HUMAN_APPLE_TEAM_ID.com.kiorex.app']);
+    const paths = aasa.applinks.details[0]!.components.map((c) => c['/']);
+    expect(paths).toEqual(DOMAINS.appLinks.patient.iosPaths);
+    expect(paths).not.toContain('/*'); // never claim the whole host (the app would swallow every web page)
+    const al = JSON.parse(readFileSync(new URL('assetlinks.kiorex.json', dir), 'utf8')) as Array<{ target: { package_name: string; sha256_cert_fingerprints: string[] } }>;
+    expect(al[0]!.target.package_name).toBe(DOMAINS.appLinks.patient.androidPackage);
+    expect(al[0]!.target.sha256_cert_fingerprints).toEqual(['TODO_NEEDS_HUMAN_SHA256_CERT_FINGERPRINT']);
+    expect(DOMAINS.appLinks.patient.host).toBe('patient');
+    expect(DOMAINS.appLinks.patient.androidPathPatterns.length).toBe(DOMAINS.appLinks.patient.iosPaths.length);
+    // the staff app association is untouched
+    expect(DOMAINS.appLinks).toMatchObject({ host: 'home', iosBundleId: 'com.kiorly.app', paths: ['/signin/*', '/open/*'] });
   });
 });
