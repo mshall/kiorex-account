@@ -24,6 +24,7 @@ body{margin:0;background:var(--kx-bg);color:var(--kx-text);font-family:var(--kx-
 .lm-btn:hover{border-color:var(--kx-primary);background:var(--kx-bg-subtle)}.lm-btn:active{transform:scale(.97)}
 .lm-btn .code{letter-spacing:.06em}.lm-btn .chev{color:var(--kx-text-muted)}
 .lm-list{position:absolute;inset-inline-end:0;top:calc(100% + 8px);z-index:40;min-width:11rem;padding:4px;border-radius:14px;background:var(--kx-surface);border:1px solid var(--kx-border);box-shadow:0 1px 2px rgba(30,27,75,.06),0 12px 32px rgba(30,27,75,.16)}
+@media (max-width:767px){.lm-list{inset-inline-end:auto;inset-inline-start:0}} /* phone: the control sits at the leading edge, so the menu opens inward instead of off-screen */
 .lm-item{font:inherit;width:100%;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:var(--kx-text);font-weight:500;cursor:pointer;text-align:start}
 .lm-item:hover,.lm-item:focus-visible{background:var(--kx-bg-subtle)}.lm-item[aria-checked=true]{font-weight:600;color:var(--kx-primary)}
 [data-theme=dark] .lm-item[aria-checked=true]{color:#A5B4FC}
