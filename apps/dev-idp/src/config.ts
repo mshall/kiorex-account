@@ -91,6 +91,7 @@ const idpSchema = z.object({
 const seedSchema = z.object({
   users: z.array(z.object({
     sub: z.string(), phone: z.string(), name: z.string(), locale: z.enum(['ar', 'en']), roles: z.array(z.string()), totpSecret: z.string().optional(),
+    email: z.string().optional(), emailVerified: z.boolean().optional(), // dev seed only: a person whose e-mail was verified (corporate domain join in local tests)
   })),
 });
 

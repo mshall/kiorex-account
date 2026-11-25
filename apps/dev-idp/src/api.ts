@@ -1,3 +1,4 @@
+import type { EmailVerification } from './email.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type Provider from 'oidc-provider';
 import { decodeJwt, jwtVerify, importJWK, type JWK } from 'jose';
@@ -20,7 +21,7 @@ import type { Scim } from './scim.js';
 import type { Ctx } from './services.js';
 import { handleExtended, errorResponse } from './routes.js';
 
-export interface Services { guardian: Guardianship; linking: AccountLinking; orgs: Orgs; totp: Totp; federation: Federation; scim: Scim }
+export interface Services { guardian: Guardianship; linking: AccountLinking; orgs: Orgs; totp: Totp; federation: Federation; scim: Scim; email: EmailVerification }
 
 export interface ApiDeps {
   provider: Provider; pool: Pool; accounts: Accounts; dispatcher: LogoutDispatcher; passkeys: Passkeys;

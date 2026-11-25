@@ -82,6 +82,8 @@ export function createProvider({ cfg, pool, accounts, key, issuer, orgClaims }: 
       if (!a) return undefined;
       const { sub: _sub, ...rest } = identityClaims(a); // sub is set by the library
       void _sub;
+      // email and email_verified travel only to a client that asked for the `email` scope (data minimisation); an unverified address never appears (identityClaims)
+      if (!String((token as { scope?: string }).scope ?? '').split(' ').includes('email')) { delete rest.email; delete rest.email_verified; }
       const sid = (token as { sid?: string }).sid;
       const out: Record<string, unknown> = sid ? { ...rest, sid } : { ...rest }; // sid lets products match back-channel logout tokens
       // KA-10: assurance signal (acr/amr/auth_time) from the login session; products require acr=mfa for money/clinical/ops actions

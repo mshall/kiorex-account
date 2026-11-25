@@ -6,6 +6,7 @@ export interface Account {
   sub: string; phone: string | null; phone_verified: boolean; name: string | null;
   locale: 'ar' | 'en'; roles: string[]; status: string;
   kind: 'person' | 'dependant'; dob: string | null; market: string; merged_into: string | null;
+  email?: string | null; email_verified?: boolean;
 }
 
 export class Accounts {
@@ -18,6 +19,7 @@ export class Accounts {
          ON CONFLICT (sub) DO UPDATE SET phone=$2, phone_verified=true, name=$3, locale=$4, roles=$5, status='active', deleted_at=NULL`,
         [u.sub, u.phone, u.name, u.locale, JSON.stringify(u.roles)],
       );
+      if (u.email) await this.pool.query(`UPDATE accounts SET email=$2, email_verified=$3 WHERE sub=$1`, [u.sub, u.email.toLowerCase(), u.emailVerified === true]);
       if (u.totpSecret) { // dev-only deterministic TOTP so E2E tests can compute codes
         await this.pool.query(
           `INSERT INTO totp_credentials (sub, secret, confirmed_at) VALUES ($1,$2,now())
@@ -79,5 +81,7 @@ export function identityClaims(a: Account): Record<string, unknown> {
     kx_roles: a.roles,
   };
   if (a.name) out.name = a.name;
+  // `email_verified` is an explicit true only after the code round trip (email.ts); an unverified address is never released as a claim
+  if (a.email && a.email_verified === true) { out.email = a.email; out.email_verified = true; }
   return out;
 }

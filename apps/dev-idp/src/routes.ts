@@ -71,7 +71,7 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
     const a = await account(d, caller);
     return ok(200, {
       sub: a.sub, name: a.name, phone: a.phone, phone_verified: a.phone_verified, locale: a.locale, roles: a.roles, kind: a.kind,
-      mfa_required: svc.totp.requiresMfa(a), totp_enrolled: await svc.totp.isEnrolled(a.sub), acr: caller.acr ?? null, amr: caller.amr ?? [], auth_time: caller.authTime ?? null,
+      email: a.email_verified ? (a.email ?? null) : null, email_verified: a.email_verified === true, mfa_required: svc.totp.requiresMfa(a), totp_enrolled: await svc.totp.isEnrolled(a.sub), acr: caller.acr ?? null, amr: caller.amr ?? [], auth_time: caller.authTime ?? null,
     });
   }
   if (p === '/api/account' && m === 'PATCH') {
@@ -92,6 +92,14 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
     await d.audit.record('account.profile.updated', a.sub, { fields: Object.keys(patch) });
     return ok(200, { sub: a.sub, name: a.name, locale: a.locale });
   }
+  // ---------------- e-mail verification (optional; email and email_verified claims) ----------------
+  if (p === '/api/email' && m === 'GET') return ok(200, await svc.email.state(caller.sub));
+  if (p === '/api/email' && m === 'POST') {
+    const a = await account(d, caller);
+    return ok(200, await svc.email.start(caller.sub, (await json(req)).email, a.locale));
+  }
+  if (p === '/api/email/verify' && m === 'POST') return ok(200, await svc.email.verify(caller.sub, (await json(req)).code));
+  if (p === '/api/email' && m === 'DELETE') { await svc.email.remove(caller.sub); return ok(200, { status: 'removed' }); }
   if (p === '/api/meta' && m === 'GET') {
     const g = d.cfg.guardianship; const su = d.cfg.stepUp;
     return ok(200, {

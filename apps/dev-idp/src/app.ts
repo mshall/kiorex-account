@@ -1,3 +1,4 @@
+import { EmailVerification } from './email.js';
 import http from 'node:http';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -124,7 +125,7 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
   const federation = new Federation(ctx, rt.providerSsoEnabled, upstreams, o.fetchImpl);
   const totp = new Totp(pool, cfg, o.totpNow ?? now);
   const scim = new Scim(ctx);
-  const svc = { guardian: new Guardianship(ctx), linking: new AccountLinking(ctx, otp), orgs, totp, federation, scim };
+  const svc = { guardian: new Guardianship(ctx), linking: new AccountLinking(ctx, otp), orgs, totp, federation, scim, email: new EmailVerification(pool, inbox, audit, now) };
   const origin = new URL(rt.issuer);
   const passkeys = new Passkeys(pool, { id: origin.hostname, name: cfg.passwordless.passkeys.rpName, origin: origin.origin });
   const suppressedSessions = new Set<string>();

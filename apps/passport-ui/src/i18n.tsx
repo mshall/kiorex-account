@@ -149,6 +149,7 @@ const en = {
   // errors
   'err.unknown': 'Something went wrong. Please try again.', 'err.network': 'Could not reach Kiorex Passport. Check your connection.', 'err.401': 'Your session ended. Please sign in again.',
   'err.feature_disabled': 'This feature is temporarily unavailable.', 'err.step_up_required': 'Extra verification is needed.',
+  'err.invalid_email': 'Enter a valid e-mail address.', 'err.email_code_resend_too_soon': 'A code was sent a moment ago. Wait a minute before asking for another.', 'err.email_in_use': 'This e-mail address is already verified on another account.', 'err.no_pending_email_verification': 'There is no code waiting. Ask for a new one.', 'err.too_many_attempts': 'Too many wrong codes. Ask for a new code later.', 'err.invalid_code': 'That code is not right.',
   'err.invalid_name': 'Enter a name up to 80 characters.', 'err.invalid_locale': 'Choose Arabic or English.', 'err.invalid_dob': 'Enter a valid date of birth.', 'err.dob_in_future': 'Date of birth cannot be in the future.',
   'err.already_adult': 'This person is already an adult and manages their own Passport.', 'err.invalid_evidence_type': 'Choose an evidence type.', 'err.invalid_evidence_reference': 'Enter a document reference, not a national ID number.',
   'err.evidence_reference_required': 'This evidence type needs a document reference.', 'err.invalid_relationship': 'Choose your relationship.', 'err.guardian_must_be_verified_adult_account': 'Only a verified adult account can be a guardian.',
@@ -298,6 +299,7 @@ const ar: Record<Key, string> = {
 
   'err.unknown': 'حدث خطأ ما. حاول مرة أخرى.', 'err.network': 'تعذّر الاتصال بكيوريكس باسبورت. تحقق من اتصالك.', 'err.401': 'انتهت جلستك. سجّل الدخول مرة أخرى.',
   'err.feature_disabled': 'هذه الميزة غير متاحة مؤقتًا.', 'err.step_up_required': 'مطلوب تحقق إضافي.',
+  'err.invalid_email': 'أدخل عنوان بريد إلكتروني صحيحًا.', 'err.email_code_resend_too_soon': 'أُرسل رمز قبل لحظات. انتظر دقيقة قبل طلب رمز آخر.', 'err.email_in_use': 'عنوان البريد هذا موثّق بالفعل على حساب آخر.', 'err.no_pending_email_verification': 'لا يوجد رمز بانتظارك. اطلب رمزًا جديدًا.', 'err.too_many_attempts': 'محاولات خاطئة كثيرة. اطلب رمزًا جديدًا لاحقًا.', 'err.invalid_code': 'هذا الرمز غير صحيح.',
   'err.invalid_name': 'أدخل اسمًا لا يزيد عن 80 حرفًا.', 'err.invalid_locale': 'اختر العربية أو الإنجليزية.', 'err.invalid_dob': 'أدخل تاريخ ميلاد صحيحًا.', 'err.dob_in_future': 'لا يمكن أن يكون تاريخ الميلاد في المستقبل.',
   'err.already_adult': 'هذا الشخص بالغ بالفعل ويدير كيوريكس باسبورت الخاص به.', 'err.invalid_evidence_type': 'اختر نوع الإثبات.', 'err.invalid_evidence_reference': 'أدخل مرجع مستند وليس رقمًا قوميًا.',
   'err.evidence_reference_required': 'نوع الإثبات هذا يحتاج مرجع مستند.', 'err.invalid_relationship': 'اختر صلة القرابة.', 'err.guardian_must_be_verified_adult_account': 'يمكن لحساب بالغ موثّق فقط أن يكون وصيًا.',

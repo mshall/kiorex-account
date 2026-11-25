@@ -14,11 +14,12 @@
     { "name": "openid", "claims": ["sub", "sid", "auth_time", "acr", "amr"] },
     { "name": "profile", "claims": ["name", "locale"] },
     { "name": "phone", "claims": ["phone_number", "phone_number_verified"] },
+    { "name": "email", "description": "The person's own e-mail, only after they verified it with a code (email_verified is an explicit true only then). Optional; Kiorex uses it for corporate-benefit domain eligibility.", "claims": ["email", "email_verified"] },
     { "name": "kx", "description": "Role hints only. Never grants clinical access (ADR-013/BR40).", "claims": ["kx_roles"] },
     { "name": "kx_org", "description": "Organisation membership hints (org_id + role hint). Never grants clinical access (ADR-013/BR40).", "claims": ["kx_orgs"] },
     { "name": "offline_access", "claims": [] }
   ],
-  "accessTokenClaims": ["sub", "phone_number", "phone_number_verified", "name", "locale", "kx_roles", "kx_orgs", "act", "acr", "amr"],
+  "accessTokenClaims": ["sub", "phone_number", "phone_number_verified", "email", "email_verified", "name", "locale", "kx_roles", "kx_orgs", "act", "acr", "amr"],
   "claimsMapping": {
     "$comment": "IdP attribute -> token claim. Cognito: custom attributes are declared on the user pool schema (custom:kx_roles etc.) and mapped via the pre-token-generation trigger.",
     "sub": { "source": "subject.id", "cognito": "sub", "note": "Opaque ULID/UUID; never derived from phone or email (KX-04 §03)." },
@@ -118,7 +119,7 @@
       "name": "Kiorex patient web",
       "type": "public",
       "grantTypes": ["authorization_code", "refresh_token"],
-      "scopes": ["openid", "profile", "phone", "kx", "kx_org", "offline_access"],
+      "scopes": ["openid", "profile", "phone", "email", "kx", "kx_org", "offline_access"],
       "pkce": "S256",
       "environments": {
         "local": {
@@ -170,7 +171,7 @@
       "name": "Kiorex mobile (Expo)",
       "type": "public",
       "grantTypes": ["authorization_code", "refresh_token"],
-      "scopes": ["openid", "profile", "phone", "kx", "kx_org", "offline_access"],
+      "scopes": ["openid", "profile", "phone", "email", "kx", "kx_org", "offline_access"],
       "pkce": "S256",
       "applicationType": "native",
       "environments": {

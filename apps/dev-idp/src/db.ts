@@ -85,6 +85,14 @@ export async function migrate(pool: Pool, schema: string): Promise<void> {
     CREATE INDEX IF NOT EXISTS guardian_links_guardian ON guardian_links (guardian_sub);
     CREATE INDEX IF NOT EXISTS guardian_links_dependant ON guardian_links (dependant_sub);
 
+    -- gap closure: optional verified e-mail (claims email, email_verified); the flag is true only after the person returns a code sent to that address
+    ALTER TABLE accounts ADD COLUMN IF NOT EXISTS email text;
+    ALTER TABLE accounts ADD COLUMN IF NOT EXISTS email_verified boolean NOT NULL DEFAULT false;
+    CREATE TABLE IF NOT EXISTS email_verifications (
+      sub text PRIMARY KEY, email text NOT NULL, code_hash text NOT NULL, attempts int NOT NULL DEFAULT 0,
+      expires_at timestamptz NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+    );
+
     -- KA-08 account linking / merge (never automatic)
     CREATE TABLE IF NOT EXISTS account_contacts (
       sub text NOT NULL, type text NOT NULL, value text NOT NULL, verified boolean NOT NULL DEFAULT true,
