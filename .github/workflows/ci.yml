@@ -29,6 +29,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - name: OpenAPI of the account API is valid (Redocly lint; the route-versus-document drift test runs inside npm test)
+        run: npx --yes @redocly/cli@2.2.0 lint Docs/openapi/passport-account.v1.openapi.json --config .redocly.yaml
 
   # Production-bundle hygiene for Kiorly Home: no "Test users (dev only)" panel, no synthetic phones or dev OTP and no localhost URL in a production build (and the development build must contain the panel, so the check is not vacuous).
   bundles:
