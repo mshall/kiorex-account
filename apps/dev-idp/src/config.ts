@@ -97,7 +97,8 @@ const seedSchema = z.object({
 export type IdpConfig = z.infer<typeof idpSchema>;
 export type SeedUser = z.infer<typeof seedSchema>['users'][number];
 
-export function loadIdpConfig(file = path.join(REPO_ROOT, 'config/idp.json')): IdpConfig {
+/** KX_IDP_CONFIG: alternate idp.json (a private test stack points every local URL at its own ports; the committed file is never edited). */
+export function loadIdpConfig(file = process.env.KX_IDP_CONFIG ?? path.join(REPO_ROOT, 'config/idp.json')): IdpConfig {
   return idpSchema.parse(JSON.parse(readFileSync(file, 'utf8')));
 }
 export function loadSeedUsers(file = path.join(REPO_ROOT, 'config/seed-users.json')): SeedUser[] {
