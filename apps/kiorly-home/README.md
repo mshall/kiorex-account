@@ -10,7 +10,7 @@ Sign-out: RP-initiated logout with `id_token_hint`, back to Home. Never asks for
 
 ```bash
 npm run dev -w @kiorex/kiorly-home                 # http://localhost:5194/signin  (Passport on :4400, proxied at /idp)
-npm run build -w @kiorex/kiorly-home               # KX_ENV=staging|production selects the domain table
+npm run build -w @kiorex/kiorly-home               # KX_ENV=staging|production selects the domain table; KX_ENV=dev reads every origin from env (see Docs/DEPLOY_DEV.md)
 npm run check:bundle -w @kiorex/kiorly-home        # no dev panel, no localhost in a production build
 npx vitest run apps/kiorly-home                    # unit tests
 npm run test:e2e -w @kiorex/kiorly-home            # Playwright (system Chrome), throwaway IdP on :4455, Home on :5194

@@ -1,4 +1,5 @@
 import { generateSync } from 'otplib';
+import { isPublicDeployment } from './public-mode.js';
 import { loadSeedUsers, type SeedUser } from './config.js';
 type Lang = 'ar' | 'en';
 const esc = (s: unknown): string => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
@@ -12,6 +13,8 @@ export const DEV_OTP = '000000';
 
 export function devTestUsersEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   const prod = [env.NODE_ENV, env.KX_ENV, env.APP_ENV].some((v) => ['production', 'prod'].includes((v ?? '').toLowerCase()));
+  // Public DEV deployments show the quick-pick panel only when the demo OTP is explicitly on (public-mode.ts).
+  if (isPublicDeployment(env) && env.KX_DEV_OTP_BYPASS !== 'true') return false;
   return !prod && (env.KX_DEV_TEST_USERS ?? 'true').toLowerCase() !== 'false';
 }
 

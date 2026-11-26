@@ -12,6 +12,7 @@ Start with the [README](../README.md), then pick a document.
 | [PROVIDERS.md](PROVIDERS.md) | SMS / WhatsApp provider contract for OTP and notifications: env, payloads, webhooks, mock inbox and simulators |
 | [NEEDS_HUMAN.md](NEEDS_HUMAN.md) | Open decisions (legal wording, vendor, hosting, tokens) |
 | [TEST_DATA.md](TEST_DATA.md) | Synthetic QA data (DEV ONLY) |
+| [DEPLOY_DEV.md](DEPLOY_DEV.md) | Docker image, health route, public DEV mode, client URI overrides, Kiorly Home dev tier |
 
 Per-folder READMEs: [apps/dev-idp](../apps/dev-idp/README.md) · [apps/passport-ui](../apps/passport-ui/README.md) · [infra](../infra/README.md) · [infra/tofu](../infra/tofu/README.md).
 

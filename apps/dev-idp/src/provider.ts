@@ -35,11 +35,14 @@ export function buildClients(cfg: IdpConfig): ClientMetadata[] {
 
 export interface ProviderDeps {
   cfg: IdpConfig; pool: Pool; accounts: Accounts; key: SigningKey; issuer: string;
+  /** KX_COOKIE_KEYS (public DEV deployments); absent = the published local-only keys. */
+  cookieKeys?: string[];
   /** KA-09: active memberships as hints for the `kx_orgs` claim (scope kx_org only). */
   orgClaims?: (sub: string) => Promise<Array<{ org_id: string; role_hint: string }>>;
 }
 
-export function createProvider({ cfg, pool, accounts, key, issuer, orgClaims }: ProviderDeps): Provider {
+export function createProvider(deps: ProviderDeps): Provider {
+  const { cfg, pool, accounts, key, issuer, orgClaims } = deps;
   const L = cfg.tokenLifetimes;
   const claims: Record<string, string[]> = {};
   for (const s of cfg.scopes) claims[s.name] = s.claims;
@@ -54,7 +57,7 @@ export function createProvider({ cfg, pool, accounts, key, issuer, orgClaims }: 
     adapter: makePgAdapter(pool),
     clients: buildClients(cfg),
     jwks: { keys: [key.privateJwk as never] },
-    cookies: { keys: ['kx-dev-cookie-key-1-not-a-secret', 'kx-dev-cookie-key-2-not-a-secret'] },
+    cookies: { keys: deps.cookieKeys?.length ? deps.cookieKeys : ['kx-dev-cookie-key-1-not-a-secret', 'kx-dev-cookie-key-2-not-a-secret'] },
     claims,
     scopes: cfg.scopes.map((s) => s.name),
     conformIdTokenClaims: false,

@@ -84,7 +84,9 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
   if (homeClient) homeClient.environments.local.backchannelLogoutUri ??= `${rt.issuer}/account/backchannel-logout`;
   setNativeFormActionSchemes(cfg.clients.flatMap((c) => [...c.environments.local.redirectUris, ...c.environments.local.postLogoutRedirectUris]));
   const seedUsers = o.seedUsers ?? loadSeedUsers();
-  const testNumbers = seedUsers.map((u) => u.phone);
+  const seedNumbers = seedUsers.map((u) => u.phone);
+  /** Numbers for which the demo OTP 000000 is accepted. Empty when the bypass is off (public DEV deployment default). */
+  const testNumbers = rt.devOtpBypass === false ? [] : seedNumbers;
   const pool = createPool(rt.databaseUrl, rt.schema);
   await migrate(pool, rt.schema);
   const accounts = new Accounts(pool);
@@ -110,7 +112,7 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
   const hooks: Ctx['hooks'] = { revokeSessions: async () => undefined };
   const ctx: Ctx = { pool, cfg, accounts, audit, events, notifier, key, issuer: rt.issuer, dispatcher, now, hooks };
   const orgs = new Orgs(ctx);
-  const provider = createProvider({ cfg, pool, accounts, key, issuer: rt.issuer, orgClaims: (sub) => orgs.claimsFor(sub) });
+  const provider = createProvider({ cfg, pool, accounts, key, issuer: rt.issuer, cookieKeys: rt.cookieKeys, orgClaims: (sub) => orgs.claimsFor(sub) });
   provider.proxy = rt.trustProxy;
 
   // KA-11: second fake upstream IdP (dev), only when the flag account.provider_sso is on
@@ -177,6 +179,7 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
           const r = await delivery.handleWebhook(p.slice('/webhooks/'.length), raw, req.headers);
           return r ? send(res, 200, r) : send(res, 401, { error: 'invalid_signature' });
         }
+        if (rt.devEndpoints === false && p.startsWith('/dev/')) return send(res, 404, { error: 'not_found' });
         if (realMessaging && (p.startsWith('/dev/inbox') || p.startsWith('/dev/webhooks') || p.startsWith('/dev/delivery-status') || p === '/dev/reset-rate-limits')) return send(res, 404, { error: 'not_found' });
         if (p === '/dev/delivery-status' && req.method === 'GET') return send(res, 200, { statuses: await delivery.list() });
         if (p === '/dev/webhooks/simulate' && req.method === 'POST') {
@@ -231,7 +234,7 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
 
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject);
-    server.listen(rt.port, '127.0.0.1', resolve);
+    server.listen(rt.port, rt.host ?? '127.0.0.1', resolve);
   });
   const port = (server.address() as { port: number }).port;
   const purge = setInterval(() => { void purgeExpired(pool).catch(() => undefined); void svc.guardian.expireDue().catch(() => undefined); }, 10 * 60_000);
