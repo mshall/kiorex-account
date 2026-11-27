@@ -114,6 +114,8 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
   const orgs = new Orgs(ctx);
   const provider = createProvider({ cfg, pool, accounts, key, issuer: rt.issuer, cookieKeys: rt.cookieKeys, orgClaims: (sub) => orgs.claimsFor(sub) });
   provider.proxy = rt.trustProxy;
+  // behind the origin router the header holds the real client address as its LAST entry (see http.ts clientIp)
+  if (rt.trustProxy) (provider as unknown as { maxIpsCount: number }).maxIpsCount = 1;
 
   // KA-11: second fake upstream IdP (dev), only when the flag account.provider_sso is on
   const upstreams = new Map<string, FakeUpstreamIdp>();

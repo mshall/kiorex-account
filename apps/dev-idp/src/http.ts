@@ -1,3 +1,4 @@
+import { isIP } from 'node:net';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 export async function readBody(req: IncomingMessage, limit = 256 * 1024): Promise<Buffer> {
@@ -48,10 +49,16 @@ export const redirect = (res: ServerResponse, to: string): void => {
   res.end();
 };
 
+/**
+ * Real client address. Without KX_TRUST_PROXY the socket peer. With it, the RIGHTMOST X-Forwarded-For entry: the address the nearest trusted proxy
+ * appended (the leftmost entries are client-controlled and spoofable). The origin router (Caddy) overwrites the header with the single address
+ * CloudFront saw; see infra/tofu/deploy/compose/Caddyfile. A value that is not an IP address is ignored.
+ */
 export function clientIp(req: IncomingMessage, trustProxy: boolean): string {
   if (trustProxy) {
-    const xff = String(req.headers['x-forwarded-for'] ?? '').split(',')[0]?.trim();
-    if (xff) return xff;
+    const parts = String(req.headers['x-forwarded-for'] ?? '').split(',');
+    const last = parts[parts.length - 1]?.trim();
+    if (last && isIP(last)) return last;
   }
   return req.socket.remoteAddress ?? 'unknown';
 }

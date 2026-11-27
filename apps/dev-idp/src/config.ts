@@ -215,7 +215,8 @@ export function runtimeFromEnv(cfg: IdpConfig, env: NodeJS.ProcessEnv = process.
     nodeEnv: env.NODE_ENV,
     trustProxy: env.KX_TRUST_PROXY === 'true',
     passkeysEnabled: flagEnv !== undefined ? flagEnv === 'true' : cfg.flags['account.passkeys'] ?? false,
-    providerSsoEnabled: ssoEnv !== undefined ? ssoEnv === 'true' : cfg.flags['account.provider_sso'] ?? false,
+    // the fake hospital IdP is a local-dev convenience: a hosted (public) deployment shows it only when KX_FLAG_ACCOUNT_PROVIDER_SSO=true is set explicitly
+    providerSsoEnabled: ssoEnv !== undefined ? ssoEnv === 'true' : publicMode ? false : cfg.flags['account.provider_sso'] ?? false,
     upstreamPort: Number(env.KX_FAKE_UPSTREAM_PORT ?? cfg.federation.upstreams[0]?.local.port ?? 4401),
     logOtp: true,
     host: env.HOST ?? '127.0.0.1',

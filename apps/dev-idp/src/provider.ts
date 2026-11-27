@@ -33,6 +33,17 @@ export function buildClients(cfg: IdpConfig): ClientMetadata[] {
   });
 }
 
+/** Origins that may call the IdP from a browser: the origins of every registered client's redirect and post-logout URIs. */
+export function corsAllowList(clients: ClientMetadata[]): Set<string> {
+  const out = new Set<string>();
+  for (const c of clients) {
+    for (const u of [...(c.redirect_uris ?? []), ...(c.post_logout_redirect_uris ?? [])]) {
+      try { const o = new URL(u); if (o.protocol === 'http:' || o.protocol === 'https:') out.add(o.origin); } catch { /* custom scheme (native app): no browser origin */ }
+    }
+  }
+  return out;
+}
+
 export interface ProviderDeps {
   cfg: IdpConfig; pool: Pool; accounts: Accounts; key: SigningKey; issuer: string;
   /** KX_COOKIE_KEYS (public DEV deployments); absent = the published local-only keys. */
@@ -139,5 +150,17 @@ export function createProvider(deps: ProviderDeps): Provider {
     },
   };
   provider = new Provider(issuer, configuration);
+  // CORS allow-list. The library answers a CORS request with the caller's Origin and only withdraws it once a registered client is known and
+  // refuses the origin (shared/cors.js); a request that fails BEFORE a client is known (no or invalid bearer token on /me, bad introspection input)
+  // therefore reflected any Origin. Strip every CORS header unless the Origin is one of the origins of the registered clients' redirect and
+  // post-logout URIs (derived from the same registry-generated client config, never typed here).
+  const allowed = corsAllowList(configuration.clients as ClientMetadata[]);
+  provider.use(async (ctx, next) => {
+    await next();
+    const origin = ctx.get('origin');
+    if (origin && !allowed.has(origin)) {
+      for (const h of ['Access-Control-Allow-Origin', 'Access-Control-Allow-Credentials', 'Access-Control-Allow-Methods', 'Access-Control-Allow-Headers', 'Access-Control-Expose-Headers', 'Access-Control-Max-Age']) ctx.remove(h);
+    }
+  });
   return provider;
 }
