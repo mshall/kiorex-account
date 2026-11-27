@@ -61,6 +61,9 @@ function Shell({ children }: { children: ReactNode }) {
   const { account, signOut } = useApp();
   const { path } = useRoute();
   const isOps = account.roles.some((r) => r === 'ops_admin' || r === 'super_admin');
+  // WCAG 2.4.2: one title per screen (section name from the existing nav labels, then the product name)
+  const section = NAV.find((n) => n.to === path);
+  useEffect(() => { document.title = section ? `${t(section.key)} - Kiorex Passport` : 'Kiorex Passport'; }, [section, t]);
   return (
     <>
       <a className="skip" href="#main">{t('app.skip')}</a>
