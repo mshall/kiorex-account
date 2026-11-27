@@ -5,6 +5,7 @@ import { useI18n, translate, clientName } from '../i18n';
 import { ApiError, type Passkey, type SecurityEvent } from '../api';
 import { Alert, Async, Badge, Button, Card, ConfirmDialog, Empty, ErrorState, Field, Ltr, useAction, useAsync, useToast } from '../ui';
 import { describeDevice, fmtDate } from '../util';
+import { EmailCard } from './Email';
 
 function PasskeysCard({ onChange }: { onChange: () => void }) {
   const { api, meta } = useApp();
@@ -163,6 +164,7 @@ export function SecurityPage() {
       <h1>{t('sec.title')}</h1>
       <PasskeysCard onChange={bump} />
       <TotpCard onChange={bump} />
+      <EmailCard onChange={bump} />
       <SessionsCard onChange={bump} />
       <EventsCard tick={tick} />
     </>

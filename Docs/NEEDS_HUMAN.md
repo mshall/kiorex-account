@@ -38,7 +38,7 @@ Real providers are wired in a dedicated pre-launch pass, staging first. Mock ada
 | WhatsApp Business (OTP + notifications) | `DevInbox.otpChannel` -> `WhatsAppAuthTemplateChannel` with an injected fake fetch (`apps/dev-idp/src/notify.ts`) | Meta-approved templates `TODO_NEEDS_HUMAN` (authentication + utility), `WHATSAPP_SENDER_ID`, `WHATSAPP_API_KEY` (items 2-3, 14) |
 | SMS fallback | `SmsChannel` with an inbox publisher | Provider + sender ID (item 4) |
 | Enterprise upstream IdP (provider SSO) | `FakeUpstreamIdp` on :4401 | Real SAML/OIDC upstream metadata, client credentials per customer (item 17) |
-| Email (org invitations if chosen) | not built | Provider + templates |
+| Email (verification code; org invitations if chosen) | Verification UI built 27 Nov 2026 (Passport Security > E-mail card, `apps/passport-ui/src/pages/Email.tsx`) over the mock channel (dev inbox, template `kx_email_verify`); org invitations stay phone-only | Provider (SES), sender domain, approved AR/EN wording for the code message (`apps/dev-idp/src/email.ts` body is an English placeholder), template names |
 
 ## Known engineering gaps (not decisions)
 - **SCIM provisioning** (KA-11 second half) is built (`Docs/SCIM.md`); open: which customers use it, Passport UI for token management, production hosting.

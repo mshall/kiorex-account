@@ -5,6 +5,7 @@ export class ApiError extends Error {
 }
 
 export interface Account { sub: string; name: string | null; phone: string | null; phone_verified: boolean; locale: 'ar' | 'en'; roles: string[]; kind: string; mfa_required: boolean; totp_enrolled: boolean; acr: string | null; amr: string[]; auth_time: number | null }
+export interface EmailState { email: string | null; email_verified: boolean; pending: boolean }
 export interface Meta {
   passkeys_enabled: boolean;
   guardian: { age_of_majority: Record<string, number>; default_market: string; evidence_types: string[]; relationships: string[]; act_scopes: string[]; max_dependants: number; act_as_ttl_seconds: number };
@@ -33,6 +34,10 @@ export interface Api {
   account(): Promise<Account>;
   updateProfile(p: { name?: string; locale?: 'ar' | 'en' }): Promise<{ name: string | null; locale: 'ar' | 'en' }>;
   meta(): Promise<Meta>;
+  emailState(): Promise<EmailState>;
+  emailStart(email: string): Promise<{ status: 'code_sent'; expires_in: number }>;
+  emailVerify(code: string): Promise<{ email: string; email_verified: true }>;
+  emailRemove(): Promise<void>;
   passkeys(): Promise<Passkey[]>;
   passkeyOptions(): Promise<unknown>;
   passkeyVerify(att: unknown): Promise<void>;
@@ -109,6 +114,10 @@ export function createApi(baseUrl: string, auth: AuthLike, doFetch: typeof fetch
     account: () => call('GET', '/api/account'),
     updateProfile: (p) => call('PATCH', '/api/account', p),
     meta: () => call('GET', '/api/meta'),
+    emailState: () => call('GET', '/api/email'),
+    emailStart: (email) => call('POST', '/api/email', { email }),
+    emailVerify: (code) => call('POST', '/api/email/verify', { code }),
+    emailRemove: async () => { await call('DELETE', '/api/email'); },
     passkeys: async () => (await call<{ passkeys: Passkey[] }>('GET', '/api/passkeys')).passkeys,
     passkeyOptions: () => call('POST', '/api/passkeys/register/options', {}),
     passkeyVerify: async (att) => { await call('POST', '/api/passkeys/register/verify', att); },

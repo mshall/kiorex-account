@@ -43,7 +43,7 @@ async function opsReviewer(d: ApiDeps, caller: Caller): Promise<Account> {
 
 /** Auth events a person may see about their own account (never other subjects, never raw phone numbers). */
 const SECURITY_EVENT_TYPES = ['login.success', 'passkey.login', 'passkey.login.failed', 'passkey.registered', 'passkey.removed', 'totp.enrolled', 'totp.disabled', 'totp.verified', 'totp.failed',
-  'step_up.success', 'step_up.failed', 'session.revoked', 'federation.login', 'account.link.requested', 'account.link.verified', 'account.link.merged', 'account.link.reversed', 'guardian.act_as', 'app.access.revoked', 'account.profile.updated'];
+  'step_up.success', 'step_up.failed', 'session.revoked', 'federation.login', 'account.link.requested', 'account.link.verified', 'account.link.merged', 'account.link.reversed', 'guardian.act_as', 'app.access.revoked', 'account.profile.updated', 'email.verified', 'email.removed', 'email.verification.failed'];
 const EVENT_DATA_KEYS = ['client', 'amr', 'acr', 'method', 'reason', 'upstream', 'uv'];
 function pickEventData(data: Record<string, unknown> | null): Record<string, unknown> {
   return Object.fromEntries(Object.entries(data ?? {}).filter(([k]) => EVENT_DATA_KEYS.includes(k)));

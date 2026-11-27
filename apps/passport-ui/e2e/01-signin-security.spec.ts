@@ -25,7 +25,9 @@ test.describe('sign-in -> security -> passkey (virtual authenticator)', () => {
 
     // sign out, then sign back in with the passkey on the IdP login page
     await page.getByRole('button', { name: 'Sign out' }).click();
-    await page.getByRole('button', { name: 'Yes, sign out' }).click();
+    // the IdP's end-session confirmation page is skipped when the id_token_hint is accepted; click it only when it is shown
+    const yes = page.getByRole('button', { name: 'Yes, sign out' });
+    if (await yes.isVisible({ timeout: 3000 }).catch(() => false)) await yes.click();
     await page.waitForURL(/\/account(\?.*)?$/).catch(() => undefined);
     await signIn(page, phone, { passkeyLogin: true });
     await nav(page, 'Security').click();
