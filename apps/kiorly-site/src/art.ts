@@ -47,7 +47,7 @@ export const sprite = (): string => `<svg width="0" height="0" style="position:a
 export const icon = (name: string, cls = 'ic'): string => `<svg class="${cls}" aria-hidden="true" focusable="false"><use href="#i-${name}"/></svg>`;
 
 // ───────────────────────── drawing helpers ─────────────────────────
-interface Label { x: number; y: number; s: string; size?: number; weight?: number; fill?: string; anchor?: 'start' | 'middle' | 'end' }
+interface Label { id?: string; x: number; y: number; s: string; size?: number; weight?: number; fill?: string; anchor?: 'start' | 'middle' | 'end' }
 const r = (x: number, y: number, w: number, h: number, rx: number, fill: string, stroke?: string, sw = 1) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}"${stroke ? ` stroke="${stroke}" stroke-width="${sw}"` : ''}/>`;
 const circ = (x: number, y: number, rad: number, fill: string, stroke?: string) => `<circle cx="${x}" cy="${y}" r="${rad}" fill="${fill}"${stroke ? ` stroke="${stroke}"` : ''}/>`;
 const ln = (x1: number, y1: number, x2: number, y2: number, stroke = C.line, sw = 1, dash = '') => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"${dash ? ` stroke-dasharray="${dash}"` : ''}/>`;
@@ -58,10 +58,11 @@ function frame(w: number, h: number, l: Lang, graphics: string, labels: Label[],
   const g = rtl ? `<g transform="translate(${w},0) scale(-1,1)">${graphics}</g>` : graphics;
   const font = rtl ? "'IBM Plex Sans Arabic','Jost',sans-serif" : "'Jost',sans-serif";
   const tx = labels.map((t) => {
-    const a = t.anchor ?? 'start'; const x = rtl ? w - t.x : t.x; const anchor = a === 'middle' ? 'middle' : rtl ? (a === 'start' ? 'end' : 'start') : a;
-    return `<text x="${x}" y="${t.y}" text-anchor="${anchor}" font-size="${t.size ?? 11}" font-weight="${t.weight ?? 500}" fill="${t.fill ?? C.ink}">${esc(t.s)}</text>`;
+    // SVG text-anchor start/end are relative to the text DIRECTION, so with direction=rtl set explicitly below `start` already means the right edge: mirror x only, never swap the anchor (swapping twice put Arabic labels on top of the node icons).
+    const anchor = t.anchor ?? 'start'; const x = rtl ? w - t.x : t.x;
+    return `<text${t.id ? ` data-label="${t.id}"` : ''} x="${x}" y="${t.y}" text-anchor="${anchor}" font-size="${t.size ?? 11}" font-weight="${t.weight ?? 500}" fill="${t.fill ?? C.ink}">${esc(t.s)}</text>`;
   }).join('');
-  return `<svg class="art" viewBox="0 0 ${w} ${h}" role="img" aria-labelledby="${id}-t" font-family="${font}" xmlns="http://www.w3.org/2000/svg"><title id="${id}-t">${esc(alt)}</title>${g}${tx}</svg>`;
+  return `<svg class="art" direction="${rtl ? 'rtl' : 'ltr'}" viewBox="0 0 ${w} ${h}" role="img" aria-labelledby="${id}-t" font-family="${font}" xmlns="http://www.w3.org/2000/svg"><title id="${id}-t">${esc(alt)}</title>${g}${tx}</svg>`;
 }
 const T = (en: string, ar: string, l: Lang) => (l === 'ar' ? ar : en);
 const win = (x: number, y: number, w: number, h: number, side = true) => r(x, y, w, h, 12, C.white, C.line) + r(x, y, w, 24, 12, C.ground, C.line) + r(x, y + 12, w, 12, 0, C.ground) + ln(x, y + 24, x + w, y + 24)
@@ -159,18 +160,18 @@ export function heroArt(l: Lang, alt: string): string {
 
 export function connectionDiagram(l: Lang, alt: string): string {
   const W = 800, H = 330; let g = r(0, 0, W, H, 18, C.ground);
-  const node = (x: number, y: number, w: number, h: number, col: string) => r(x, y, w, h, 16, C.white, col, 2) + r(x, y, w, 8, 4, col);
-  g += node(24, 96, 168, 138, C.ocean) + node(316, 62, 168, 206, C.indigo) + node(608, 40, 168, 70, C.teal) + node(608, 130, 168, 70, C.green) + node(608, 220, 168, 70, C.violet);
+  const node = (id: string, x: number, y: number, w: number, h: number, col: string) => `<g data-node="${id}">${r(x, y, w, h, 16, C.white, col, 2)}${r(x, y, w, 8, 4, col)}</g>`;
+  g += node('patient', 24, 96, 168, 138, C.ocean) + node('kiorex', 316, 62, 168, 206, C.indigo) + node('clinic', 608, 40, 168, 70, C.teal) + node('pharmacy', 608, 130, 168, 70, C.green) + node('lab', 608, 220, 168, 70, C.violet);
   g += circ(108, 150, 22, tint(C.ocean, 0.16)) + circ(108, 144, 8, C.ocean) + r(94, 154, 28, 14, 7, C.ocean) + skeleton(60, 190, 96, C.line, 6) + skeleton(76, 204, 64, C.line, 5);
   g += `<g fill="none" stroke="${C.indigo}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><polyline points="372,112 346,138 372,164"/><polyline points="428,112 454,138 428,164" stroke="${C.peri}"/></g><path d="M338 138 H362 L367 133 L372 146 L378 126 L384 142 L388 138 H462" fill="none" stroke="${C.coral}" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round"/>` + skeleton(350, 210, 100, C.line, 6) + skeleton(366, 226, 68, C.line, 5);
-  [[608, 40, C.teal], [608, 130, C.green], [608, 220, C.violet]].forEach(([x, y, col]) => { g += circ((x as number) + 28, (y as number) + 38, 14, tint(col as string, 0.18)) + circ((x as number) + 28, (y as number) + 38, 5, col as string) + skeleton((x as number) + 54, (y as number) + 48, 90, C.line, 5); });
-  const arrow = (x1: number, y1: number, x2: number, y2: number, col: string, dash = '') => ln(x1, y1, x2, y2, col, 2.600, dash) + `<path d="M${x2} ${y2} l-8 -5 v10 z" fill="${col}" transform="rotate(${(Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI} ${x2} ${y2})"/>`;
-  g += arrow(196, 126, 312, 126, C.ocean) + arrow(312, 206, 196, 206, C.ocean, '6 6') + arrow(488, 100, 604, 75, C.teal) + arrow(488, 166, 604, 166, C.green) + arrow(488, 232, 604, 255, C.violet) + arrow(604, 95, 488, 120, C.coral, '6 6') + arrow(604, 185, 488, 190, C.coral, '6 6');
+  [['clinic', 608, 40, C.teal], ['pharmacy', 608, 130, C.green], ['lab', 608, 220, C.violet]].forEach(([id, x, y, col]) => { g += `<g data-dot="${id}">${circ((x as number) + 28, (y as number) + 38, 14, tint(col as string, 0.18))}${circ((x as number) + 28, (y as number) + 38, 5, col as string)}</g>` + skeleton((x as number) + 54, (y as number) + 48, 90, C.line, 5); });
+  const arrow = (id: string, x1: number, y1: number, x2: number, y2: number, col: string, dash = '') => `<g data-arrow="${id}">` + ln(x1, y1, x2, y2, col, 2.600, dash) + `<path d="M${x2} ${y2} l-8 -5 v10 z" fill="${col}" transform="rotate(${(Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI} ${x2} ${y2})"/></g>`;
+  g += arrow('search', 196, 126, 312, 126, C.ocean) + arrow('confirm', 312, 206, 196, 206, C.ocean, '6 6') + arrow('to-clinic', 488, 100, 604, 75, C.teal) + arrow('to-pharmacy', 488, 166, 604, 166, C.green) + arrow('to-lab', 488, 232, 604, 255, C.violet) + arrow('com-clinic', 604, 95, 488, 120, C.coral, '6 6') + arrow('com-pharmacy', 604, 185, 488, 190, C.coral, '6 6');
   const L: Label[] = [
-    { x: 108, y: 118, s: T('Patient', 'المريض', l), size: 12, weight: 700, anchor: 'middle' }, { x: 400, y: 86, s: T('Kiorex', 'كيوريكس', l), size: 14, weight: 700, fill: C.indigo, anchor: 'middle' }, { x: 400, y: 190, s: T('marketplace', 'السوق', l), size: 10.500, fill: C.muted, anchor: 'middle' },
-    { x: 254, y: 118, s: T('search and book', 'بحث وحجز', l), size: 10, weight: 600, fill: '#075985', anchor: 'middle' }, { x: 254, y: 198, s: T('confirmation', 'تأكيد', l), size: 10, weight: 600, fill: '#075985', anchor: 'middle' },
-    { x: 662, y: 82, s: T('Kiorly Clinic', 'كيورلي كلينيك', l), size: 11.5, weight: 700, fill: '#0F766E' }, { x: 662, y: 172, s: T('Kiorly Pharmacy', 'كيورلي فارماسي', l), size: 11.5, weight: 700, fill: '#15803D' }, { x: 662, y: 262, s: T('Kiorly Lab', 'كيورلي لاب', l), size: 11.5, weight: 700, fill: '#6D28D9' },
-    { x: 400, y: 304, s: T('Commission and settlement: the same numbers, visible to both sides', 'العمولة والتسوية: الأرقام نفسها ظاهرة للطرفين', l), size: 11.500, weight: 700, fill: '#8F4944', anchor: 'middle' },
+    { id: 'patient', x: 108, y: 118, s: T('Patient', 'المريض', l), size: 12, weight: 700, anchor: 'middle' }, { id: 'kiorex', x: 400, y: 86, s: T('Kiorex', 'كيوريكس', l), size: 14, weight: 700, fill: C.indigo, anchor: 'middle' }, { id: 'market', x: 400, y: 190, s: T('marketplace', 'السوق', l), size: 10.500, fill: C.muted, anchor: 'middle' },
+    { id: 'search', x: 254, y: 118, s: T('search and book', 'بحث وحجز', l), size: 10, weight: 600, fill: '#075985', anchor: 'middle' }, { id: 'confirm', x: 254, y: 198, s: T('confirmation', 'تأكيد', l), size: 10, weight: 600, fill: '#075985', anchor: 'middle' },
+    { id: 'clinic', x: 662, y: 82, s: T('Kiorly Clinic', 'كيورلي كلينيك', l), size: 11.5, weight: 700, fill: '#0F766E' }, { id: 'pharmacy', x: 662, y: 172, s: T('Kiorly Pharmacy', 'كيورلي فارماسي', l), size: 11.5, weight: 700, fill: '#15803D' }, { id: 'lab', x: 662, y: 262, s: T('Kiorly Lab', 'كيورلي لاب', l), size: 11.5, weight: 700, fill: '#6D28D9' },
+    { id: 'commission', x: 400, y: 304, s: T('Commission and settlement: the same numbers, visible to both sides', 'العمولة والتسوية: الأرقام نفسها ظاهرة للطرفين', l), size: 11.500, weight: 700, fill: '#8F4944', anchor: 'middle' },
   ];
   g += ln(60, 290, 740, 290, tint(C.coral, 0.5), 2, '2 7');
   return frame(W, H, l, g, L, alt, 'conn');
