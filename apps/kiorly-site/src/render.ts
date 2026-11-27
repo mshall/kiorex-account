@@ -49,7 +49,7 @@ function footer(cfg: SiteConfig, l: Lang, base = ''): string {
 }
 
 const sectionHead = (id: string, eyebrow: string, title: string, lead: string) => `<div class="sec-head reveal"><p class="eyebrow">${esc(eyebrow)}</p><h2 id="${id}-h">${esc(title)}</h2><p class="lead">${esc(lead)}</p></div>`;
-const needsHuman = (cfg: SiteConfig, text: string) => (cfg.previewBanner ? `<p class="nh" data-needs-human><span class="nh-tag">${esc(FOOT.needs[cfg.env === 'prod' ? 'en' : 'en'])}</span> ${esc(text)}</p>` : '');
+const needsHuman = (cfg: SiteConfig, text: string) => (cfg.previewBanner ? `<p class="nh" data-needs-human><span class="nh-tag">${esc(FOOT.needs.en)}</span> ${esc(text)}</p>` : '');
 
 function hero(cfg: SiteConfig, l: Lang): string {
   return `<section class="hero" id="top" aria-labelledby="hero-h"><div class="wrap hero-grid">
