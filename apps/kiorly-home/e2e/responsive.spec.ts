@@ -25,7 +25,7 @@ const noOverflow = (page: Page) => page.evaluate(() => {
   const d = document.documentElement; if (d.scrollWidth > window.innerWidth) return `scrollWidth ${d.scrollWidth} > ${window.innerWidth}`;
   const bad: string[] = [];
   for (const el of Array.from(document.querySelectorAll<HTMLElement>('.signcard, .signcard *, .band *, .brandpane *, .foot *'))) {
-    const cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[data-dev-test-users]')) continue;
+    const cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden') continue;
     const r = el.getBoundingClientRect(); if (r.width === 0) continue;
     if (r.right > window.innerWidth + 1 || r.left < -1) bad.push(`${el.tagName}.${el.className} ${Math.round(r.left)}..${Math.round(r.right)}`);
   }
@@ -61,23 +61,6 @@ for (const [w, h] of MATRIX) {
         expect(await noOverflow(page)).toBe('');
         expect(blockers(await new AxeBuilder({ page }).analyze())).toEqual([]);
         await page.screenshot({ path: path.join(SHOTS, `${w}x${h}-${lang}-${theme}-password.png`) });
-      });
-    }
-
-    if (mode(w) === 'desktop') {
-      test('dev drawer: collapsed by default, opens as an overlay without moving the layout, closes again', async ({ page }) => {
-        await prepare(page, 'en', 'light');
-        const before = await page.locator('.signcard').boundingBox();
-        const toggle = page.getByTestId('dev-toggle');
-        await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-        await toggle.click();
-        await expect(page.locator('[data-dev-test-users] [data-phone]').first()).toBeVisible();
-        expect(await page.locator('.signcard').boundingBox()).toEqual(before); // overlay: nothing reflows
-        expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-        const box = (await page.locator('[data-dev-test-users]').boundingBox())!; expect(box.x + box.width).toBeLessThanOrEqual(w + 1); expect(box.y).toBeGreaterThanOrEqual(0);
-        await page.screenshot({ path: path.join(SHOTS, `${w}x${h}-en-light-dev-open.png`) });
-        await page.keyboard.press('Escape');
-        await toggle.click().catch(() => undefined);
       });
     }
   });

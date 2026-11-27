@@ -1,6 +1,6 @@
 # Kiorex Passport test guide (DEV ONLY)
 
-> **DEV ONLY / synthetic.** All names, phones, e-mails, passwords, OTPs and TOTP seeds below are fake values for the local stack; they are refused when `NODE_ENV=production` and the sign-in quick-pick ("Test users (dev only)") is not in production builds. Providers are mocked (dev inbox / logs, PSP `sandbox-fake`, video `mock`). No tax-authority integration.
+> **DEV ONLY / synthetic.** All names, phones, e-mails, passwords, OTPs and TOTP seeds below are fake values for the local stack; they are refused when `NODE_ENV=production` and the sign-in pages never render any of them (no quick-pick panel, in any build); they are not in production builds. Providers are mocked (dev inbox / logs, PSP `sandbox-fake`, video `mock`). No tax-authority integration.
 > This guide is the repo's slice of the workspace guide `TEST_GUIDE.md` (parent folder `kiorex-v2/`, not part of this repository). Facts verified against the seeds and dev databases on 23 Nov 2026.
 
 ## Run the stack and seed it
@@ -21,9 +21,9 @@ npm test                             # vitest (incl. dev-test-users.test.ts)
 
 URLs: sign-in and account pages http://localhost:4400/account, dev inbox http://localhost:4400/dev/inbox (OTP messages), OIDC discovery http://localhost:4400/.well-known/openid-configuration; clients: patient web :5180, ops console :5181, patient app :8081, Kiorly Clinic / Pharmacy / Lab web, staff app.
 
-## The Test users (dev only) panel
+## No on-screen test users
 
-Rendered by `apps/dev-idp/src/dev-test-users.ts` on the phone, code and ops TOTP pages, built from `config/seed-users.json` (groups: Patients, Provider staff, Nurse edition, Ops). A chip submits the phone, the code page fills `000000` and verifies, and for ops the TOTP page shows the **current code** (computed from the stored seed by the dev IdP) with a one-click fill, plus the **seed with a copy button**. A client may pass `login_hint=<seeded phone>` (the patient app does) to pre-fill and auto-submit once. Shown only when `NODE_ENV` is not production and `KX_DEV_TEST_USERS` is not `false`; the dev IdP also refuses to start in production. English and Arabic (RTL), light and dark, phone width. Covered by `apps/dev-idp/test/dev-test-users.test.ts`.
+No sign-in page (Passport phone, code and ops authenticator pages, Kiorly Home) renders test users, demo credentials, OTP hints or TOTP seeds, in any build (founder decision 27 Nov 2026). Sign in by typing the seeded values below; the fixed dev code and the ops TOTP are accepted server-side only, and the ops TOTP is derived from the seed with an authenticator or the test helpers.
 
 Dev-only secrets: Passport OTP for every seeded phone **`000000`**; staff password **`Demo@12345`** (older Clinic accounts `admin@kiorly.com`, `superadmin@kiorly.com`, `admin@drahmedshall.com`: **`demo`**); Lab dev-login has no password; Postgres `postgres` / `postgres`.
 

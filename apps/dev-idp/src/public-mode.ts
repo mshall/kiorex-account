@@ -5,7 +5,7 @@
  * runs with NODE_ENV=development behind an https URL. That is allowed, but only in this HARDENED mode, which turns the local conveniences OFF
  * unless each is switched on explicitly:
  *   - public mode is on when DEV_IDP_PUBLIC=true OR the ISSUER host is not loopback (so a forgotten flag cannot leave a public host permissive);
- *   - the fixed demo OTP 000000 is accepted only with KX_DEV_OTP_BYPASS=true (the "Test users" quick-pick panel follows it);
+ *   - the fixed demo OTP 000000 is accepted only with KX_DEV_OTP_BYPASS=true;
  *   - the /dev/* helper routes (inbox with OTP codes, events, simulators, rate-limit reset) answer 404 unless KX_DEV_ENDPOINTS=true;
  *   - start-up fails unless: ISSUER is https, DATABASE_URL is set, KX_WORKSPACE_URL_CLINIC|PHARMACY|LAB are https, KX_COOKIE_KEYS holds at least one key of 32+ characters (no published constant),
  *     and every confidential client has its secret set through KX_CLIENT_OVERRIDES_JSON (the committed dev secrets are public).

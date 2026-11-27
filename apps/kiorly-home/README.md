@@ -17,8 +17,8 @@ npm run test:e2e -w @kiorex/kiorly-home            # Playwright (system Chrome),
 ```
 The Passport client is registered in `config/idp.json`; restart the dev IdP once to pick it up (`e2e/scripts/up.sh --restart --only=passport`).
 
-## Test users (dev only)
-Panel under the card (absent from production bundles). **Kiorex Passport**: six personas (Ahmed Fawzy +201000002001 Clinic, Mostafa Reda +201000002004 Pharmacy, دينا وجدي +201000002005 Lab, Mona Adel +201000003001 Nurse, multi-workspace +201000002031, no-workspace +201000002032; dev code 000000): a click starts the Passport sign-in with the phone filled and selects the persona's tile. **Password**: the logins of the chosen tile (Clinic 21, Nurse 5, Pharmacy 15, Lab 27 = 3 orgs x 9 roles; password `Demo@12345`, older Clinic demo accounts `demo`, Lab none): a click switches to Password and fills the form.
+## Demo data
+No demo or test-user content is rendered in any build (no quick-pick panel, no demo logins, no OTP hints). Seeded demo accounts live in the seed files only; sign in by typing the credentials. `npm run check:bundle` asserts it.
 
 ## Tests
 * `npx vitest run apps/kiorly-home` : decisions, handoff redirect mapping, request shape per product (no Lab password), i18n parity.

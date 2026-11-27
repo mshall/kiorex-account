@@ -76,13 +76,6 @@ h2{font-size:1.125rem;margin:24px 0 12px}
 :root{--kx-text-muted:#4b5280;--kx-product-nurse-text:#BE123C}
 [data-theme=dark]{--kx-text-muted:#b3b8e6;--kx-product-nurse-text:#FB7185}
 @media (prefers-color-scheme:dark){[data-theme=auto]{--kx-text-muted:#b3b8e6;--kx-product-nurse-text:#FB7185}}
-.dev{margin:24px auto 0;max-width:720px;border:1px dashed var(--kx-coral-500,#E8735E);border-radius:var(--kx-radius-lg,14px);padding:14px;background:color-mix(in srgb,var(--kx-surface) 94%,var(--kx-coral-500,#E8735E))}
-.dev h2{margin:0 0 4px;font-size:1rem;display:flex;align-items:center;gap:8px}
-.dev .tag{font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--kx-bg);background:var(--kx-text);border-radius:999px;padding:1px 8px}
-.dev p{font-size:.8125rem;margin:0 0 8px}.dev h3{font-size:.8125rem;margin:12px 0 6px;color:var(--kx-text-muted)}.dev h4{font-size:.75rem;margin:10px 0 6px;color:var(--kx-text-muted);font-weight:600}.dev .dim{margin:0 0 6px;color:var(--kx-text-muted)}
-.dev ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
-.dev .chip{display:flex;flex-direction:column;align-items:flex-start;text-align:start;width:100%;min-height:48px;padding:8px 12px;border-radius:10px;border:1px solid var(--kx-border-strong,#c7cbe6);background:var(--kx-surface);color:var(--kx-text);font:inherit;cursor:pointer}
-.dev .chip small{color:var(--kx-text-muted);direction:ltr;unicode-bidi:plaintext}
 @media (max-width:480px){.band{padding:8px 16px 4px}.signcard{padding:20px 16px}}
 
 /* ============ Responsive system: phone (<768) as before, tablet 768-1023 single column, desktop >=1024 split screen ============ */
@@ -155,19 +148,7 @@ html{scrollbar-gutter:stable}
   [dir=rtl] .bp-pulse{transform:scaleX(-1)}
     .brandpane :focus-visible,.lockup:focus-visible{outline-color:#fff}
 
-  /* dev drawer: fixed to the bottom end, collapsed by default, never part of the layout */
-  .dev{position:fixed;inset-inline-end:16px;bottom:16px;z-index:30;width:min(460px,calc(100vw - 32px));max-height:min(72dvh,680px);margin:0;overflow:auto;box-shadow:0 12px 40px rgba(30,27,75,.28)}
-  .dev-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
-  .dev-toggle{display:inline-flex}
-  .dev[data-open=false]{width:auto}
-  .dev[data-open=false] .dev-body{display:none}
-  .dev[data-open=false] h2{margin:0}
-  .dev[data-open=false] .dev-title{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-  .dev[data-open=false]{padding:8px 10px}
 }
-.dev-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.dev-toggle{display:none;font:inherit;font-size:.8125rem;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--kx-border-strong,#c7cbe6);background:var(--kx-surface);color:var(--kx-text);cursor:pointer}
-@media (min-width:1024px){.dev-toggle{display:inline-flex;align-items:center}}
 
 /* short viewports on desktop: trim the brand panel instead of clipping it */
 @media (min-width:1024px) and (max-height:820px){

@@ -35,31 +35,23 @@ test.beforeEach(async ({ page, context }) => {
   await fetch(`${IDP}/dev/reset-rate-limits`, { method: 'POST' });
 });
 
-/** The dev panel is a collapsed drawer on desktop (>= 1024px) and always open inline below; open it when the toggle is visible. */
-async function openDev(page: Page) {
-  await page.locator('[data-dev-test-users]').waitFor({ state: 'attached' }); // lazy chunk
-  const t = page.getByTestId('dev-toggle');
-  if (await t.isVisible() && (await t.getAttribute('aria-expanded')) !== 'true') await t.click();
-}
-async function closeDev(page: Page) {
-  const t = page.getByTestId('dev-toggle');
-  if (await t.isVisible() && (await t.getAttribute('aria-expanded')) === 'true') await t.click();
-}
 const tile = (page: Page, k: string) => page.getByTestId(`product-${k}`);
 const fillPassword = async (page: Page, email: string, password: string) => { await page.getByTestId('signin-method-password').click(); await page.getByTestId('signin-email').fill(email); await page.getByTestId('signin-password').fill(password); };
 
-/** Real Passport sign-in through Home's dev "Test users" panel (login_hint), finishing the dev code if the IdP did not auto-submit it. */
+/** Phone typed at Passport for each seeded persona; the tile is the product that persona belongs to. */
+const TILE_OF: Record<string, string> = { [P.ahmed]: 'clinic', [P.mostafa]: 'pharmacy', [P.dina]: 'lab', [P.mona]: 'nurse' };
+/** Real Passport sign-in typed by hand: choose the tile, start Passport, type the phone and the code like a user. */
 async function passportSignIn(page: Page, phone: string, path = '/signin') {
   await page.goto(path);
-  await openDev(page);
-  await page.locator(`[data-dev-test-users] [data-phone="${phone}"]`).click();
+  await tile(page, TILE_OF[phone] ?? 'clinic').click();
+  await page.getByTestId('signin-passport').click();
   await page.waitForURL(/\/interaction\//);
+  await page.locator('#phone').fill(phone);
+  await page.locator('form[action$="/phone"] button[type=submit]').first().click();
   const code = page.locator('#code');
-  if (await code.isVisible({ timeout: 3000 }).catch(() => false)) {
-    if (!(await code.inputValue())) await code.fill('000000');
-    const verify = page.locator('form[action$="/verify"] button[type=submit]').first();
-    if (await verify.isVisible().catch(() => false)) await verify.click().catch(() => undefined);
-  }
+  await code.waitFor({ timeout: 10_000 });
+  await code.fill('000000');
+  await page.locator('form[action$="/verify"] button[type=submit]').first().click();
   const skip = page.locator('form[action$="/finish"] button');
   if (await skip.isVisible({ timeout: 1500 }).catch(() => false)) await skip.click();
 }
@@ -248,27 +240,16 @@ test.describe('Passport method (default): PKCE sign-in, then the product opens s
   });
 });
 
-test.describe('dev "Test users (dev only)" panel', () => {
-  test('lists the Passport personas and the password personas of the chosen tile (Clinic 21, Nurse 5, Pharmacy 15, Lab 27) and fills the form', async ({ page }) => {
+test.describe('no demo or test-user content in the sign-in UI', () => {
+  test('no Test users panel, demo emails, passwords or dev code are rendered, on any tile', async ({ page }) => {
     await page.goto('/signin');
-    const panel = page.locator('[data-dev-test-users]');
-    await expect(page.getByTestId('dev-toggle')).toHaveAttribute('aria-expanded', 'false'); // collapsed drawer on desktop
-    await openDev(page);
-    await expect(panel).toContainText('Test users (dev only)');
-    await expect(panel.locator('[data-phone]')).toHaveCount(6);
-    await closeDev(page);
-    for (const [k, n] of [['clinic', 21], ['nurse', 5], ['pharmacy', 15], ['lab', 27]] as const) { await tile(page, k).click(); await expect(panel.locator('[data-email]')).toHaveCount(n); }
-    await tile(page, 'lab').click();
-    await openDev(page);
-    await panel.locator('[data-email="signatory@chain-lab.test"]').click();
-    await closeDev(page);
-    await expect(page.getByTestId('signin-method-password')).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByTestId('signin-email')).toHaveValue('signatory@chain-lab.test'); await expect(page.getByTestId('signin-org')).toHaveValue('chain-lab');
-    await tile(page, 'pharmacy').click();
-    await openDev(page);
-    await panel.locator('[data-email="cashier@demo.kiorly.local"]').click();
-    await closeDev(page);
-    await expect(page.getByTestId('signin-email')).toHaveValue('cashier@demo.kiorly.local'); await expect(page.getByTestId('signin-password')).toHaveValue('Demo@12345');
+    await expect(page.locator('[data-dev-test-users]')).toHaveCount(0);
+    await expect(page.getByTestId('dev-toggle')).toHaveCount(0);
+    for (const k of ['clinic', 'nurse', 'pharmacy', 'lab']) {
+      await tile(page, k).click();
+      const text = await page.locator('body').innerText();
+      expect(text).not.toMatch(/Test users|dev only|Demo@12345|000000|demo-lab|@demo\.|\+2010000/i);
+    }
   });
 });
 

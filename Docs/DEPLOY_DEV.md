@@ -24,7 +24,6 @@ docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/kiorex-pass
 |---|---|---|
 | Switched on by | nothing | `DEV_IDP_PUBLIC=true` (set in the image), or any non-loopback `ISSUER` (a forgotten flag cannot leave a public host permissive) |
 | Demo OTP `000000` for seeded numbers | on | **off** unless `KX_DEV_OTP_BYPASS=true` |
-| "Test users" quick-pick panel | on | off unless the OTP bypass is on |
 | `/dev/*` helper routes (inbox with OTP codes, events, simulators) | on | **404** unless `KX_DEV_ENDPOINTS=true` |
 | Cookie keys | published constants | `KX_COOKIE_KEYS` (32+ chars each) required |
 | Confidential client secrets | committed dev values | must be set in `KX_CLIENT_OVERRIDES_JSON` |

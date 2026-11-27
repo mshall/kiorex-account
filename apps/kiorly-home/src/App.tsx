@@ -1,13 +1,10 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { DICT, LangCtx, initialLang, useT, type Lang } from './i18n';
 import { CARD_KEYS, DEFAULT_THEME, PRODUCTS, THEME_KEY, initialTile, needsOrg, parseMethod, parseTheme, parseTo, productEntryUrl, signupUrl, toCards, workspaceHint, type Card, type CardKey, type SignInMethod, type Theme } from './core';
 import { fetchWorkspaces, handleCallback, hasSession, signOut, startLogin } from './oidc';
 import { handoffLogin } from './handoff';
 import { ENV } from './env';
-import type { PasswordPersona } from './dev/personas';
 
-// DEV ONLY quick-pick: the condition is inline so Vite folds it to false in production builds and drops the import and the whole ./dev folder.
-const DevTestUsers = import.meta.env.DEV && import.meta.env.VITE_DEV_TEST_USERS !== 'false' ? lazy(() => import('./dev/TestUsers')) : null;
 
 const LAST = 'kh.last'; const METHOD = 'kh.method';
 const read = (k: string): string | null => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -214,7 +211,6 @@ function Shell({ lang, setLang, theme, setTheme, dark }: { lang: Lang; setLang: 
     if (r.code === 'passwordDisabled') { chooseMethod('passport'); setError(t.passwordDisabled(t.short[tile])); return; }
     setError(r.code === 'invalid' ? (lab ? t.invalidLab : t.invalid) : r.code === 'rateLimited' ? t.rateLimited : r.code === 'network' ? t.network : r.code === 'notAllowed' ? t.notAllowed : t.serverError);
   };
-  const fill = (u: PasswordPersona) => { setMethodState('password'); setEmail(u.email); setPassword(u.password); setOrg(u.org); setError(null); };
 
   return (
     <div className="page">
@@ -259,7 +255,6 @@ function Shell({ lang, setLang, theme, setTheme, dark }: { lang: Lang; setLang: 
               )}
               <p className="note center create"><span>{t.newHere}</span> <a href={signupUrl(tile, ENV.products[tile])} data-testid="create-workspace">{t.createWorkspace(t.short[tile])}</a></p>
             </div>
-            {DevTestUsers ? <Suspense fallback={null}><DevTestUsers tile={tile} onPassport={(phone, k) => { setTile(k); begin(phone, k); }} onFill={fill} /></Suspense> : null}
           </section>
         ) : null}
         {view.s === 'callback' ? <Status heading={heading} text={t.callbackWorking} /> : null}
