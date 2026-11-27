@@ -20,6 +20,7 @@ import { DevInbox, Notifier, TeeChannel } from './notify.js';
 import { Events } from './events.js';
 import { Totp } from './totp.js';
 import { MfaPolicy } from './mfa-policy.js';
+import { SigninLimits } from './signin-limits.js';
 import { Guardianship } from './guardian.js';
 import { AccountLinking } from './links.js';
 import { Orgs } from './orgs.js';
@@ -131,7 +132,9 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
   const totp = new Totp(pool, cfg, o.totpNow ?? now);
   const scim = new Scim(ctx);
   const mfaPolicy = new MfaPolicy(ctx);
-  const svc = { guardian: new Guardianship(ctx), linking: new AccountLinking(ctx, otp), orgs, totp, mfaPolicy, federation, scim, email: new EmailVerification(pool, inbox, audit, now) };
+  const signinLimits = new SigninLimits(ctx);
+  otp.limitsSource = () => signinLimits.effective();
+  const svc = { guardian: new Guardianship(ctx), linking: new AccountLinking(ctx, otp), orgs, totp, mfaPolicy, signinLimits, federation, scim, email: new EmailVerification(pool, inbox, audit, now) };
   const origin = new URL(rt.issuer);
   const passkeys = new Passkeys(pool, { id: origin.hostname, name: cfg.passwordless.passkeys.rpName, origin: origin.origin });
   const suppressedSessions = new Set<string>();

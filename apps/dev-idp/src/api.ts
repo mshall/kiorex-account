@@ -17,12 +17,13 @@ import type { AccountLinking } from './links.js';
 import type { Orgs } from './orgs.js';
 import type { Totp } from './totp.js';
 import type { MfaPolicy } from './mfa-policy.js';
+import type { SigninLimits } from './signin-limits.js';
 import type { Federation } from './federation.js';
 import type { Scim } from './scim.js';
 import type { Ctx } from './services.js';
 import { handleExtended, errorResponse } from './routes.js';
 
-export interface Services { guardian: Guardianship; linking: AccountLinking; orgs: Orgs; totp: Totp; mfaPolicy: MfaPolicy; federation: Federation; scim: Scim; email: EmailVerification }
+export interface Services { guardian: Guardianship; linking: AccountLinking; orgs: Orgs; totp: Totp; mfaPolicy: MfaPolicy; signinLimits: SigninLimits; federation: Federation; scim: Scim; email: EmailVerification }
 
 export interface ApiDeps {
   provider: Provider; pool: Pool; accounts: Accounts; dispatcher: LogoutDispatcher; passkeys: Passkeys;

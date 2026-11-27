@@ -5,6 +5,9 @@ export class ApiError extends Error {
 }
 
 export interface Account { sub: string; name: string | null; phone: string | null; phone_verified: boolean; locale: 'ar' | 'en'; roles: string[]; kind: string; mfa_required: boolean; mfa_required_by?: 'role' | 'policy' | null; totp_enrolled: boolean; acr: string | null; amr: string[]; auth_time: number | null }
+export interface SigninLimitsDoc { maxSendsPerPhonePerHour: number; maxSendsPerIpPerHour: number; maxAttemptsPerChallenge: number; ttlSeconds: number; lockoutMinutesAfterExhaustedChallenge: number }
+export interface SigninLimitsChange { id: string; proposed_by: string; proposed_by_name: string | null; limits: Partial<SigninLimitsDoc>; note: string | null; status: 'pending' | 'applied' | 'rejected' | 'withdrawn'; decided_by_name: string | null; decided_by: string | null; decided_at: string | null; applied_directly: boolean; created_at: string }
+export interface SigninLimitsState { defaults: SigninLimitsDoc; stored: Partial<SigninLimitsDoc>; effective: SigninLimitsDoc; ranges: Record<keyof SigninLimitsDoc, [number, number]>; version: number; updated_by_name: string | null; updated_at: string | null; pending: SigninLimitsChange[]; changes: SigninLimitsChange[]; me: { sub: string; can_apply_directly: boolean } }
 export interface MfaRule { scope: 'all' | 'org_type' | 'org'; value?: string; roles: string[] }
 export interface MfaPolicyDoc { enabled: boolean; rules: MfaRule[] }
 export interface MfaImpact { people: number; without_factor: number }
@@ -74,6 +77,9 @@ export interface Api {
   requestLink(phone: string): Promise<{ link_id: string; status: string }>;
   verifyLink(id: string, code: string): Promise<LinkView>;
   cancelLink(id: string): Promise<void>;
+  opsSigninLimits(): Promise<SigninLimitsState>;
+  opsSigninLimitsPropose(limits: Partial<SigninLimitsDoc>, note: string, apply: boolean): Promise<SigninLimitsChange>;
+  opsSigninLimitsDecide(id: string, action: 'approve' | 'reject' | 'withdraw', note?: string): Promise<SigninLimitsChange>;
   opsMfaPolicy(): Promise<MfaPolicyState>;
   opsMfaPreview(policy: MfaPolicyDoc): Promise<{ policy: MfaPolicyDoc; impact: MfaImpact }>;
   opsMfaPropose(policy: MfaPolicyDoc, note: string, apply: boolean): Promise<MfaChange>;
@@ -161,6 +167,9 @@ export function createApi(baseUrl: string, auth: AuthLike, doFetch: typeof fetch
     requestLink: (phone) => call('POST', '/api/links', { phone }),
     verifyLink: (id, code) => call('POST', `/api/links/${enc(id)}/verify`, { code }),
     cancelLink: async (id) => { await call('DELETE', `/api/links/${enc(id)}`); },
+    opsSigninLimits: () => call('GET', '/api/ops/signin-limits'),
+    opsSigninLimitsPropose: (limits, note, apply) => call('POST', '/api/ops/signin-limits/changes', { limits, ...(note.trim() ? { note: note.trim() } : {}), ...(apply ? { apply: true } : {}) }),
+    opsSigninLimitsDecide: (id, action, note) => call('POST', `/api/ops/signin-limits/changes/${enc(id)}/${action}`, note ? { note } : {}),
     opsMfaPolicy: () => call('GET', '/api/ops/mfa-policy'),
     opsMfaPreview: (policy) => call('POST', '/api/ops/mfa-policy/preview', { policy }),
     opsMfaPropose: (policy, note, apply) => call('POST', '/api/ops/mfa-policy/changes', { policy, ...(note.trim() ? { note: note.trim() } : {}), ...(apply ? { apply: true } : {}) }),

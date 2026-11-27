@@ -204,6 +204,29 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
     throw new HttpError(404, 'not_found');
   }
 
+  // ---------------- sign-in limits (one-time-code numbers; ops_admin / super_admin + fresh MFA step-up; maker-checker; audited; hard ranges in code) ----------------
+  if (s[0] === 'api' && s[1] === 'ops' && s[2] === 'signin-limits') {
+    const actor = await opsReviewer(d, caller);
+    const sl = svc.signinLimits;
+    if (s.length === 3 && m === 'GET') {
+      const v = await sl.view();
+      const changes = await sl.list(30);
+      return ok(200, {
+        ...v, updated_by_name: v.updated_by ? (await d.pool.query(`SELECT name FROM accounts WHERE sub = $1`, [v.updated_by])).rows[0]?.name ?? null : null,
+        pending: changes.filter((c) => c.status === 'pending'), changes: changes.filter((c) => c.status !== 'pending'),
+        me: { sub: actor.sub, can_apply_directly: actor.roles.includes('super_admin') },
+      });
+    }
+    if (s.length === 4 && s[3] === 'changes' && m === 'POST') return ok(201, await sl.propose(actor, await json(req)));
+    if (s.length === 6 && s[3] === 'changes' && m === 'POST') {
+      const b = await json(req);
+      if (s[5] === 'approve') return ok(200, await sl.approve(actor, s[4]!, b.note));
+      if (s[5] === 'reject') return ok(200, await sl.reject(actor, s[4]!, b.note));
+      if (s[5] === 'withdraw') return ok(200, await sl.withdraw(actor, s[4]!));
+    }
+    throw new HttpError(404, 'not_found');
+  }
+
   // ---------------- KA-09 organisations & memberships ----------------
   if (p === '/api/orgs' && m === 'POST') return ok(201, await svc.orgs.create(await account(d, caller), await json(req)));
   if (p === '/api/workspaces' && m === 'GET') return ok(200, { workspaces: await svc.orgs.workspaces(caller.sub) });

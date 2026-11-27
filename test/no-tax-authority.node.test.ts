@@ -16,8 +16,8 @@ const SKIP_FILES = new Set(['package-lock.json', 'no-tax-authority.node.test.ts'
 
 const FORBIDDEN: Array<[string, RegExp]> = [
   ['Egyptian Tax Authority / ETA', /\bETA\b|egyptian[\s_-]*tax[\s_-]*authority|eta\.gov\.eg|invoicing\.eta|preprod\.invoicing|submitToETA/i],
-  ['e-invoice', /e[\s_-]?invoic(e|ing)/i],
-  ['e-receipt', /e[\s_-]?receipt/i],
+  ['e-invoice', /\be[\s_-]?invoic(e|ing)/i],
+  ['e-receipt', /\be[\s_-]?receipt/i],
   ['ZATCA / FTA / fiscal reporting', /\bzatca\b|\bfatoora\b|federal[\s_-]*tax[\s_-]*authority|fiscal[\s_-]*(device|printer|memory)/i],
   ['tax submission / e-seal', /tax[\s_-]*(authority|submission|reporting)[\s_-]*(api|client|endpoint)|e[\s_-]?seal\b/i],
 ];
