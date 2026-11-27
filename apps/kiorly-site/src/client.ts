@@ -49,8 +49,9 @@ else {
 const links = [...document.querySelectorAll<HTMLAnchorElement>('#site-nav a[href^="#"]:not(.btn)')];
 if (links.length && typeof IntersectionObserver === 'function') {
   const byId = new Map(links.map((a) => [a.getAttribute('href')!.slice(1), a]));
+  // every section is observed, not only the ones with a menu link: a section without one (standalone vs connected, Join us) clears the mark instead of leaving the previous section marked
   const spy = new IntersectionObserver((entries) => { for (const en of entries) if (en.isIntersecting) { for (const a of links) a.removeAttribute('aria-current'); byId.get(en.target.id)?.setAttribute('aria-current', 'true'); } }, { rootMargin: '-40% 0px -55% 0px' });
-  for (const id of byId.keys()) { const s = document.getElementById(id); if (s) spy.observe(s); }
+  for (const s of document.querySelectorAll<HTMLElement>('main section[id]')) spy.observe(s);
 }
 
 // the join form

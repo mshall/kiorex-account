@@ -35,7 +35,7 @@ function head(cfg: SiteConfig, l: Lang, title: string, description: string, a: A
 
 function header(cfg: SiteConfig, l: Lang, base = ''): string {
   const links = [['modules', NAV.products], ['connected', NAV.connected], ['workflows', NAV.workflows], ['security', NAV.security], ['plans', NAV.plans], ['faq', NAV.faq]] as const;
-  return `<a class="skip" href="#main">${esc(NAV.skip[l])}</a>${cfg.previewBanner ? `<div class="preview" role="note">${esc(COMMON.previewBanner[l])}</div>` : ''}
+  return `<a class="skip" href="#main">${esc(NAV.skip[l])}</a>${cfg.previewBanner ? `<aside class="preview" aria-label="${esc(COMMON.previewBanner[l])}">${esc(COMMON.previewBanner[l])}</aside>` : ''}
 <header class="top"><div class="wrap bar">
 <a class="logo" href="${base}#top" aria-label="${esc(BRAND[l])}"><img src="${lockup(l)}" width="156" height="37" alt="${esc(BRAND[l])}"></a>
 <button type="button" class="menu-btn" data-menu-toggle aria-expanded="false" aria-controls="site-nav"><span class="sr">${esc(NAV.menu[l])}</span>${icon('menu', 'ic open-ic')}${icon('close', 'ic close-ic')}</button>
