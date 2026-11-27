@@ -25,6 +25,15 @@ scripts/seed-all.sh [--reset]                           # workspace root: every 
 * Passport allows **5 OTP sends per phone per hour**. Clear the counters with `npm run db:reset` (this also drops dev sessions and tokens; do not run it while someone else is testing).
 * URLs: UI `http://localhost:4400/account` · dev inbox `http://localhost:4400/dev/inbox` · OIDC discovery `/.well-known/openid-configuration` · second fake upstream IdP `:4401` (federation tests only).
 
+### TOTP secrets of the ops demo accounts are LOCAL and never committed (27 Nov 2026)
+
+The seed marks `+201000000099`, `+201000009001` and `+201000009002` with `"totp": true`; it carries no secret. The first local start or seed run generates a random Base32 secret per account on THIS machine into `kiorex-account/.local/totp-secrets.json` (git-ignored, mode 0600, keyed by phone). Restarts reuse it, so the dev IdP, `db:seed:demo`, the Playwright suites and the other repos' e2e (which read the same file, or `OPS_TOTP_SEED`/`KX_LOCAL_TOTP_FILE`) stay in step.
+
+- Show them: `npm run dev:totp-secrets`. Rotate: `npm run dev:totp-secrets -- --rotate`, then `npm run db:seed:demo` (or restart the dev IdP).
+- Use one in an authenticator app, or compute a code: `node -e "console.log(require('otplib').generateSync({secret:'<secret>',strategy:'totp'}))"`.
+- A hosted deployment (public mode) never reads this file and never writes a TOTP row from the seed; kx-test accounts get their own generated secrets (Secrets Manager `/kx/test/e2e`).
+- Older versions of this repository published fixed seeds; they are dead everywhere that matters (see the workspace document `_docs/security/OLD_DEMO_TOTP_SECRETS.md`).
+
 ## 3. Personas (all login at `http://localhost:4400/account`, phone OTP `000000` unless noted)
 
 | Phone | Name | Account type / org | Why it exists |
@@ -55,9 +64,9 @@ scripts/seed-all.sh [--reset]                           # workspace root: every 
 | `+201000003010` | Dr Mai Hassan | physiotherapist member of Nile Care | |
 | `+201000003011` | Noha Nurse (pending invite) | none yet | **pending invitation** to the agency as nurse (token `demo-invite-agency-nurse`) |
 | `+201000000001` / `0002` | Amira / Hassan | patients | **e2e fixtures, do not edit** (the e2e suite signs in as them) |
-| `+201000000099` | Ops Super Admin | roles `ops_admin`, `super_admin` | OTP + **TOTP** `REMOVED-OLD-DEMO-TOTP-SECRET` (DEV ONLY) |
-| `+201000009001` | Ops Admin Demo | `ops_admin` | OTP + TOTP `REMOVED-OLD-DEMO-TOTP-SECRET` |
-| `+201000009002` | Ops Finance Demo | `ops_admin`, `finance` | OTP + TOTP `REMOVED-OLD-DEMO-TOTP-SECRET` |
+| `+201000000099` | Ops Super Admin | roles `ops_admin`, `super_admin` | OTP + **TOTP** `<local seed +201000000099>` (DEV ONLY) |
+| `+201000009001` | Ops Admin Demo | `ops_admin` | OTP + TOTP `<local seed +201000009001>` |
+| `+201000009002` | Ops Finance Demo | `ops_admin`, `finance` | OTP + TOTP `<local seed +201000009002>` |
 | `+201000009003` | Ops Support Demo | `ops_admin`, `support` | OTP + TOTP **enrolment on first sign-in** (an unconfirmed credential exists, no seeded secret) |
 
 Dependants (no login): Yassin Samir Ali `…4001`, Laila Samir Ali `…4002`, Salma Karim Mostafa `…4003`, Adam Mahmoud El-Sayed `…4004`, Zeina Tarek Zaki `…4005`, Kareem Omar Hegazy `…4006`, Mariam Dalia Ibrahim `…4007` (subs `01HZKXD00000000000000040xx`).
@@ -90,7 +99,7 @@ TOTP: add the secret to any authenticator app (Base32, SHA-1, 30 s, 6 digits). A
 
 **P7. Security page.** 1) Hoda -> **Security**. *Expected:* two synthetic passkeys, sessions list (revoke one -> removed), events (step-up success 3 min old, step-up failed, session revoked). A privileged action (e.g. revoking all sessions) asks for step-up.
 
-**P8. Ops: TOTP step and link review.** 1) Sign in as `+201000000099`, `000000`. 2) TOTP prompt: enter the current code for `REMOVED-OLD-DEMO-TOTP-SECRET`. 3) Open `/account/ops/links`. *Expected:* exactly one pending request (secondary `+201000001009`). Approve/reject needs a fresh step-up; **do not approve** unless you want two demo accounts merged (merges are reversible only through the reviewed reverse action). 4) Repeat as `+201000009001` with its own secret: same queue. 5) `+201000009003`: after the OTP you are asked to enrol a TOTP (scan the QR, confirm) because no secret is seeded.
+**P8. Ops: TOTP step and link review.** 1) Sign in as `+201000000099`, `000000`. 2) TOTP prompt: enter the current code for `<local seed +201000000099>`. 3) Open `/account/ops/links`. *Expected:* exactly one pending request (secondary `+201000001009`). Approve/reject needs a fresh step-up; **do not approve** unless you want two demo accounts merged (merges are reversible only through the reviewed reverse action). 4) Repeat as `+201000009001` with its own secret: same queue. 5) `+201000009003`: after the OTP you are asked to enrol a TOTP (scan the QR, confirm) because no secret is seeded.
 
 **P9. Dependant has no login.** Try to sign in with Yassin's sub or any phone: dependants have no phone, so there is nothing to enter; they only exist under their guardian's Family page.
 

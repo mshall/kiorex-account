@@ -168,6 +168,17 @@ export async function migrate(pool: Pool, schema: string): Promise<void> {
     );
     CREATE UNIQUE INDEX IF NOT EXISTS scim_users_name ON scim_users (org_id, lower(user_name));
 
+    -- configurable second-factor policy (default: disabled = MFA optional) with a maker-checker change log
+    CREATE TABLE IF NOT EXISTS mfa_policy (
+      id int PRIMARY KEY CHECK (id = 1), policy jsonb NOT NULL, version int NOT NULL DEFAULT 0, updated_by text, updated_at timestamptz
+    );
+    CREATE TABLE IF NOT EXISTS mfa_policy_changes (
+      id text PRIMARY KEY, proposed_by text NOT NULL, policy jsonb NOT NULL, note text, base_version int NOT NULL,
+      status text NOT NULL DEFAULT 'pending', decided_by text, decided_at timestamptz, decision_note text,
+      applied_directly boolean NOT NULL DEFAULT false, created_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS mfa_policy_changes_status ON mfa_policy_changes (status, created_at DESC);
+
     CREATE TABLE IF NOT EXISTS audit_events (
       seq bigserial PRIMARY KEY, at timestamptz NOT NULL DEFAULT now(), type text NOT NULL, sub text, data jsonb NOT NULL DEFAULT '{}',
       prev_hash text NOT NULL, hash text NOT NULL

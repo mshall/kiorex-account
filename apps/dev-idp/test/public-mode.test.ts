@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { assertNotProduction } from '../src/guard.js';
 import { devTestUsersEnabled } from '../src/dev-test-users.js';
-import { loadIdpConfig, runtimeFromEnv } from '../src/config.js';
+import { loadIdpConfig, loadSeedUsers, runtimeFromEnv } from '../src/config.js';
 import { isPublicDeployment, publicModeProblems } from '../src/public-mode.js';
 import { createApp, type DevIdp } from '../src/app.js';
 import { dropSchema } from '../src/db.js';
@@ -69,6 +69,7 @@ describe('a public-mode server', () => {
   beforeAll(async () => {
     const runtime = { ...runtimeFromEnv(cfg, { PORT: String(port), ISSUER: `http://localhost:${port}`, KX_DB_SCHEMA: schema, KX_TRUST_PROXY: 'true', DEV_IDP_PUBLIC: 'true', KX_COOKIE_KEYS: 'c'.repeat(40), KX_FAKE_UPSTREAM_PORT: '0' }), providerSsoEnabled: false };
     idp = await createApp({ runtime, cfg: structuredClone(cfg), quiet: true, env: {} });
+    expect(idp.seedUsers.some((u) => u.totpSecret), 'a hosted start loads no TOTP secret at all').toBe(false);
   });
   afterAll(async () => { await dropSchema(idp.pool, schema).catch(() => undefined); await idp.close(); });
   it('hides every /dev route and keeps health and discovery', async () => {
@@ -79,13 +80,13 @@ describe('a public-mode server', () => {
   });
   it('registers no demo-OTP numbers, so 000000 is never accepted', () => { expect(idp.testNumbers).toEqual([]); });
   it('never writes the published dev TOTP secrets, and a restart never reverts what an operator provisioned', async () => {
-    const withTotp = idp.seedUsers.filter((u) => u.totpSecret);
-    expect(withTotp.length).toBeGreaterThan(0); // the published seed does carry them, which is why a hosted database must not receive them
+    const withTotp = loadSeedUsers().filter((u) => u.totpSecret); // the LOCAL generated ones: a hosted database must never receive them
+    expect(withTotp.length).toBeGreaterThan(0);
     expect((await idp.pool.query(`SELECT count(*)::int AS n FROM totp_credentials`)).rows[0].n).toBe(0);
     const sub = withTotp[0]!.sub;
     await idp.pool.query(`UPDATE accounts SET roles = roles || '["owner"]'::jsonb, name = 'Operator edit' WHERE sub = $1`, [sub]);
     await idp.pool.query(`INSERT INTO totp_credentials (sub, secret, confirmed_at) VALUES ($1, 'GENERATEDOUTSIDEGIT', now())`, [sub]);
-    await new Accounts(idp.pool).seed(idp.seedUsers, { hosted: true }); // what every container start does
+    await new Accounts(idp.pool).seed(withTotp, { hosted: true }); // what every container start does
     const a = (await idp.pool.query(`SELECT roles, name FROM accounts WHERE sub = $1`, [sub])).rows[0];
     expect(a.roles).toContain('owner'); expect(a.name).toBe('Operator edit');
     expect((await idp.pool.query(`SELECT secret FROM totp_credentials WHERE sub = $1`, [sub])).rows[0].secret).toBe('GENERATEDOUTSIDEGIT');

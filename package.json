@@ -18,6 +18,7 @@
     "test": "vitest run",
     "test:unit": "vitest run packages",
     "db:reset": "npm run db:reset -w @kiorex/dev-idp",
+    "dev:totp-secrets": "tsx scripts/local-totp.ts",
     "db:seed:demo": "DEMO_SEED_ALLOWED=true tsx scripts/seed-demo.ts",
     "test:e2e": "playwright test -c apps/passport-ui/e2e/playwright.config.ts",
     "demo-data:remove": "tsx scripts/demo-data-remove.ts",

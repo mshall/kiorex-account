@@ -7,6 +7,7 @@ Start with the [README](../README.md), then pick a document.
 | [DEV_IDP_CONTRACT.md](DEV_IDP_CONTRACT.md) | Dev IdP contract, clients, tokens, session API, guardian, linking, orgs, step-up, federation, SCIM, Passport UI |
 | [KA_TRACE.md](KA_TRACE.md) | KX-04 requirement trace (KA-01 to KA-14) with tests and prod path |
 | [IDP_SCORECARD.md](IDP_SCORECARD.md) | Managed IdP comparison; vendor decision NEEDS_HUMAN |
+| [MFA_POLICY.md](MFA_POLICY.md) | Optional-by-default two-step verification, the ops console policy (roles, organisation type, organisation, maker-checker), what a real owner sees, Pharmacy and Lab interplay |
 | [SCIM.md](SCIM.md) | SCIM 2.0 provisioning per organisation |
 | [UPGRADE_NOTES.md](UPGRADE_NOTES.md) | Toolchain/dependency versions, breaking changes handled, pinned items, how to verify |
 | [PROVIDERS.md](PROVIDERS.md) | SMS / WhatsApp provider contract for OTP and notifications: env, payloads, webhooks, mock inbox and simulators |

@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { z } from 'zod';
 import { isPublicDeployment } from './public-mode.js';
+import { ensureLocalTotpSecrets, localTotpFile } from './local-totp.js';
 import { parsePromotionMode, type PromotionMode } from './promotion-mode.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -92,7 +93,9 @@ const idpSchema = z.object({
 });
 const seedSchema = z.object({
   users: z.array(z.object({
-    sub: z.string(), phone: z.string(), name: z.string(), locale: z.enum(['ar', 'en']), roles: z.array(z.string()), totpSecret: z.string().optional(),
+    sub: z.string(), phone: z.string(), name: z.string(), locale: z.enum(['ar', 'en']), roles: z.array(z.string()),
+    /** The seed only marks WHO has a TOTP; the secret is generated locally and never committed (local-totp.ts). */
+    totp: z.boolean().optional(), totpSecret: z.string().optional(),
     email: z.string().optional(), emailVerified: z.boolean().optional(), // dev seed only: a person whose e-mail was verified (corporate domain join in local tests)
   })),
 });
@@ -154,8 +157,16 @@ export function applyClientOverrides(cfg: IdpConfig, env: NodeJS.ProcessEnv = pr
   }
   return cfg;
 }
-export function loadSeedUsers(file = path.join(REPO_ROOT, 'config/seed-users.json')): SeedUser[] {
-  return seedSchema.parse(JSON.parse(readFileSync(file, 'utf8'))).users;
+/**
+ * Seed users. `totp: true` accounts get a LOCAL generated secret (git-ignored file, local-totp.ts) in `totpSecret`; `totp: 'none'` (hosted deployments) leaves them without.
+ */
+export function loadSeedUsers(file = path.join(REPO_ROOT, 'config/seed-users.json'), o: { totp?: 'local' | 'none'; env?: NodeJS.ProcessEnv } = {}): SeedUser[] {
+  const users = seedSchema.parse(JSON.parse(readFileSync(file, 'utf8'))).users;
+  if ((o.totp ?? 'local') === 'none') return users.map(({ totpSecret: _drop, ...u }) => { void _drop; return u; });
+  const want = users.filter((u) => u.totp);
+  if (!want.length) return users;
+  const secrets = ensureLocalTotpSecrets(localTotpFile(REPO_ROOT, o.env ?? process.env), want.map((u) => u.phone));
+  return users.map((u) => (u.totp ? { ...u, totpSecret: secrets[u.phone] } : u));
 }
 
 /** Brand assets: tokens.css prefers ../_brand (workspace sibling, always fresh) and falls back to the committed copy (CI); everything else is the committed copy. */

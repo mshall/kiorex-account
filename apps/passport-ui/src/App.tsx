@@ -12,6 +12,7 @@ import { SecurityPage } from './pages/Security';
 import { FamilyPage } from './pages/Family';
 import { LinkedPage } from './pages/Linked';
 import { OpsLinksPage } from './pages/OpsLinks';
+import { OpsMfaPage } from './pages/OpsMfa';
 import { OrgsPage } from './pages/Orgs';
 import { PrivacyPage } from './pages/Privacy';
 import { AppsPage } from './pages/Apps';
@@ -51,7 +52,7 @@ function Toolbar() {
 const NAV: Array<{ to: string; key: TKey; ops?: boolean }> = [
   { to: '/account', key: 'nav.home' }, { to: '/account/security', key: 'nav.security' }, { to: '/account/family', key: 'nav.family' },
   { to: '/account/linked', key: 'nav.linked' }, { to: '/account/orgs', key: 'nav.orgs' }, { to: '/account/privacy', key: 'nav.privacy' },
-  { to: '/account/apps', key: 'nav.apps' }, { to: '/account/ops/links', key: 'nav.ops', ops: true },
+  { to: '/account/apps', key: 'nav.apps' }, { to: '/account/ops/links', key: 'nav.ops', ops: true }, { to: '/account/ops/mfa', key: 'nav.mfa', ops: true },
 ];
 
 function Shell({ children }: { children: ReactNode }) {
@@ -91,6 +92,7 @@ function Routes() {
     case '/account/apps': return <AppsPage />;
     case '/account/step-up': return <StepUpPage />;
     case '/account/ops/links': return <OpsLinksPage />;
+    case '/account/ops/mfa': return <OpsMfaPage />;
     default: return <><h1>404</h1><p>{t('app.notFound')}</p><Link to="/account">{t('nav.home')}</Link></>;
   }
 }

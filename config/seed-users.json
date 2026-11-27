@@ -1,5 +1,5 @@
 {
-  "$comment": "LOCAL DEV ONLY seed users (INTEGRATION.md). Never read by the Cognito/tofu stack. The 000000 OTP bypass is accepted only for these numbers and only when NODE_ENV != production. TOTP secrets are fixed DEV-ONLY values (E2E + demo). Demo personas (phones +20100000xxxx, 1xxx patients, 2xxx org members, 9xxx ops) are documented in TEST_DATA.md; dependants, guardian links, organisations and invitations live in seed-demo.json (loaded by scripts/seed-demo.ts).",
+  "$comment": "LOCAL DEV ONLY seed users (INTEGRATION.md). Never read by the Cognito/tofu stack. The 000000 OTP bypass is accepted only for these numbers and only when NODE_ENV != production. Accounts marked \"totp\": true get a RANDOM per-machine TOTP secret generated at first local start into the git-ignored .local/totp-secrets.json (no secret is ever committed; npm run dev:totp-secrets prints or rotates them). Demo personas (phones +20100000xxxx, 1xxx patients, 2xxx org members, 9xxx ops) are documented in TEST_DATA.md; dependants, guardian links, organisations and invitations live in seed-demo.json (loaded by scripts/seed-demo.ts).",
   "users": [
     {
       "sub": "01HZKX00000000000000000001",
@@ -28,7 +28,7 @@
         "ops_admin",
         "super_admin"
       ],
-      "totpSecret": "REMOVED-OLD-DEMO-TOTP-SECRET"
+      "totp": true
     },
     {
       "sub": "01HZKXD0000000000000001001",
@@ -254,7 +254,7 @@
       "roles": [
         "ops_admin"
       ],
-      "totpSecret": "REMOVED-OLD-DEMO-TOTP-SECRET"
+      "totp": true
     },
     {
       "sub": "01HZKXD0000000000000009002",
@@ -265,7 +265,7 @@
         "ops_admin",
         "finance"
       ],
-      "totpSecret": "REMOVED-OLD-DEMO-TOTP-SECRET"
+      "totp": true
     },
     {
       "sub": "01HZKXD0000000000000009003",

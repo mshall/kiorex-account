@@ -20,8 +20,8 @@ npx tsx scripts/seed-demo.ts --reset       # removes only demo records (subs 01H
 | +201000002001 | Ahmed Fawzy | owner of org *Nile Care Medical Center (DEMO)* |
 | +201000002002 / 2003 | Sara Lotfy / Dr Amr Salem | receptionist / doctor members |
 | +201000002004 / 2005 | Mostafa Reda / Dina Wagdy | pharmacist (Delta Pharmacy) / lab technician (Cairo Diagnostics) |
-| +201000000099 | Ops super admin | TOTP `REMOVED-OLD-DEMO-TOTP-SECRET` |
-| +201000009001 / 9002 / 9003 | Ops admin / finance / support | TOTP `REMOVED-OLD-DEMO-TOTP-SECRET` / `REMOVED-OLD-DEMO-TOTP-SECRET` / none |
+| +201000000099 | Ops super admin | TOTP `<local seed +201000000099>` |
+| +201000009001 / 9002 / 9003 | Ops admin / finance / support | TOTP `<local seed +201000009001>` / `<local seed +201000009002>` / none |
 | +201000000001 / 0002 | Amira / Hassan | e2e fixtures, unchanged |
 Pages: `/account/family` (guardian links, act-as), `/account/orgs` (memberships; pending invite for `+201000001010`, token `demo-invite-nile-nurse`), `/account/security` (demo sessions for 1001, 1005), `/account/ops/links` (ops reviewer queue). OTP codes are also visible at `/dev/inbox`. Dependant accounts have no phone/login by design.
 

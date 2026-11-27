@@ -11,6 +11,7 @@ import { codePage, errorText, passkeyPage, phonePage, totpPage, page, t, t2, esc
 import type { Pool } from './db.js';
 import type { IdpConfig } from './config.js';
 import type { Totp } from './totp.js';
+import type { MfaPolicy } from './mfa-policy.js';
 import type { Federation, FederatedResult } from './federation.js';
 import { HttpError } from './services.js';
 import { clearStates, getState, setState } from './istate.js';
@@ -18,7 +19,7 @@ import { clearStates, getState, setState } from './istate.js';
 export interface InteractionDeps {
   provider: Provider; accounts: Accounts; otp: OtpService; passkeys: Passkeys; audit: Audit;
   passkeysEnabled: boolean; trustProxy: boolean;
-  pool: Pool; cfg: IdpConfig; totp: Totp; federation: Federation;
+  pool: Pool; cfg: IdpConfig; totp: Totp; mfaPolicy: MfaPolicy; federation: Federation;
 }
 
 function pickLang(req: IncomingMessage, url: URL, form: Record<string, string>, uiLocales?: unknown): Lang {
@@ -79,18 +80,20 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
     const t = await getState(d.pool, uid, 'totp');
     return !!t && t.sub === ff.account.sub;
   };
-  const needsMfa = (ff: FirstFactor) => d.totp.requiresMfa(ff.account);
+  /** Mandatory second factor: baseline roles (config) or the ops-managed MFA policy (roles, organisation type, organisation). Optional otherwise. */
+  const needsMfa = async (ff: FirstFactor) => (await d.mfaPolicy.requirement(ff.account)).required;
 
   const renderTotp = async (ff: FirstFactor, error?: string, status = 200) => {
     const enrol = (await d.totp.isEnrolled(ff.account.sub)) ? undefined : await d.totp.enrolStart(ff.account);
-    return send(res, status, totpPage(lang, uid, { error, enrol }));
+    // a voluntarily enrolled person (factor not mandatory) may skip; a mandatory factor can never be skipped
+    return send(res, status, totpPage(lang, uid, { error, enrol, skippable: !(await needsMfa(ff)) }));
   };
 
   const finishLogin = async () => {
     const ff = await firstFactor();
     if (!ff) return back();
     const totpDone = await secondFactorDone(ff);
-    if (needsMfa(ff) && !totpDone) return back(); // privileged roles must pass TOTP (KA-03/KA-10) before any token is issued
+    if ((await needsMfa(ff)) && !totpDone) return back(); // privileged roles must pass TOTP (KA-03/KA-10) before any token is issued
     if (ff.method === 'otp') {
       const c = await d.otp.consume(uid);
       if (!c) return back();
@@ -106,7 +109,11 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
 
   /** After a first factor (and any required TOTP): offer passkey registration after phone OTP, else finish. */
   const afterFactors = async (ff: FirstFactor) => {
-    if (needsMfa(ff) && !(await secondFactorDone(ff))) return renderTotp(ff);
+    if (!(await secondFactorDone(ff))) {
+      if (await needsMfa(ff)) return renderTotp(ff);
+      // optional: an enrolled person is offered the authenticator code (the MFA claim is issued only when it is used); skipping keeps the basic level
+      if ((await d.totp.isEnrolled(ff.account.sub)) && !(await getState(d.pool, uid, 'totp_skip'))) return renderTotp(ff);
+    }
     if (ff.method === 'otp' && d.passkeysEnabled) return send(res, 200, passkeyPage(lang, uid));
     return finishLogin();
   };
@@ -218,7 +225,9 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
   // KA-03/KA-10: TOTP challenge or first-time enrolment for privileged roles
   if (isPost && action === 'totp') {
     const ff = await firstFactor();
-    if (!ff || !needsMfa(ff)) return back();
+    if (!ff) return back();
+    const enrolledAlready = await d.totp.isEnrolled(ff.account.sub);
+    if (!(await needsMfa(ff)) && !enrolledAlready) return back(); // optional factors are enrolled in the account page, not in the sign-in
     const enrolled = await d.totp.isEnrolled(ff.account.sub);
     const r = await d.totp.verify(ff.account.sub, form.totp ?? '', { confirm: !enrolled });
     if (!r.ok) {
@@ -230,6 +239,16 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
     if (!enrolled) await d.audit.record('totp.enrolled', ff.account.sub);
     await setState(d.pool, uid, 'totp', ff.account.sub, { step: r.step });
     await d.audit.record('totp.verified', ff.account.sub);
+    return afterFactors(ff);
+  }
+
+  // optional second factor: skip (never for a mandatory one)
+  if (isPost && action === 'totp/skip') {
+    const ff = await firstFactor();
+    if (!ff) return back();
+    if (await needsMfa(ff)) return renderTotp(ff, undefined, 403);
+    await setState(d.pool, uid, 'totp_skip', ff.account.sub);
+    await d.audit.record('totp.skipped', ff.account.sub);
     return afterFactors(ff);
   }
 

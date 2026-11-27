@@ -1,13 +1,10 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test';
 import { generateSync } from 'otplib';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import { loadSeedUsers } from '../../dev-idp/src/config.js';
 
 export const PORT = Number(process.env.KX_E2E_PORT ?? 4450);
 export const ISSUER = `http://localhost:${PORT}`;
-const here = path.dirname(fileURLToPath(import.meta.url));
-const seed = JSON.parse(readFileSync(path.join(here, '../../../config/seed-users.json'), 'utf8')).users as Array<{ phone: string; totpSecret?: string; roles: string[] }>;
+const seed = loadSeedUsers() as Array<{ phone: string; totpSecret?: string; roles: string[] }>; // local generated TOTP secrets (git-ignored), same file the dev IdP of this suite uses
 export const OPS = seed.find((u) => u.roles.includes('super_admin'))!;
 
 const used = new Set<string>();

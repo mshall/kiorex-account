@@ -1,7 +1,7 @@
 import type { Pool } from './db.js';
 
 /** Server-side state attached to one login interaction (second-factor done, passkey login, federation pending). */
-export type StateKind = 'totp' | 'passkey_login' | 'fed_login' | 'fed_pending';
+export type StateKind = 'totp' | 'passkey_login' | 'fed_login' | 'fed_pending' | 'totp_skip';
 
 export async function setState(pool: Pool, uid: string, kind: StateKind, sub: string, data: Record<string, unknown> = {}): Promise<void> {
   await pool.query(

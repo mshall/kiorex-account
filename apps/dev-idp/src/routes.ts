@@ -69,9 +69,10 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
   // ---------------- self-service profile + policy (Passport web UI) ----------------
   if (p === '/api/account' && m === 'GET') {
     const a = await account(d, caller);
+    const mfa = await svc.mfaPolicy.requirement(a);
     return ok(200, {
       sub: a.sub, name: a.name, phone: a.phone, phone_verified: a.phone_verified, locale: a.locale, roles: a.roles, kind: a.kind,
-      email: a.email_verified ? (a.email ?? null) : null, email_verified: a.email_verified === true, mfa_required: svc.totp.requiresMfa(a), totp_enrolled: await svc.totp.isEnrolled(a.sub), acr: caller.acr ?? null, amr: caller.amr ?? [], auth_time: caller.authTime ?? null,
+      email: a.email_verified ? (a.email ?? null) : null, email_verified: a.email_verified === true, mfa_required: mfa.required, mfa_required_by: mfa.by, totp_enrolled: await svc.totp.isEnrolled(a.sub), acr: caller.acr ?? null, amr: caller.amr ?? [], auth_time: caller.authTime ?? null,
     });
   }
   if (p === '/api/account' && m === 'PATCH') {
@@ -108,6 +109,7 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
       orgs: { role_hints: d.cfg.orgs.roleHints, editions: d.cfg.orgs.editions, default_edition: d.cfg.orgs.defaultEdition, invitation_ttl_days: d.cfg.orgs.invitationTtlDays },
       step_up: { freshness_seconds: su.freshnessSeconds, sensitive_actions: su.sensitiveActions, acr_mfa: su.acr.mfa },
       mfa_required_roles: d.cfg.mfaPolicy.requiredForRoles,
+      mfa_policy_enabled: (await svc.mfaPolicy.current()).policy.enabled,
     });
   }
   if (p === '/api/security/events' && m === 'GET') {
@@ -170,6 +172,38 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
     }
   }
 
+  // ---------------- configurable MFA policy (ops_admin / super_admin + fresh MFA step-up; maker-checker; audited) ----------------
+  if (s[0] === 'api' && s[1] === 'ops' && s[2] === 'mfa-policy') {
+    const actor = await opsReviewer(d, caller);
+    const mp = svc.mfaPolicy;
+    if (s.length === 3 && m === 'GET') {
+      const cur = await mp.current();
+      const changes = await mp.list(30);
+      const names = cur.updated_by ? (await d.pool.query(`SELECT name FROM accounts WHERE sub = $1`, [cur.updated_by])).rows[0]?.name ?? null : null;
+      const cfgm = d.cfg.mfaPolicy as { requiredForRoles: string[] };
+      return ok(200, {
+        policy: cur.policy, version: cur.version, updated_by: cur.updated_by, updated_by_name: names, updated_at: cur.updated_at,
+        impact: await mp.impact(cur.policy),
+        pending: await Promise.all(changes.filter((c) => c.status === 'pending').map(async (c) => ({ ...c, impact: await mp.impact(c.policy) }))),
+        changes: changes.filter((c) => c.status !== 'pending'),
+        options: { roles: mp.assignableRoles(), org_types: ['clinic', 'nurse', 'pharmacy', 'lab'], orgs: await mp.orgOptions(), baseline_roles: cfgm.requiredForRoles },
+        me: { sub: actor.sub, can_apply_directly: actor.roles.includes('super_admin') },
+      });
+    }
+    if (s.length === 4 && s[3] === 'preview' && m === 'POST') {
+      const policy = await mp.validate((await json(req)).policy);
+      return ok(200, { policy, impact: await mp.impact(policy) });
+    }
+    if (s.length === 4 && s[3] === 'changes' && m === 'POST') return ok(201, await mp.propose(actor, await json(req)));
+    if (s.length === 6 && s[3] === 'changes' && m === 'POST') {
+      const b = await json(req);
+      if (s[5] === 'approve') return ok(200, await mp.approve(actor, s[4]!, b.note));
+      if (s[5] === 'reject') return ok(200, await mp.reject(actor, s[4]!, b.note));
+      if (s[5] === 'withdraw') return ok(200, await mp.withdraw(actor, s[4]!));
+    }
+    throw new HttpError(404, 'not_found');
+  }
+
   // ---------------- KA-09 organisations & memberships ----------------
   if (p === '/api/orgs' && m === 'POST') return ok(201, await svc.orgs.create(await account(d, caller), await json(req)));
   if (p === '/api/workspaces' && m === 'GET') return ok(200, { workspaces: await svc.orgs.workspaces(caller.sub) });
@@ -192,7 +226,7 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
   }
 
   // ---------------- KA-10 TOTP + step-up ----------------
-  if (p === '/api/totp' && m === 'GET') return ok(200, { enrolled: await svc.totp.isEnrolled(caller.sub), required: svc.totp.requiresMfa(await account(d, caller)) });
+  if (p === '/api/totp' && m === 'GET') return ok(200, { enrolled: await svc.totp.isEnrolled(caller.sub), required: (await svc.mfaPolicy.requirement(await account(d, caller))).required });
   if (p === '/api/totp/enroll' && m === 'POST') {
     const e = await svc.totp.enrolStart(await account(d, caller));
     if (!e) throw new HttpError(409, 'already_enrolled');
@@ -206,7 +240,7 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
   }
   if (p === '/api/totp' && m === 'DELETE') {
     const a = await account(d, caller);
-    if (svc.totp.requiresMfa(a)) throw new HttpError(409, 'totp_required_for_role');
+    if ((await svc.mfaPolicy.requirement(a)).required) throw new HttpError(409, 'totp_required_for_role');
     const ch = stepUpChallenge(d, caller);
     if (ch) throw ch;
     if (!(await svc.totp.disable(a.sub))) throw new HttpError(404, 'not_enrolled');

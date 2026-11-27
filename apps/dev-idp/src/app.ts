@@ -19,6 +19,7 @@ import { handleApi, revokeAllSessions, type ApiDeps } from './api.js';
 import { DevInbox, Notifier, TeeChannel } from './notify.js';
 import { Events } from './events.js';
 import { Totp } from './totp.js';
+import { MfaPolicy } from './mfa-policy.js';
 import { Guardianship } from './guardian.js';
 import { AccountLinking } from './links.js';
 import { Orgs } from './orgs.js';
@@ -83,7 +84,7 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
   const homeClient = cfg.clients.find((c) => c.clientId === 'kiorly-home');
   if (homeClient) homeClient.environments.local.backchannelLogoutUri ??= `${rt.issuer}/account/backchannel-logout`;
   setNativeFormActionSchemes(cfg.clients.flatMap((c) => [...c.environments.local.redirectUris, ...c.environments.local.postLogoutRedirectUris]));
-  const seedUsers = o.seedUsers ?? loadSeedUsers();
+  const seedUsers = o.seedUsers ?? loadSeedUsers(undefined, { totp: rt.publicMode ? 'none' : 'local' });
   const seedNumbers = seedUsers.map((u) => u.phone);
   /** Numbers for which the demo OTP 000000 is accepted. Empty when the bypass is off (public DEV deployment default). */
   const testNumbers = rt.devOtpBypass === false ? [] : seedNumbers;
@@ -129,7 +130,8 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
   const federation = new Federation(ctx, rt.providerSsoEnabled, upstreams, o.fetchImpl);
   const totp = new Totp(pool, cfg, o.totpNow ?? now);
   const scim = new Scim(ctx);
-  const svc = { guardian: new Guardianship(ctx), linking: new AccountLinking(ctx, otp), orgs, totp, federation, scim, email: new EmailVerification(pool, inbox, audit, now) };
+  const mfaPolicy = new MfaPolicy(ctx);
+  const svc = { guardian: new Guardianship(ctx), linking: new AccountLinking(ctx, otp), orgs, totp, mfaPolicy, federation, scim, email: new EmailVerification(pool, inbox, audit, now) };
   const origin = new URL(rt.issuer);
   const passkeys = new Passkeys(pool, { id: origin.hostname, name: cfg.passwordless.passkeys.rpName, origin: origin.origin });
   const suppressedSessions = new Set<string>();
@@ -162,7 +164,7 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
     cfg, svc, ctx, trustProxy: rt.trustProxy, now,
   };
   hooks.revokeSessions = (sub) => revokeAllSessions(apiDeps, sub);
-  const iDeps = { provider, accounts, otp, passkeys, audit, passkeysEnabled: rt.passkeysEnabled, trustProxy: rt.trustProxy, pool, cfg, totp, federation };
+  const iDeps = { provider, accounts, otp, passkeys, audit, passkeysEnabled: rt.passkeysEnabled, trustProxy: rt.trustProxy, pool, cfg, totp, mfaPolicy, federation };
 
   const swBrowser = path.join(REPO_ROOT, 'node_modules/@simplewebauthn/browser/dist/bundle/index.umd.min.js');
   const swScript = readFileSync(swBrowser, 'utf8');

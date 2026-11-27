@@ -80,7 +80,7 @@ function TotpCard({ onChange }: { onChange: () => void }) {
       {account.totp_enrolled ? (
         <>
           <p>{t('totp.on')}</p>
-          {account.mfa_required ? <Alert kind="info">{t('totp.required')}</Alert> : <Button variant="secondary" onClick={() => setConfirmOff(true)}>{t('totp.disable')}</Button>}
+          {account.mfa_required ? <Alert kind="info">{account.mfa_required_by === 'policy' ? t('totp.requiredPolicy') : t('totp.required')}</Alert> : <Button variant="secondary" onClick={() => setConfirmOff(true)}>{t('totp.disable')}</Button>}
         </>
       ) : enrol ? (
         <form onSubmit={(e) => { e.preventDefault(); void confirm(); }}>
@@ -94,7 +94,7 @@ function TotpCard({ onChange }: { onChange: () => void }) {
           <Button type="submit" disabled={code.replace(/\s/g, '').length < 6}>{t('totp.confirm')}</Button>
         </form>
       ) : (
-        <><p>{t('totp.off')}</p><Button onClick={() => void start()} busy={busy}>{t('totp.enrol')}</Button></>
+        <>{account.mfa_required ? <Alert kind="warning">{t('totp.requiredNotEnrolled')}</Alert> : null}<p>{t('totp.off')}</p><Button onClick={() => void start()} busy={busy}>{t('totp.enrol')}</Button></>
       )}
       {confirmOff ? <ConfirmDialog title={t('totp.disableTitle')} body={t('totp.disableBody')} confirmLabel={t('totp.disable')} danger busy={busy} onConfirm={() => void disable()} onCancel={() => setConfirmOff(false)} /> : null}
     </Card>

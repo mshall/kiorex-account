@@ -4,7 +4,19 @@ export class ApiError extends Error {
   constructor(readonly status: number, readonly code: string, readonly extra: Record<string, unknown> = {}) { super(code); }
 }
 
-export interface Account { sub: string; name: string | null; phone: string | null; phone_verified: boolean; locale: 'ar' | 'en'; roles: string[]; kind: string; mfa_required: boolean; totp_enrolled: boolean; acr: string | null; amr: string[]; auth_time: number | null }
+export interface Account { sub: string; name: string | null; phone: string | null; phone_verified: boolean; locale: 'ar' | 'en'; roles: string[]; kind: string; mfa_required: boolean; mfa_required_by?: 'role' | 'policy' | null; totp_enrolled: boolean; acr: string | null; amr: string[]; auth_time: number | null }
+export interface MfaRule { scope: 'all' | 'org_type' | 'org'; value?: string; roles: string[] }
+export interface MfaPolicyDoc { enabled: boolean; rules: MfaRule[] }
+export interface MfaImpact { people: number; without_factor: number }
+export interface MfaChange {
+  id: string; proposed_by: string; proposed_by_name: string | null; policy: MfaPolicyDoc; note: string | null; base_version: number; status: 'pending' | 'applied' | 'rejected' | 'withdrawn';
+  decided_by: string | null; decided_by_name: string | null; decided_at: string | null; decision_note: string | null; applied_directly: boolean; created_at: string; impact?: MfaImpact;
+}
+export interface MfaPolicyState {
+  policy: MfaPolicyDoc; version: number; updated_by_name: string | null; updated_at: string | null; impact: MfaImpact; pending: MfaChange[]; changes: MfaChange[];
+  options: { roles: string[]; org_types: string[]; orgs: Array<{ org_id: string; legal_name: string; types: string[] }>; baseline_roles: string[] };
+  me: { sub: string; can_apply_directly: boolean };
+}
 export interface EmailState { email: string | null; email_verified: boolean; pending: boolean }
 export interface ScimToken { token_id: string; label: string; created_at: string; last_used_at: string | null; revoked_at: string | null }
 export interface ScimTokenCreated { token_id: string; label: string; token: string; scim_base_url: string }
@@ -62,6 +74,10 @@ export interface Api {
   requestLink(phone: string): Promise<{ link_id: string; status: string }>;
   verifyLink(id: string, code: string): Promise<LinkView>;
   cancelLink(id: string): Promise<void>;
+  opsMfaPolicy(): Promise<MfaPolicyState>;
+  opsMfaPreview(policy: MfaPolicyDoc): Promise<{ policy: MfaPolicyDoc; impact: MfaImpact }>;
+  opsMfaPropose(policy: MfaPolicyDoc, note: string, apply: boolean): Promise<MfaChange>;
+  opsMfaDecide(id: string, action: 'approve' | 'reject' | 'withdraw', note?: string): Promise<MfaChange>;
   opsLinks(status: string): Promise<LinkView[]>;
   opsLinkAction(id: string, action: 'approve' | 'reject' | 'reverse', body: { resolution?: Resolution; note?: string }): Promise<LinkView>;
   federationIdentities(): Promise<FederatedIdentity[]>;
@@ -145,6 +161,10 @@ export function createApi(baseUrl: string, auth: AuthLike, doFetch: typeof fetch
     requestLink: (phone) => call('POST', '/api/links', { phone }),
     verifyLink: (id, code) => call('POST', `/api/links/${enc(id)}/verify`, { code }),
     cancelLink: async (id) => { await call('DELETE', `/api/links/${enc(id)}`); },
+    opsMfaPolicy: () => call('GET', '/api/ops/mfa-policy'),
+    opsMfaPreview: (policy) => call('POST', '/api/ops/mfa-policy/preview', { policy }),
+    opsMfaPropose: (policy, note, apply) => call('POST', '/api/ops/mfa-policy/changes', { policy, ...(note.trim() ? { note: note.trim() } : {}), ...(apply ? { apply: true } : {}) }),
+    opsMfaDecide: (id, action, note) => call('POST', `/api/ops/mfa-policy/changes/${enc(id)}/${action}`, note ? { note } : {}),
     opsLinks: async (status) => (await call<{ links: LinkView[] }>('GET', `/api/ops/links?status=${enc(status)}`)).links,
     opsLinkAction: (id, action, body) => call('POST', `/api/ops/links/${enc(id)}/${action}`, body),
     federationIdentities: async () => (await call<{ identities: FederatedIdentity[] }>('GET', '/api/federation/identities')).identities,

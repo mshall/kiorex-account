@@ -11,11 +11,12 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { assertDemoSeedAllowed } from './demo-seed-guard.js';
+import { loadSeedUsers } from '../apps/dev-idp/src/config.js';
 assertDemoSeedAllowed('Kiorex Passport dev IdP (local DB kiorex_account)');
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const url = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:5433/kiorex_account';
 const reset = process.argv.includes('--reset');
-const users = JSON.parse(readFileSync(join(root, 'config/seed-users.json'), 'utf8')).users as any[];
+const users = loadSeedUsers() as any[]; // `totp: true` accounts get a LOCAL generated secret (git-ignored .local/totp-secrets.json), never a committed one
 const demo = JSON.parse(readFileSync(join(root, 'config/seed-demo.json'), 'utf8'));
 const pool = new pg.Pool({ connectionString: url });
 const q = (sql: string, p: any[] = []) => pool.query(sql, p);

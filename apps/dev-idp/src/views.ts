@@ -130,14 +130,16 @@ const X2 = {
     pkLogin: 'Sign in with a passkey', pkFail: 'Passkey sign-in failed. Use your phone number instead.',
     fedWith: (n: string) => `Continue with ${n}`, fedLink: 'Your provider account is not linked yet. Verify your mobile number once to link it to Kiorex Passport.',
     totpTitle: 'Two-step verification', totpSub: 'Enter the 6-digit code from your authenticator app.', totpCode: 'Authenticator code', totpGo: 'Verify',
-    totpEnrolTitle: 'Set up your authenticator', totpEnrolSub: 'Your role requires two-step verification. Add this key to an authenticator app, then enter the code it shows.', totpKey: 'Setup key',
+    totpEnrolTitle: 'Set up your authenticator', totpEnrolSub: 'Two-step verification is required for your account. Add this key to an authenticator app (for example Google Authenticator, Microsoft Authenticator or Authy), then enter the 6-digit code it shows.', totpKey: 'Setup key',
+    totpSkip: 'Skip for now', totpOptionalSub: 'You turned on two-step verification. Enter the code to sign in with it, or skip.',
     totpErr: { wrong: (n: number) => `Incorrect code. ${n} attempt(s) left.`, locked: 'Too many wrong attempts. Try again in a few minutes.', invalid: 'Enter the 6-digit code.' },
   },
   ar: {
     pkLogin: 'تسجيل الدخول بمفتاح مرور', pkFail: 'فشل الدخول بمفتاح المرور. استخدم رقم هاتفك.',
     fedWith: (n: string) => `المتابعة عبر ${n}`, fedLink: 'حساب مزوّد الخدمة غير مرتبط بعد. تحقق من رقم هاتفك مرة واحدة لربطه بكيوريكس باسبورت.',
     totpTitle: 'التحقق بخطوتين', totpSub: 'أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة.', totpCode: 'رمز المصادقة', totpGo: 'تحقق',
-    totpEnrolTitle: 'إعداد تطبيق المصادقة', totpEnrolSub: 'دورك يتطلب التحقق بخطوتين. أضف هذا المفتاح إلى تطبيق مصادقة ثم أدخل الرمز الظاهر.', totpKey: 'مفتاح الإعداد',
+    totpEnrolTitle: 'إعداد تطبيق المصادقة', totpEnrolSub: 'التحقق بخطوتين مطلوب لحسابك. أضف هذا المفتاح إلى تطبيق مصادقة (مثل Google Authenticator أو Microsoft Authenticator أو Authy) ثم أدخل الرمز المكوّن من 6 أرقام الذي يظهر.', totpKey: 'مفتاح الإعداد',
+    totpSkip: 'تخطَّ الآن', totpOptionalSub: 'لقد فعّلت التحقق بخطوتين. أدخل الرمز لتسجيل الدخول به أو تخطَّ.',
     totpErr: { wrong: (n: number) => `الرمز غير صحيح. تبقّت ${n} محاولة.`, locked: 'محاولات خاطئة كثيرة. حاول بعد دقائق.', invalid: 'أدخل الرمز المكوّن من 6 أرقام.' },
   },
 } as const;
@@ -171,15 +173,15 @@ document.getElementById('pk-login').addEventListener('click',async()=>{
 }
 
 /** KA-10: TOTP challenge, or first-time enrolment (secret shown) for privileged roles. */
-export function totpPage(lang: Lang, uid: string, o: { error?: string; enrol?: { secret: string; uri: string }} = {}): string {
+export function totpPage(lang: Lang, uid: string, o: { error?: string; enrol?: { secret: string; uri: string }; skippable?: boolean } = {}): string {
   const y = t2(lang);
   const head = o.enrol
     ? `<h1>${y.totpEnrolTitle}</h1><p>${y.totpEnrolSub}</p><p>${y.totpKey}: <bdi dir="ltr" id="totp-secret"><code>${esc(o.enrol.secret)}</code></bdi></p><p class="hint"><bdi dir="ltr">${esc(o.enrol.uri)}</bdi></p>`
-    : `<h1>${y.totpTitle}</h1><p>${y.totpSub}</p>`;
+    : `<h1>${y.totpTitle}</h1><p>${o.skippable ? y.totpOptionalSub : y.totpSub}</p>`;
   return page(lang, y.totpTitle, `${head}${err(o.error ?? '')}
 <form method="post" action="/interaction/${esc(uid)}/totp"><input type="hidden" name="lang" value="${lang}">
 <label for="totp">${y.totpCode}</label><input id="totp" class="code" name="totp" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="6" required autofocus>
-<button type="submit">${y.totpGo}</button></form>`, { langSwitchHref: `/interaction/${uid}?lang=${lang === 'ar' ? 'en' : 'ar'}` });
+<button type="submit">${y.totpGo}</button></form>${o.skippable ? `\n<form method="post" action="/interaction/${esc(uid)}/totp/skip"><input type="hidden" name="lang" value="${lang}"><button type="submit" class="secondary" id="totp-skip">${y.totpSkip}</button></form>` : ''}`, { langSwitchHref: `/interaction/${uid}?lang=${lang === 'ar' ? 'en' : 'ar'}` });
 }
 
 export function codePage(lang: Lang, uid: string, maskedPhone: string, o: { error?: string} = {}): string {
