@@ -9,10 +9,13 @@ import { renderPages, robotsTxt, sitemapXml } from './render';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const APP_DIR = path.resolve(here, '..');
-/** The vendored Kiorly brand set (identical to _brand/dist/svg/kiorly-*.svg, which the Kiorly guard checksums). The Kiorex logo is never copied. */
+/** The vendored Kiorly brand set (identical to _brand/dist/svg/kiorly-*.svg, which the Kiorly guard checksums). */
 const BRAND_DIR = path.resolve(APP_DIR, '../kiorly-home/public/brand');
 const BRAND_FILES = ['kiorly-lockup.svg', 'kiorly-lockup-inverse.svg', 'kiorly-lockup-ar.svg', 'kiorly-lockup-ar-inverse.svg', 'kiorly-mark.svg', 'kiorly-mark-inverse.svg', 'favicon.svg'];
+/** The Kiorex logo (founder spec v2, copied verbatim from _brand/ with a parity test) is used only in "Kiorly by Kiorex" places, at its minimum size of 120 px wide or more. */
+const KIOREX_FILES = ['kiorex-logo-full.svg', 'kiorex-mark.svg'];
 const FONT_FILES = ['Jost_400Regular.ttf', 'Jost_600SemiBold.ttf', 'IBMPlexSansArabic_400Regular.ttf', 'IBMPlexSansArabic_600SemiBold.ttf'];
+const VENDOR_DIR = path.resolve(APP_DIR, 'assets/vendor');
 
 const hash = (b: string | Buffer) => createHash('sha256').update(b).digest('hex').slice(0, 10);
 async function bundle(entry: string): Promise<string> {
@@ -24,11 +27,14 @@ export async function buildSite(cfg: SiteConfig, outDir = path.join(APP_DIR, 'di
   rmSync(outDir, { recursive: true, force: true });
   const put = (rel: string, body: string | Buffer) => { const f = path.join(outDir, rel); mkdirSync(path.dirname(f), { recursive: true }); writeFileSync(f, body); };
   const css = readFileSync(path.join(APP_DIR, 'assets/site.css'), 'utf8');
-  const js = await bundle('client.ts'); const langJs = await bundle('client-lang.ts');
-  const assets = { css: `/assets/site.${hash(css)}.css`, js: `/assets/site.${hash(js)}.js`, langJs: `/assets/lang.${hash(langJs)}.js` };
-  put(assets.css.slice(1), css); put(assets.js.slice(1), js); put(assets.langJs.slice(1), langJs);
+  const js = await bundle('client.ts'); const langJs = await bundle('client-lang.ts'); const bootJs = await bundle('boot.ts');
+  const assets = { css: `/assets/site.${hash(css)}.css`, js: `/assets/site.${hash(js)}.js`, langJs: `/assets/lang.${hash(langJs)}.js`, bootJs: `/assets/boot.${hash(bootJs)}.js` };
+  put(assets.css.slice(1), css); put(assets.js.slice(1), js); put(assets.langJs.slice(1), langJs); put(assets.bootJs.slice(1), bootJs);
   for (const f of BRAND_FILES) { const src = path.join(BRAND_DIR, f); if (!existsSync(src)) throw new Error(`Kiorly brand file missing: ${src}`); put(`assets/brand/${f}`, readFileSync(src)); }
+  for (const f of KIOREX_FILES) put(`assets/brand/${f}`, readFileSync(path.join(VENDOR_DIR, f)));
   for (const f of FONT_FILES) put(`assets/fonts/${f}`, readFileSync(path.join(BRAND_DIR, 'fonts', f)));
+  put('assets/fonts/PlusJakartaSans-SemiBold-latin.woff2', readFileSync(path.join(VENDOR_DIR, 'PlusJakartaSans-SemiBold-latin.woff2')));
+  put('assets/fonts/OFL.txt', readFileSync(path.join(VENDOR_DIR, 'OFL.txt')));
   for (const p of renderPages(cfg, assets)) put(p.path, p.body);
   put('robots.txt', robotsTxt(cfg));
   if (cfg.indexable) put('sitemap.xml', sitemapXml(cfg));

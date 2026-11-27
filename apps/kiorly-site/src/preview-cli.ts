@@ -4,7 +4,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { APP_DIR } from './build';
 
-const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.ttf': 'font/ttf', '.txt': 'text/plain', '.xml': 'application/xml' };
+const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.ttf': 'font/ttf', '.woff2': 'font/woff2', '.txt': 'text/plain', '.xml': 'application/xml' };
 export function startPreview(root: string, port: number) {
   return new Promise<import('node:http').Server>((resolve) => {
     const s = createServer((req, res) => {

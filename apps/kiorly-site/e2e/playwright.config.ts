@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const MOCK = Number(process.env.KIORLY_SITE_E2E_PORT ?? 5196);
+const MOCK = Number(process.env.KIORLY_SITE_E2E_PORT ?? 5496);
 const LIVE = MOCK + 1;
 const cwd = '../../..';
 // The two builds get their hosts from the environment of the test run (the app has no host literal): a mock-leads site and a live-endpoint site.

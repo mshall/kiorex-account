@@ -1,0 +1,696 @@
+{
+  "providerTypes": [
+    {
+      "key": "CLINIC",
+      "en": "Clinic",
+      "ar": "عيادة",
+      "active": true
+    },
+    {
+      "key": "INDEPENDENT_DOCTOR",
+      "en": "Independent doctor",
+      "ar": "طبيب مستقل",
+      "active": true
+    },
+    {
+      "key": "CHAIN",
+      "en": "Chain of clinics",
+      "ar": "سلسلة عيادات",
+      "active": true
+    },
+    {
+      "key": "HOSPITAL",
+      "en": "Hospital",
+      "ar": "مستشفى",
+      "active": true
+    },
+    {
+      "key": "NURSE",
+      "en": "Nurse",
+      "ar": "ممرض أو ممرضة",
+      "active": true
+    },
+    {
+      "key": "PHYSICIAN",
+      "en": "Physician or allied health professional",
+      "ar": "طبيب أو أخصائي رعاية صحية",
+      "active": true
+    },
+    {
+      "key": "LAB",
+      "en": "Laboratory",
+      "ar": "معمل",
+      "active": true
+    },
+    {
+      "key": "PHARMACY",
+      "en": "Pharmacy",
+      "ar": "صيدلية",
+      "active": true
+    },
+    {
+      "key": "OTHER",
+      "en": "Other",
+      "ar": "أخرى",
+      "active": true
+    }
+  ],
+  "specialties": [
+    {
+      "key": "GENERAL_PRACTICE",
+      "en": "General practice",
+      "ar": "طب عام",
+      "active": true
+    },
+    {
+      "key": "INTERNAL_MEDICINE",
+      "en": "Internal medicine",
+      "ar": "باطنة",
+      "active": true
+    },
+    {
+      "key": "PEDIATRICS",
+      "en": "Paediatrics",
+      "ar": "أطفال",
+      "active": true
+    },
+    {
+      "key": "OBGYN",
+      "en": "Obstetrics and gynaecology",
+      "ar": "نساء وتوليد",
+      "active": true
+    },
+    {
+      "key": "DERMATOLOGY",
+      "en": "Dermatology",
+      "ar": "جلدية",
+      "active": true
+    },
+    {
+      "key": "DENTISTRY",
+      "en": "Dentistry",
+      "ar": "أسنان",
+      "active": true
+    },
+    {
+      "key": "OPHTHALMOLOGY",
+      "en": "Ophthalmology",
+      "ar": "عيون",
+      "active": true
+    },
+    {
+      "key": "ENT",
+      "en": "Ear, nose and throat",
+      "ar": "أنف وأذن وحنجرة",
+      "active": true
+    },
+    {
+      "key": "ORTHOPEDICS",
+      "en": "Orthopaedics",
+      "ar": "عظام",
+      "active": true
+    },
+    {
+      "key": "CARDIOLOGY",
+      "en": "Cardiology",
+      "ar": "قلب",
+      "active": true
+    },
+    {
+      "key": "NEUROLOGY",
+      "en": "Neurology",
+      "ar": "مخ وأعصاب",
+      "active": true
+    },
+    {
+      "key": "PSYCHIATRY",
+      "en": "Psychiatry",
+      "ar": "نفسية",
+      "active": true
+    },
+    {
+      "key": "UROLOGY",
+      "en": "Urology",
+      "ar": "مسالك بولية",
+      "active": true
+    },
+    {
+      "key": "PHYSIOTHERAPY",
+      "en": "Physiotherapy",
+      "ar": "علاج طبيعي",
+      "active": true
+    },
+    {
+      "key": "NUTRITION",
+      "en": "Nutrition",
+      "ar": "تغذية",
+      "active": true
+    },
+    {
+      "key": "RADIOLOGY",
+      "en": "Radiology",
+      "ar": "أشعة",
+      "active": true
+    },
+    {
+      "key": "LAB_MEDICINE",
+      "en": "Laboratory medicine",
+      "ar": "تحاليل طبية",
+      "active": true
+    },
+    {
+      "key": "HOME_NURSING",
+      "en": "Nursing and home care",
+      "ar": "تمريض ورعاية منزلية",
+      "active": true
+    },
+    {
+      "key": "OTHER",
+      "en": "Other",
+      "ar": "أخرى",
+      "active": true
+    }
+  ],
+  "modules": [
+    {
+      "key": "CLINIC",
+      "en": "Kiorly Clinic",
+      "ar": "كيورلي كلينيك",
+      "active": true
+    },
+    {
+      "key": "PHARMACY",
+      "en": "Kiorly Pharmacy",
+      "ar": "كيورلي فارماسي",
+      "active": true
+    },
+    {
+      "key": "LAB",
+      "en": "Kiorly Lab",
+      "ar": "كيورلي لاب",
+      "active": true
+    },
+    {
+      "key": "NURSE",
+      "en": "Kiorly Nurse",
+      "ar": "كيورلي للتمريض",
+      "active": true
+    },
+    {
+      "key": "STAFF_APP",
+      "en": "Kiorly staff app",
+      "ar": "تطبيق كيورلي للفريق",
+      "active": true
+    },
+    {
+      "key": "ENTERPRISE",
+      "en": "Hospitals and chains",
+      "ar": "المستشفيات والسلاسل",
+      "active": true
+    }
+  ],
+  "goLive": [
+    {
+      "key": "ASAP",
+      "en": "As soon as possible",
+      "ar": "في أقرب وقت",
+      "active": true
+    },
+    {
+      "key": "WITHIN_1_MONTH",
+      "en": "Within a month",
+      "ar": "خلال شهر",
+      "active": true
+    },
+    {
+      "key": "ONE_TO_THREE_MONTHS",
+      "en": "In one to three months",
+      "ar": "خلال شهر إلى ثلاثة",
+      "active": true
+    },
+    {
+      "key": "THREE_TO_SIX_MONTHS",
+      "en": "In three to six months",
+      "ar": "خلال ثلاثة إلى ستة أشهر",
+      "active": true
+    },
+    {
+      "key": "EXPLORING",
+      "en": "Just exploring",
+      "ar": "أستكشف فقط",
+      "active": true
+    }
+  ],
+  "software": [
+    {
+      "key": "NONE",
+      "en": "None, we use paper or spreadsheets",
+      "ar": "لا شيء، نستخدم الورق أو جداول البيانات",
+      "active": true
+    },
+    {
+      "key": "OTHER_SOFTWARE",
+      "en": "Another software",
+      "ar": "برنامج آخر",
+      "active": true
+    }
+  ],
+  "contactChannels": [
+    {
+      "key": "PHONE",
+      "en": "Phone call",
+      "ar": "مكالمة هاتفية",
+      "active": true
+    },
+    {
+      "key": "WHATSAPP",
+      "en": "WhatsApp",
+      "ar": "واتساب",
+      "active": true
+    },
+    {
+      "key": "EMAIL",
+      "en": "Email",
+      "ar": "بريد إلكتروني",
+      "active": true
+    }
+  ],
+  "contactTimes": [
+    {
+      "key": "MORNING",
+      "en": "Morning",
+      "ar": "صباحا",
+      "active": true
+    },
+    {
+      "key": "AFTERNOON",
+      "en": "Afternoon",
+      "ar": "بعد الظهر",
+      "active": true
+    },
+    {
+      "key": "EVENING",
+      "en": "Evening",
+      "ar": "مساء",
+      "active": true
+    },
+    {
+      "key": "ANYTIME",
+      "en": "Any time",
+      "ar": "في أي وقت",
+      "active": true
+    }
+  ],
+  "markets": [
+    {
+      "key": "EG",
+      "en": "Egypt",
+      "ar": "مصر",
+      "active": true,
+      "dialCode": "+20",
+      "governorates": [
+        {
+          "key": "CAIRO",
+          "en": "Cairo",
+          "ar": "القاهرة",
+          "active": true
+        },
+        {
+          "key": "GIZA",
+          "en": "Giza",
+          "ar": "الجيزة",
+          "active": true
+        },
+        {
+          "key": "ALEXANDRIA",
+          "en": "Alexandria",
+          "ar": "الإسكندرية",
+          "active": true
+        },
+        {
+          "key": "QALYUBIA",
+          "en": "Qalyubia",
+          "ar": "القليوبية",
+          "active": true
+        },
+        {
+          "key": "PORT_SAID",
+          "en": "Port Said",
+          "ar": "بورسعيد",
+          "active": true
+        },
+        {
+          "key": "SUEZ",
+          "en": "Suez",
+          "ar": "السويس",
+          "active": true
+        },
+        {
+          "key": "DAKAHLIA",
+          "en": "Dakahlia",
+          "ar": "الدقهلية",
+          "active": true
+        },
+        {
+          "key": "SHARQIA",
+          "en": "Sharqia",
+          "ar": "الشرقية",
+          "active": true
+        },
+        {
+          "key": "GHARBIA",
+          "en": "Gharbia",
+          "ar": "الغربية",
+          "active": true
+        },
+        {
+          "key": "MONUFIA",
+          "en": "Monufia",
+          "ar": "المنوفية",
+          "active": true
+        },
+        {
+          "key": "BEHEIRA",
+          "en": "Beheira",
+          "ar": "البحيرة",
+          "active": true
+        },
+        {
+          "key": "KAFR_EL_SHEIKH",
+          "en": "Kafr El Sheikh",
+          "ar": "كفر الشيخ",
+          "active": true
+        },
+        {
+          "key": "DAMIETTA",
+          "en": "Damietta",
+          "ar": "دمياط",
+          "active": true
+        },
+        {
+          "key": "ISMAILIA",
+          "en": "Ismailia",
+          "ar": "الإسماعيلية",
+          "active": true
+        },
+        {
+          "key": "NORTH_SINAI",
+          "en": "North Sinai",
+          "ar": "شمال سيناء",
+          "active": true
+        },
+        {
+          "key": "SOUTH_SINAI",
+          "en": "South Sinai",
+          "ar": "جنوب سيناء",
+          "active": true
+        },
+        {
+          "key": "FAYOUM",
+          "en": "Fayoum",
+          "ar": "الفيوم",
+          "active": true
+        },
+        {
+          "key": "BENI_SUEF",
+          "en": "Beni Suef",
+          "ar": "بني سويف",
+          "active": true
+        },
+        {
+          "key": "MINYA",
+          "en": "Minya",
+          "ar": "المنيا",
+          "active": true
+        },
+        {
+          "key": "ASSIUT",
+          "en": "Assiut",
+          "ar": "أسيوط",
+          "active": true
+        },
+        {
+          "key": "SOHAG",
+          "en": "Sohag",
+          "ar": "سوهاج",
+          "active": true
+        },
+        {
+          "key": "QENA",
+          "en": "Qena",
+          "ar": "قنا",
+          "active": true
+        },
+        {
+          "key": "LUXOR",
+          "en": "Luxor",
+          "ar": "الأقصر",
+          "active": true
+        },
+        {
+          "key": "ASWAN",
+          "en": "Aswan",
+          "ar": "أسوان",
+          "active": true
+        },
+        {
+          "key": "RED_SEA",
+          "en": "Red Sea",
+          "ar": "البحر الأحمر",
+          "active": true
+        },
+        {
+          "key": "NEW_VALLEY",
+          "en": "New Valley",
+          "ar": "الوادي الجديد",
+          "active": true
+        },
+        {
+          "key": "MATROUH",
+          "en": "Matrouh",
+          "ar": "مطروح",
+          "active": true
+        }
+      ]
+    }
+  ],
+  "requiredFields": [
+    "modules"
+  ],
+  "typeFields": {
+    "CLINIC": {
+      "fields": [
+        "tradeName",
+        "branches",
+        "staffCount",
+        "specialties",
+        "services",
+        "currentSoftware",
+        "facilityLicence",
+        "commercialRegister",
+        "taxCard"
+      ],
+      "answers": {
+        "rooms": {
+          "kind": "int",
+          "min": 1,
+          "max": 500
+        }
+      },
+      "minBranches": null
+    },
+    "INDEPENDENT_DOCTOR": {
+      "fields": [
+        "tradeName",
+        "specialties",
+        "services",
+        "currentSoftware",
+        "professionalLicence",
+        "taxCard"
+      ],
+      "answers": {
+        "practiceSetting": {
+          "kind": "enum",
+          "values": [
+            "OWN_CLINIC",
+            "SHARED_CLINIC",
+            "MULTIPLE_PLACES"
+          ]
+        }
+      },
+      "minBranches": null
+    },
+    "CHAIN": {
+      "fields": [
+        "tradeName",
+        "branches",
+        "staffCount",
+        "specialties",
+        "services",
+        "currentSoftware",
+        "facilityLicence",
+        "commercialRegister",
+        "taxCard"
+      ],
+      "answers": {
+        "centralBilling": {
+          "kind": "bool"
+        },
+        "citiesCount": {
+          "kind": "int",
+          "min": 1,
+          "max": 200
+        }
+      },
+      "minBranches": 2
+    },
+    "HOSPITAL": {
+      "fields": [
+        "tradeName",
+        "branches",
+        "staffCount",
+        "specialties",
+        "services",
+        "currentSoftware",
+        "facilityLicence",
+        "commercialRegister",
+        "taxCard"
+      ],
+      "answers": {
+        "beds": {
+          "kind": "int",
+          "min": 1,
+          "max": 5000
+        },
+        "departments": {
+          "kind": "int",
+          "min": 1,
+          "max": 200
+        },
+        "currentHis": {
+          "kind": "bool"
+        }
+      },
+      "minBranches": null
+    },
+    "NURSE": {
+      "fields": [
+        "tradeName",
+        "specialties",
+        "services",
+        "currentSoftware",
+        "professionalLicence",
+        "taxCard"
+      ],
+      "answers": {
+        "homeVisits": {
+          "kind": "bool"
+        },
+        "practiceModel": {
+          "kind": "enum",
+          "values": [
+            "SOLO",
+            "AGENCY"
+          ]
+        }
+      },
+      "minBranches": null
+    },
+    "PHYSICIAN": {
+      "fields": [
+        "tradeName",
+        "specialties",
+        "services",
+        "currentSoftware",
+        "professionalLicence",
+        "taxCard"
+      ],
+      "answers": {
+        "practiceSetting": {
+          "kind": "enum",
+          "values": [
+            "OWN_CLINIC",
+            "SHARED_CLINIC",
+            "MULTIPLE_PLACES"
+          ]
+        }
+      },
+      "minBranches": null
+    },
+    "LAB": {
+      "fields": [
+        "tradeName",
+        "branches",
+        "staffCount",
+        "services",
+        "currentSoftware",
+        "facilityLicence",
+        "commercialRegister",
+        "taxCard"
+      ],
+      "answers": {
+        "homeSampling": {
+          "kind": "bool"
+        },
+        "collectionPoints": {
+          "kind": "int",
+          "min": 0,
+          "max": 500
+        }
+      },
+      "minBranches": null
+    },
+    "PHARMACY": {
+      "fields": [
+        "tradeName",
+        "branches",
+        "staffCount",
+        "services",
+        "currentSoftware",
+        "facilityLicence",
+        "commercialRegister",
+        "taxCard"
+      ],
+      "answers": {
+        "delivery": {
+          "kind": "bool"
+        },
+        "open24h": {
+          "kind": "bool"
+        }
+      },
+      "minBranches": null
+    },
+    "OTHER": {
+      "fields": [
+        "tradeName",
+        "branches",
+        "staffCount",
+        "specialties",
+        "services",
+        "currentSoftware",
+        "facilityLicence",
+        "professionalLicence",
+        "commercialRegister",
+        "taxCard"
+      ],
+      "answers": {
+        "otherDescription": {
+          "kind": "text",
+          "max": 200
+        }
+      },
+      "minBranches": null
+    }
+  },
+  "modes": [
+    "STANDALONE",
+    "CONNECTED"
+  ],
+  "limits": {
+    "note": 1000,
+    "legalName": 120,
+    "services": 300,
+    "licence": 40
+  }
+}

@@ -1,56 +1,65 @@
-/** Browser script for the onboarding form (bundled by esbuild into assets/site.js; no dependencies). Reads its settings from data attributes of the form, so the HTML stays the single source. */
-import { buildPayload, validateLead, type LeadErrors, type LeadField, type LeadInput } from './lead';
+/** Browser behaviour of the Kiorly page: menu, scroll state, tabs, reveal animations, language memory and the join form. No framework, no network except the lead endpoint. */
+import defaults from './form-defaults.json';
+import { mountJoinForm } from './form';
+import type { FormConfig } from './lead';
 
-const form = document.querySelector<HTMLFormElement>('form[data-lead-form]');
-if (form) {
-  const lang = (form.dataset.lang === 'ar' ? 'ar' : 'en') as 'ar' | 'en';
-  const endpoint = form.dataset.endpoint || '';
-  const env = form.dataset.env || '';
-  const status = form.querySelector<HTMLElement>('[data-status]')!;
-  const msg = (k: string) => form.dataset[k] ?? '';
-  const val = (n: string) => (form.elements.namedItem(n) as HTMLInputElement | HTMLSelectElement | null)?.value ?? '';
-  const read = (): LeadInput => ({ kind: val('kind'), organisation: val('organisation'), contactName: val('contactName'), phone: val('phone'), email: val('email'), city: val('city'), message: val('message'), consent: (form.elements.namedItem('consent') as HTMLInputElement).checked, website: val('website') });
-  const show = (errors: LeadErrors) => {
-    for (const f of ['kind', 'organisation', 'contactName', 'phone', 'email', 'consent'] as LeadField[]) {
-      const el = form.querySelector<HTMLElement>(`[name="${f}"]`); const out = form.querySelector<HTMLElement>(`[data-error-for="${f}"]`);
-      const code = errors[f];
-      if (el) el.setAttribute('aria-invalid', code ? 'true' : 'false');
-      if (out) { out.textContent = code ? (code === 'required' ? msg('errRequired') : msg('errInvalid')) : ''; out.hidden = !code; }
-    }
+const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// language memory (the root page redirects by it)
+for (const a of document.querySelectorAll<HTMLAnchorElement>('a.lang')) a.addEventListener('click', () => { try { localStorage.setItem('kiorly-lang', a.hreflang); } catch { /* ignore */ } });
+
+// header state and mobile menu
+const header = document.querySelector<HTMLElement>('.top');
+const onScroll = () => header?.classList.toggle('is-stuck', window.scrollY > 8);
+onScroll(); window.addEventListener('scroll', onScroll, { passive: true });
+const toggle = document.querySelector<HTMLButtonElement>('[data-menu-toggle]'); const nav = document.querySelector<HTMLElement>('#site-nav');
+if (toggle && nav) {
+  const set = (open: boolean) => { toggle.setAttribute('aria-expanded', String(open)); nav.classList.toggle('open', open); };
+  toggle.addEventListener('click', () => set(toggle.getAttribute('aria-expanded') !== 'true'));
+  nav.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('a')) set(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') { set(false); toggle.focus(); } });
+}
+
+// accessible tabs (module selector and journeys): arrow keys, Home and End, roving tabindex
+for (const list of document.querySelectorAll<HTMLElement>('[role=tablist]')) {
+  const tabs = [...list.querySelectorAll<HTMLButtonElement>('[role=tab]')];
+  const select = (t: HTMLButtonElement, focus = false) => {
+    for (const x of tabs) { const on = x === t; x.setAttribute('aria-selected', String(on)); x.tabIndex = on ? 0 : -1; const p = document.getElementById(x.getAttribute('aria-controls') ?? ''); if (p) p.hidden = !on; }
+    if (focus) t.focus();
   };
-  form.addEventListener('submit', async (ev) => {
-    ev.preventDefault();
-    status.className = 'status'; status.textContent = '';
-    const input = read();
-    if (input.website) return; // honeypot: bots fill the hidden field; humans never see it
-    const errors = validateLead(input);
-    show(errors);
-    const first = Object.keys(errors)[0];
-    if (first) { form.querySelector<HTMLElement>(`[name="${first}"]`)?.focus(); return; }
-    const button = form.querySelector<HTMLButtonElement>('button[type=submit]')!;
-    button.disabled = true; status.textContent = msg('sending');
-    const payload = buildPayload(input, { env, locale: lang, now: new Date() });
-    try {
-      if (endpoint) {
-        const r = await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload), credentials: 'omit', referrerPolicy: 'no-referrer' });
-        if (!r.ok) throw new Error(String(r.status));
-      }
-      form.reset(); show({});
-      status.className = 'status ok'; status.textContent = endpoint ? msg('sent') : msg('mockSent');
-      status.focus();
-    } catch {
-      status.className = 'status bad'; status.textContent = msg('failed'); button.disabled = false; return;
-    }
-    button.disabled = false;
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => select(t));
+    t.addEventListener('keydown', (e) => {
+      const rtl = document.documentElement.dir === 'rtl'; const next = (e.key === 'ArrowRight') !== rtl ? 1 : -1;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); select(tabs[(i + next + tabs.length) % tabs.length]!, true); }
+      else if (e.key === 'Home') { e.preventDefault(); select(tabs[0]!, true); } else if (e.key === 'End') { e.preventDefault(); select(tabs[tabs.length - 1]!, true); }
+    });
   });
 }
 
-for (const a of document.querySelectorAll<HTMLAnchorElement>('a.lang')) a.addEventListener('click', () => { try { localStorage.setItem('kiorly-lang', a.hreflang); } catch { /* ignore */ } });
+// reveal on scroll (skipped entirely when the visitor prefers reduced motion or the browser has no IntersectionObserver)
+const reveals = [...document.querySelectorAll<HTMLElement>('.reveal')];
+if (reduce || typeof IntersectionObserver !== 'function') for (const el of reveals) el.classList.add('is-in');
+else {
+  const io = new IntersectionObserver((entries) => { for (const en of entries) if (en.isIntersecting) { en.target.classList.add('is-in'); io.unobserve(en.target); } }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+  for (const el of reveals) io.observe(el);
+}
 
-// The menu is a <details> (works without JavaScript on phones). On wide screens it is always shown: open it, and follow the viewport.
-const menu = document.querySelector<HTMLDetailsElement>('details.menu');
-if (menu && typeof matchMedia === 'function') {
-  const wide = matchMedia('(min-width: 56rem)');
-  const sync = () => { if (wide.matches) menu.open = true; };
-  sync(); wide.addEventListener('change', (e) => { menu.open = e.matches; });
+// the section the visitor is reading
+const links = [...document.querySelectorAll<HTMLAnchorElement>('#site-nav a[href^="#"]:not(.btn)')];
+if (links.length && typeof IntersectionObserver === 'function') {
+  const byId = new Map(links.map((a) => [a.getAttribute('href')!.slice(1), a]));
+  const spy = new IntersectionObserver((entries) => { for (const en of entries) if (en.isIntersecting) { for (const a of links) a.removeAttribute('aria-current'); byId.get(en.target.id)?.setAttribute('aria-current', 'true'); } }, { rootMargin: '-40% 0px -55% 0px' });
+  for (const id of byId.keys()) { const s = document.getElementById(id); if (s) spy.observe(s); }
+}
+
+// the join form
+const host = document.querySelector<HTMLElement>('[data-join]');
+let join: ReturnType<typeof mountJoinForm> | null = null;
+if (host) {
+  join = mountJoinForm(host, { lang: host.dataset.lang === 'ar' ? 'ar' : 'en', env: host.dataset.env ?? '', endpoint: host.dataset.endpoint || null, defaults: defaults as unknown as FormConfig });
+  host.dataset.ready = 'true';
+}
+for (const b of document.querySelectorAll<HTMLElement>('[data-join-mode],[data-join-module]')) {
+  b.addEventListener('click', () => { join?.prefill({ mode: b.dataset.joinMode, module: b.dataset.joinModule, type: b.dataset.joinType }); });
 }
