@@ -4,7 +4,7 @@ import { formatMoney, mountPlans, parsePlans, renderPlans, type PlansLabels } fr
 import { bindTabs } from '../src/tabs';
 import { PLANS } from '../src/content';
 
-const L = (lang: 'ar' | 'en'): PlansLabels => ({ tabs: PLANS.tabs[lang], modules: PLANS.modules[lang], tbd: PLANS.tbd[lang], ask: PLANS.ask[lang], includes: PLANS.includes[lang], free: PLANS.free[lang], unavailable: PLANS.unavailable[lang], marketNote: PLANS.marketNote[lang], perMonth: PLANS.perMonth[lang], perYear: PLANS.perYear[lang], perClinic: PLANS.perClinic[lang], perClinician: PLANS.perClinician[lang], included: PLANS.included[lang], extra: PLANS.extra[lang], noPlans: PLANS.noPlans[lang] });
+const L = (lang: 'ar' | 'en'): PlansLabels => ({ tabs: PLANS.tabs[lang], modules: PLANS.modules[lang], tbd: PLANS.tbd[lang], ask: PLANS.ask[lang], includes: PLANS.includes[lang], free: PLANS.free[lang], unavailable: PLANS.unavailable[lang], marketNote: PLANS.marketNote[lang], perMonth: PLANS.perMonth[lang], perYear: PLANS.perYear[lang], perClinic: PLANS.perClinic[lang], perClinician: PLANS.perClinician[lang], included: PLANS.included[lang], extra: PLANS.extra[lang], noPlans: PLANS.noPlans[lang], more: PLANS.more[lang] });
 const loc = (en: string, ar = `ع ${en}`) => ({ en, ar });
 const lines = (en: string[]) => ({ en, ar: en.map((x) => `ع ${x}`) });
 const plan = (id: string, o: Record<string, unknown> = {}) => ({ id, name: loc(id.toUpperCase()), summary: null, limits: lines([]), features: lines(['Video visits']), priceStatus: 'TO_BE_ANNOUNCED', prices: [], ...o });
@@ -54,6 +54,13 @@ describe('plans rendering', () => {
     const html = renderPlans(m, 'en', L('en'))!;
     expect(html).toContain('The plans of this product are being finalised.'); expect(html).not.toContain('plans-market');
     expect(renderPlans(parsePlans(body({ modules: [{ id: 'clinic', status: 'UNAVAILABLE', plans: [] }] }), 'en')!, 'en', L('en'))).toBeNull();
+  });
+  it('a long feature list shows the first six and folds the rest into a disclosure with the count', () => {
+    const many = Array.from({ length: 9 }, (_, i) => `Feature ${i + 1}`);
+    const html = renderPlans(parsePlans(body({ modules: [{ id: 'clinic', status: 'OK', plans: [plan('big', { features: lines(many) }), plan('small', { features: lines(many.slice(0, 6)) })] }] }), 'en')!, 'en', L('en'))!;
+    const big = html.slice(html.indexOf('data-plan="clinic-big"'), html.indexOf('data-plan="clinic-small"'));
+    expect(big).toContain('<details class="more"><summary>Show 3 more features</summary>'); expect((big.match(/<li><svg/g) ?? []).length).toBe(9); expect(big.indexOf('Feature 6')).toBeLessThan(big.indexOf('<details'));
+    expect(html.slice(html.indexOf('data-plan="clinic-small"'))).not.toContain('<details');
   });
   it('escapes every value', () => {
     const evil = parsePlans(body({ modules: [{ id: 'clinic', status: 'OK', plans: [plan('x', { name: loc('<img src=x onerror=alert(1)>'), features: lines(['<script>1</script>']) })] }] }), 'en')!;
