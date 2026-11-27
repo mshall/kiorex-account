@@ -5,6 +5,7 @@ import { loadIdpConfig, runtimeFromEnv } from '../src/config.js';
 import { isPublicDeployment, publicModeProblems } from '../src/public-mode.js';
 import { createApp, type DevIdp } from '../src/app.js';
 import { dropSchema } from '../src/db.js';
+import { Accounts } from '../src/accounts.js';
 
 const cfg = loadIdpConfig(undefined, {});
 const GOOD = {
@@ -77,4 +78,16 @@ describe('a public-mode server', () => {
     expect((await fetch(`${idp.issuer}/.well-known/openid-configuration`)).status).toBe(200);
   });
   it('registers no demo-OTP numbers, so 000000 is never accepted', () => { expect(idp.testNumbers).toEqual([]); });
+  it('never writes the published dev TOTP secrets, and a restart never reverts what an operator provisioned', async () => {
+    const withTotp = idp.seedUsers.filter((u) => u.totpSecret);
+    expect(withTotp.length).toBeGreaterThan(0); // the published seed does carry them, which is why a hosted database must not receive them
+    expect((await idp.pool.query(`SELECT count(*)::int AS n FROM totp_credentials`)).rows[0].n).toBe(0);
+    const sub = withTotp[0]!.sub;
+    await idp.pool.query(`UPDATE accounts SET roles = roles || '["owner"]'::jsonb, name = 'Operator edit' WHERE sub = $1`, [sub]);
+    await idp.pool.query(`INSERT INTO totp_credentials (sub, secret, confirmed_at) VALUES ($1, 'GENERATEDOUTSIDEGIT', now())`, [sub]);
+    await new Accounts(idp.pool).seed(idp.seedUsers, { hosted: true }); // what every container start does
+    const a = (await idp.pool.query(`SELECT roles, name FROM accounts WHERE sub = $1`, [sub])).rows[0];
+    expect(a.roles).toContain('owner'); expect(a.name).toBe('Operator edit');
+    expect((await idp.pool.query(`SELECT secret FROM totp_credentials WHERE sub = $1`, [sub])).rows[0].secret).toBe('GENERATEDOUTSIDEGIT');
+  });
 });

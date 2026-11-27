@@ -90,7 +90,7 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
   const pool = createPool(rt.databaseUrl, rt.schema);
   await migrate(pool, rt.schema);
   const accounts = new Accounts(pool);
-  await accounts.seed(seedUsers);
+  await accounts.seed(seedUsers, { hosted: rt.publicMode === true });
   const audit = new Audit(pool);
   const key = await loadOrCreateSigningKey(pool);
   const now = o.now ?? (() => Math.floor(Date.now() / 1000));

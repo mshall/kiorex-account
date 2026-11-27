@@ -12,8 +12,21 @@ export interface Account {
 export class Accounts {
   constructor(private readonly pool: Pool) {}
 
-  async seed(users: SeedUser[]): Promise<void> {
+  /**
+   * Writes the demo accounts. LOCAL (default): reconciles every start (roles, status, deterministic dev TOTP so E2E tests can compute codes).
+   * HOSTED (public deployment, `hosted: true`): insert-if-missing ONLY and no TOTP at all. A restart must never revert what an operator provisioned
+   * (extra roles, TOTP secrets generated outside git), and the published dev TOTP secrets of this public repository must never be written to a hosted database.
+   */
+  async seed(users: SeedUser[], o: { hosted?: boolean } = {}): Promise<void> {
     for (const u of users) {
+      if (o.hosted) {
+        const ins = await this.pool.query(
+          `INSERT INTO accounts (sub, phone, phone_verified, name, locale, roles, data_class) VALUES ($1,$2,true,$3,$4,$5,'DEMO') ON CONFLICT (sub) DO NOTHING`,
+          [u.sub, u.phone, u.name, u.locale, JSON.stringify(u.roles)],
+        );
+        if (ins.rowCount && u.email) await this.pool.query(`UPDATE accounts SET email=$2, email_verified=$3 WHERE sub=$1`, [u.sub, u.email.toLowerCase(), u.emailVerified === true]);
+        continue;
+      }
       await this.pool.query(
         `INSERT INTO accounts (sub, phone, phone_verified, name, locale, roles, data_class) VALUES ($1,$2,true,$3,$4,$5,'DEMO')
          ON CONFLICT (sub) DO UPDATE SET phone=$2, phone_verified=true, name=$3, locale=$4, roles=$5, status='active', deleted_at=NULL, data_class='DEMO'`,
