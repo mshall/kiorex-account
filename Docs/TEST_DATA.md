@@ -49,3 +49,6 @@ Known limits: Kiorex's provider sync and the Nurse-lab push-back call Kiorly Cli
 ## Kiorly Home personas (ADR-038, DEV ONLY)
 OTP `000000`. `+201000002031` Demo Multi-Workspace Owner (member of Nile Care as doctor, Delta Pharmacy as pharmacist, Cairo Lab as lab technician: three workspaces, picker). `+201000002032` Demo No-Workspace Newcomer (no organisation: Create or join). One-workspace staff: `+201000002001` (Clinic), `+201000002004` (Pharmacy), `+201000002005` (Lab); `+201000003001` Mona (Nurse edition). Demo organisations carry `product_refs` (`kiorly_clinic_tenant_id=na`, `kiorly_pharmacy_tenant_id=org_demo_kiorly`, `kiorly_lab_tenant_id=demo-lab`) so the workspace endpoint derives the product.
 
+
+
+**Tagging and removal:** every seeded person, dependant and organisation carries `data_class = 'DEMO'`. `npm run demo-data:remove -- --dry-run` lists what would go, `--confirm` deletes it (never a REAL row; idempotent). See `Docs/IDENTITY_PROMOTION.md`.

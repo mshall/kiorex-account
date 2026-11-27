@@ -1,8 +1,8 @@
 import type { CardKey } from './core';
-type HomeEnv = { tier: string; issuer: string; home: string; products: Record<CardKey, string>; api: Record<CardKey, string> };
+type HomeEnv = { tier: string; issuer: string; home: string; patient: string; products: Record<CardKey, string>; api: Record<CardKey, string> };
 declare const __KX_HOME__: HomeEnv | undefined;
 /** Build-time environment (vite.config.ts define). Falls back to local defaults under unit tests. */
-const BASE: HomeEnv = typeof __KX_HOME__ !== 'undefined' ? __KX_HOME__ : { tier: 'local', issuer: 'http://localhost:4400', home: 'http://localhost:5194', products: { clinic: 'http://localhost:5174', nurse: 'http://localhost:5174', pharmacy: 'http://localhost:5192', lab: 'http://localhost:5193' }, api: { clinic: 'http://localhost:3010', nurse: 'http://localhost:3010', pharmacy: 'http://localhost:3100', lab: 'http://localhost:3200' } };
+const BASE: HomeEnv = typeof __KX_HOME__ !== 'undefined' ? __KX_HOME__ : { tier: 'local', issuer: 'http://localhost:4400', home: 'http://localhost:5194', patient: 'http://localhost:5180', products: { clinic: 'http://localhost:5174', nurse: 'http://localhost:5174', pharmacy: 'http://localhost:5192', lab: 'http://localhost:5193' }, api: { clinic: 'http://localhost:3010', nurse: 'http://localhost:3010', pharmacy: 'http://localhost:3100', lab: 'http://localhost:3200' } };
 
 /**
  * DEV ONLY escape hatch for the real-stack e2e: when another checkout owns the default Clinic ports (:5174 web, :3010 API) this workspace runs

@@ -12,7 +12,7 @@ const DevTestUsers = import.meta.env.DEV && import.meta.env.VITE_DEV_TEST_USERS 
 const LAST = 'kh.last'; const METHOD = 'kh.method';
 const read = (k: string): string | null => { try { return localStorage.getItem(k); } catch { return null; } };
 const write = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* storage blocked: applies to this visit only */ } };
-const KIOREX_URL = (import.meta.env.VITE_KIOREX_URL as string | undefined) ?? 'https://www.kiorex.com';
+const KIOREX_URL = (import.meta.env.VITE_KIOREX_URL as string | undefined) ?? ENV.patient; // the patient site of this environment (config/domains.json `patient`, or KX_PATIENT_URL on the dev tier)
 const isDark = (theme: Theme) => theme === 'dark' || (theme === 'auto' && typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches);
 
 /** Reactive CSS media query (layout decisions that change the DOM: where the theme control lives, dev drawer behaviour). */

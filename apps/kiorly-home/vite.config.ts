@@ -2,8 +2,9 @@ import { defineConfig } from 'vite';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { devTierFromEnv } from './dev-tier';
+import { kiorlyAppLinks } from './app-links';
 
-type Env = { passport: string; home: string; clinic: string; nurse: string; pharmacy: string; lab: string; api: { clinic: string; pharmacy: string; lab: string } };
+type Env = { passport: string; patient?: string; home: string; clinic: string; nurse: string; pharmacy: string; lab: string; api: { clinic: string; pharmacy: string; lab: string } };
 const domains = JSON.parse(readFileSync(fileURLToPath(new URL('../../config/domains.json', import.meta.url)), 'utf8')).environments as Record<string, Env>;
 
 /**
@@ -24,7 +25,8 @@ export default defineConfig(({ mode }) => {
   return {
     // Vite 8 transforms JSX natively (no plugin dependency); tsconfig jsx=react-jsx
     oxc: { jsx: { runtime: 'automatic' } },
-    define: { __KX_HOME__: JSON.stringify({ tier, issuer, home: process.env.KX_HOME_ORIGIN ?? d.home, products: { clinic: d.clinic, nurse: d.nurse, pharmacy: d.pharmacy, lab: d.lab }, api: { clinic: apiClinic, nurse: apiClinic, pharmacy: apiPharmacy, lab: apiLab } }) },
+    plugins: [kiorlyAppLinks()], // /.well-known/apple-app-site-association and assetlinks.json for the staff app (config/app-links templates)
+    define: { __KX_HOME__: JSON.stringify({ tier, issuer, home: process.env.KX_HOME_ORIGIN ?? d.home, patient: process.env.KX_PATIENT_URL ?? d.patient ?? '', products: { clinic: d.clinic, nurse: d.nurse, pharmacy: d.pharmacy, lab: d.lab }, api: { clinic: apiClinic, nurse: apiClinic, pharmacy: apiPharmacy, lab: apiLab } }) },
     server: { port: Number(process.env.KX_HOME_PORT ?? 5194), strictPort: true, watch: { ignored: ['**/e2e/**', '**/dist/**'] }, proxy: { '/idp': { target, changeOrigin: false, rewrite: (p) => p.replace(/^\/idp/, '') } } },
     preview: { port: 5194, strictPort: true, proxy: { '/idp': { target, rewrite: (p) => p.replace(/^\/idp/, '') } } },
     build: { sourcemap: false },

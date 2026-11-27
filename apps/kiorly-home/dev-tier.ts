@@ -1,4 +1,4 @@
-export type HomeEnvIn = { passport: string; home: string; clinic: string; nurse: string; pharmacy: string; lab: string; api: { clinic: string; pharmacy: string; lab: string } };
+export type HomeEnvIn = { passport: string; patient?: string; home: string; clinic: string; nurse: string; pharmacy: string; lab: string; api: { clinic: string; pharmacy: string; lab: string } };
 
 const bad = (u: string) => !/^https:\/\//.test(u) || /\/\/(localhost|127\.0\.0\.1|\[::1\])([:/]|$)/.test(u);
 

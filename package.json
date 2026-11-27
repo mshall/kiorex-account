@@ -19,7 +19,11 @@
     "test:unit": "vitest run packages",
     "db:reset": "npm run db:reset -w @kiorex/dev-idp",
     "db:seed:demo": "DEMO_SEED_ALLOWED=true tsx scripts/seed-demo.ts",
-    "test:e2e": "playwright test -c apps/passport-ui/e2e/playwright.config.ts"
+    "test:e2e": "playwright test -c apps/passport-ui/e2e/playwright.config.ts",
+    "demo-data:remove": "tsx scripts/demo-data-remove.ts",
+    "identity:export": "tsx scripts/identity-export.ts",
+    "identity:promote": "tsx scripts/identity-promote.ts",
+    "client-overrides:emit": "tsx scripts/emit-client-overrides.ts"
   },
   "devDependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1173.0",

@@ -15,8 +15,8 @@ export class Accounts {
   async seed(users: SeedUser[]): Promise<void> {
     for (const u of users) {
       await this.pool.query(
-        `INSERT INTO accounts (sub, phone, phone_verified, name, locale, roles) VALUES ($1,$2,true,$3,$4,$5)
-         ON CONFLICT (sub) DO UPDATE SET phone=$2, phone_verified=true, name=$3, locale=$4, roles=$5, status='active', deleted_at=NULL`,
+        `INSERT INTO accounts (sub, phone, phone_verified, name, locale, roles, data_class) VALUES ($1,$2,true,$3,$4,$5,'DEMO')
+         ON CONFLICT (sub) DO UPDATE SET phone=$2, phone_verified=true, name=$3, locale=$4, roles=$5, status='active', deleted_at=NULL, data_class='DEMO'`,
         [u.sub, u.phone, u.name, u.locale, JSON.stringify(u.roles)],
       );
       if (u.email) await this.pool.query(`UPDATE accounts SET email=$2, email_verified=$3 WHERE sub=$1`, [u.sub, u.email.toLowerCase(), u.emailVerified === true]);

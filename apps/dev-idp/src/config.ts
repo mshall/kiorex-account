@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { z } from 'zod';
 import { isPublicDeployment } from './public-mode.js';
+import { parsePromotionMode, type PromotionMode } from './promotion-mode.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(here, '../../..');
@@ -193,6 +194,8 @@ export interface RuntimeOptions {
   devOtpBypass?: boolean;
   /** /dev/* helper routes (inbox, events, simulators). Default true locally; in public mode false unless KX_DEV_ENDPOINTS=true. */
   devEndpoints?: boolean;
+  /** IDENTITY_PROMOTION_MODE (ask | carry | separate, default ask): read by the promotion tooling, validated at start-up so a typo fails early. */
+  identityPromotionMode?: PromotionMode;
   /** Cookie signing keys (KX_COOKIE_KEYS, comma separated). Required in public mode. */
   cookieKeys?: string[];
 }
@@ -219,6 +222,7 @@ export function runtimeFromEnv(cfg: IdpConfig, env: NodeJS.ProcessEnv = process.
     publicMode,
     devOtpBypass: publicMode ? env.KX_DEV_OTP_BYPASS === 'true' : env.KX_DEV_OTP_BYPASS !== 'false',
     devEndpoints: publicMode ? env.KX_DEV_ENDPOINTS === 'true' : env.KX_DEV_ENDPOINTS !== 'false',
+    identityPromotionMode: parsePromotionMode(env),
     cookieKeys: cookieKeys.length ? cookieKeys : undefined,
   };
 }

@@ -39,15 +39,15 @@ if (reset) {
 }
 
 for (const u of users) {
-  await q(`INSERT INTO accounts (sub, phone, phone_verified, name, locale, roles) VALUES ($1,$2,true,$3,$4,$5)
-           ON CONFLICT (sub) DO UPDATE SET phone=$2, phone_verified=true, name=$3, locale=$4, roles=$5, status='active', deleted_at=NULL`,
+  await q(`INSERT INTO accounts (sub, phone, phone_verified, name, locale, roles, data_class) VALUES ($1,$2,true,$3,$4,$5,'DEMO')
+           ON CONFLICT (sub) DO UPDATE SET phone=$2, phone_verified=true, name=$3, locale=$4, roles=$5, status='active', deleted_at=NULL, data_class='DEMO'`,
     [u.sub, u.phone, u.name, u.locale, JSON.stringify(u.roles)]);
   if (u.totpSecret) await q(`INSERT INTO totp_credentials (sub, secret, confirmed_at) VALUES ($1,$2,now())
            ON CONFLICT (sub) DO UPDATE SET secret=$2, confirmed_at=COALESCE(totp_credentials.confirmed_at, now()), last_step=0`, [u.sub, u.totpSecret]);
 }
 for (const d of demo.dependants) {
-  await q(`INSERT INTO accounts (sub, phone, phone_verified, name, locale, roles, kind, dob, market) VALUES ($1,NULL,false,$2,$3,'["patient"]','dependant',$4,'EG')
-           ON CONFLICT (sub) DO UPDATE SET name=$2, dob=$4, status='active', deleted_at=NULL`, [d.sub, d.name, d.locale, rel(d.dob)]);
+  await q(`INSERT INTO accounts (sub, phone, phone_verified, name, locale, roles, kind, dob, market, data_class) VALUES ($1,NULL,false,$2,$3,'["patient"]','dependant',$4,'EG','DEMO')
+           ON CONFLICT (sub) DO UPDATE SET name=$2, dob=$4, status='active', deleted_at=NULL, data_class='DEMO'`, [d.sub, d.name, d.locale, rel(d.dob)]);
 }
 for (const g of demo.guardianLinks) {
   // state: active (default) | pending (awaiting evidence review) | expired (past expires_at) | ended (guardian stopped it)
@@ -60,8 +60,8 @@ for (const g of demo.guardianLinks) {
 }
 for (const o of demo.organizations) {
   // edition (CLINIC | NURSE) is a display hint only (KA-14, ADR-031): Kiorly Nurse orgs show the Nurse edition in Passport
-  await q(`INSERT INTO organizations (org_id, legal_name, country, product_refs, edition, created_by) VALUES ($1,$2,$3,$6,$4,$5)
-           ON CONFLICT (org_id) DO UPDATE SET legal_name=$2, edition=$4, status='active', product_refs=$6`, [o.orgId, o.legalName, o.country, o.edition ?? 'CLINIC', o.owner, JSON.stringify(o.productRefs ?? {})]);
+  await q(`INSERT INTO organizations (org_id, legal_name, country, product_refs, edition, created_by, data_class) VALUES ($1,$2,$3,$6,$4,$5,'DEMO')
+           ON CONFLICT (org_id) DO UPDATE SET legal_name=$2, edition=$4, status='active', product_refs=$6, data_class='DEMO'`, [o.orgId, o.legalName, o.country, o.edition ?? 'CLINIC', o.owner, JSON.stringify(o.productRefs ?? {})]);
   for (const m of o.members) {
     const id = `demo_mem_${o.orgId}_${m.sub.slice(-4)}`;
     await q(`INSERT INTO memberships (id, org_id, sub, role_hint, invited_by) VALUES ($1,$2,$3,$4,$5)

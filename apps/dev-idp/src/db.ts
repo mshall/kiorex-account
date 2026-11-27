@@ -107,12 +107,18 @@ export async function migrate(pool: Pool, schema: string): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS link_requests_status ON link_requests (status);
 
+    -- demo-data tagging: every seeded demo person, dependant or organisation is durably marked DEMO so a removal script can never touch REAL rows.
+    -- Real sign-ups, SCIM provisioning and API-created organisations take the default REAL.
+    ALTER TABLE accounts ADD COLUMN IF NOT EXISTS data_class text NOT NULL DEFAULT 'REAL';
+    CREATE INDEX IF NOT EXISTS accounts_data_class ON accounts (data_class) WHERE data_class <> 'REAL';
+
     -- KA-09 organisations and memberships (identity-level assertions only)
     CREATE TABLE IF NOT EXISTS organizations (
       org_id text PRIMARY KEY, legal_name text NOT NULL, country text NOT NULL, product_refs jsonb NOT NULL DEFAULT '{}',
       status text NOT NULL DEFAULT 'active', created_by text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
     );
     ALTER TABLE organizations ADD COLUMN IF NOT EXISTS edition text NOT NULL DEFAULT 'CLINIC';
+    ALTER TABLE organizations ADD COLUMN IF NOT EXISTS data_class text NOT NULL DEFAULT 'REAL';
     CREATE TABLE IF NOT EXISTS memberships (
       id text PRIMARY KEY, org_id text NOT NULL REFERENCES organizations(org_id), sub text NOT NULL, role_hint text NOT NULL,
       invited_by text, status text NOT NULL DEFAULT 'active', effective_from timestamptz NOT NULL DEFAULT now(), expires_at timestamptz,

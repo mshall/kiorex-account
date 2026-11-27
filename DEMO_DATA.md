@@ -127,3 +127,6 @@ Mock today (`WHATSAPP_MODE` / `SMS_MODE` = `mock`): OTP and notifications go to 
 | SMS | `SMS_API_KEY`, `SMS_WEBHOOK_SECRET` | `SMS_MODE=real`, `SMS_API_URL`, `SMS_SENDER_ID` (registered alphanumeric sender) |
 
 Steps: (1) infra: the Cognito Lambda reads these from its environment. Non-secret ones go in the existing `otp_extra_env` of the identity module; the old `otp_channel`, `WA_*` inputs are obsolete. The four secrets must reach the Lambda environment (secret-injection at deploy time is an infra follow-up; no tofu was run). (2) Cold start fails with the variable names if anything is missing; `NODE_ENV=production` with both kinds mock also fails. (3) Point vendor delivery webhooks at the handler (`/webhooks/sms`, `/webhooks/whatsapp`; AWS routing is an infra follow-up). (4) Rehearse in staging: request an OTP for a real phone, check delivery, then try 6 sends to confirm the 429 rate limit. (5) Rollback: set the kinds back to `mock` (dev only; production refuses mock OTP, so rollback in production means switching provider URL).
+
+
+**Tagging and removal:** every seeded person, dependant and organisation carries `data_class = 'DEMO'`. `npm run demo-data:remove -- --dry-run` lists what would go, `--confirm` deletes it (never a REAL row; idempotent). See `Docs/IDENTITY_PROMOTION.md`.
