@@ -10,7 +10,6 @@ test('organisations: create, invite by phone, invitee accepts (list and link), o
   await nav(owner, 'Organisations').click();
   await expect(owner.getByText('You are not a member of an organisation.')).toBeVisible();
   await owner.getByLabel('Legal name').fill('Nile Family Clinic');
-  await owner.getByLabel('Country (2 letters)').fill('eg');
   await owner.getByRole('button', { name: 'Create', exact: true }).click();
   const card = owner.getByRole('listitem', { name: 'Nile Family Clinic' });
   await expect(card).toContainText('Owner');

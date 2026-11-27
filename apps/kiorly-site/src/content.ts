@@ -33,7 +33,7 @@ export const PRODUCTS: Record<ProductCopy['slug'], L10n<ProductCopy>> = {
       features: [
         { title: 'Clear appointments', text: 'A daily schedule for doctors and rooms, with confirmations and patient reminders.' },
         { title: 'One record per patient', text: 'Visits, notes and history, available to the clinic team according to their role.' },
-        { title: 'Invoices and payments', text: 'Record payments, issue invoices and export data for the clinic accountant.' },
+        { title: 'Invoices and payments', text: 'Track payments, keep invoice records and export data for the clinic accountant.' },
         { title: 'A team with roles', text: 'Different access for doctors, front desk and management, with one Kiorly sign-in.' },
         { title: 'Nurse edition', text: 'An edition for nursing, physiotherapy and home visits inside the same product.' },
       ],

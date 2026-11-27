@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '../app-context';
 import { useI18n, type TKey } from '../i18n';
-import { ApiError, type Membership, type OrgMember, type PendingInvitation, type SentInvitation } from '../api';
+import { ApiError, type Membership, type OrgMember, type PendingInvitation, type SentInvitation, type ScimToken, type ScimTokenCreated } from '../api';
 import { Alert, Async, Badge, Button, Card, ConfirmDialog, Empty, Field, Ltr, useAction, useAsync, useToast } from '../ui';
 import { E164, fmtDate, MARKETS, normPhone, shouldShowMarketSelector } from '../util';
 import { useRoute } from '../router';
@@ -79,6 +79,57 @@ function SentInvitations({ orgId, reloadKey }: { orgId: string; reloadKey: numbe
   );
 }
 
+function ScimTokens({ orgId }: { orgId: string }) {
+  const { api } = useApp();
+  const { t, lang, err } = useI18n();
+  const toast = useToast();
+  const { busy, run } = useAction();
+  const list = useAsync<ScimToken[]>(() => api.scimTokens(orgId), [orgId]);
+  const [label, setLabel] = useState('');
+  const [fresh, setFresh] = useState<ScimTokenCreated | null>(null);
+  const [revoking, setRevoking] = useState<ScimToken | null>(null);
+  const [msg, setMsg] = useState('');
+  const create = async () => {
+    setMsg('');
+    try { const r = await api.createScimToken(orgId, label.trim()); setFresh(r); setLabel(''); toast.ok(t('scim.created')); list.reload(); }
+    catch (x) { const a = x as ApiError; setMsg(a.code === 'feature_disabled' ? t('scim.unavailable') : err(a.code, a.status)); }
+  };
+  const revoke = () => revoking && run(() => api.revokeScimToken(orgId, revoking.token_id), () => { toast.ok(t('scim.revokedToast')); setRevoking(null); list.reload(); });
+  return (
+    <>
+      <h4>{t('scim.title')}</h4>
+      <p className="hint">{t('scim.lead')}</p>
+      {fresh ? (
+        <Alert kind="warning" role="alert">
+          <strong>{t('scim.createdTitle')}</strong> {t('scim.createdBody')}
+          <dl className="rows">
+            <div><dt>{t('scim.token')}</dt><dd className="break"><code data-testid="scim-token"><Ltr>{fresh.token}</Ltr></code></dd></div>
+            <div><dt>{t('scim.baseUrl')}</dt><dd className="break"><Ltr>{fresh.scim_base_url}</Ltr></dd></div>
+          </dl>
+          <Button variant="secondary" onClick={() => setFresh(null)}>{t('scim.done')}</Button>
+        </Alert>
+      ) : null}
+      {msg ? <Alert kind="error">{msg}</Alert> : null}
+      <Async state={list}>{(d) => d.length === 0 ? <Empty>{t('scim.empty')}</Empty> : (
+        <ul className="list" aria-label={t('scim.title')}>{d.map((k) => (
+          <li key={k.token_id} className="row">
+            <span>
+              <strong>{k.label}</strong> {k.revoked_at ? <Badge kind="danger">{t('scim.revoked')}</Badge> : null}
+              <span className="hint block">{t('scim.createdOn', { date: fmtDate(k.created_at, lang) })} · {k.last_used_at ? t('scim.lastUsed', { date: fmtDate(k.last_used_at, lang) }) : t('scim.neverUsed')}</span>
+            </span>
+            {k.revoked_at ? null : <Button variant="ghost" onClick={() => setRevoking(k)} aria-label={`${t('scim.revoke')} - ${k.label}`}>{t('scim.revoke')}</Button>}
+          </li>))}
+        </ul>
+      )}</Async>
+      <form onSubmit={(e) => { e.preventDefault(); void create(); }} noValidate className="inline-form">
+        <Field label={t('scim.label')} hint={t('scim.labelHint')}>{(p) => <input {...p} name="scim-label" maxLength={80} value={label} onChange={(e) => setLabel(e.target.value)} />}</Field>
+        <Button type="submit">{t('scim.create')}</Button>
+      </form>
+      {revoking ? <ConfirmDialog title={t('scim.revokeTitle')} body={t('scim.revokeBody')} confirmLabel={t('scim.revoke')} danger busy={busy} onConfirm={() => void revoke()} onCancel={() => setRevoking(null)} /> : null}
+    </>
+  );
+}
+
 function Manage({ m }: { m: Membership }) {
   const { api, meta, account } = useApp();
   const { t } = useI18n();
@@ -120,6 +171,7 @@ function Manage({ m }: { m: Membership }) {
         <Button type="submit" busy={busy}>{t('org.invite.send')}</Button>
       </form>
       <SentInvitations orgId={m.org_id} reloadKey={sentKey} />
+      <ScimTokens orgId={m.org_id} />
       {removing ? <ConfirmDialog title={t('org.removeTitle')} body={removing.name ?? undefined} confirmLabel={t('org.removeMember')} danger busy={busy} onConfirm={() => void remove()} onCancel={() => setRemoving(null)} /> : null}
     </div>
   );

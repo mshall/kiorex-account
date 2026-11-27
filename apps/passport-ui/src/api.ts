@@ -6,6 +6,8 @@ export class ApiError extends Error {
 
 export interface Account { sub: string; name: string | null; phone: string | null; phone_verified: boolean; locale: 'ar' | 'en'; roles: string[]; kind: string; mfa_required: boolean; totp_enrolled: boolean; acr: string | null; amr: string[]; auth_time: number | null }
 export interface EmailState { email: string | null; email_verified: boolean; pending: boolean }
+export interface ScimToken { token_id: string; label: string; created_at: string; last_used_at: string | null; revoked_at: string | null }
+export interface ScimTokenCreated { token_id: string; label: string; token: string; scim_base_url: string }
 export interface Meta {
   passkeys_enabled: boolean;
   guardian: { age_of_majority: Record<string, number>; default_market: string; evidence_types: string[]; relationships: string[]; act_scopes: string[]; max_dependants: number; act_as_ttl_seconds: number };
@@ -76,6 +78,9 @@ export interface Api {
   acceptInvitation(id: string): Promise<{ org_id: string; role_hint: string }>;
   acceptInvitationToken(token: string): Promise<{ org_id: string; role_hint: string }>;
   declineInvitation(id: string): Promise<void>;
+  scimTokens(orgId: string): Promise<ScimToken[]>;
+  createScimToken(orgId: string, label: string): Promise<ScimTokenCreated>;
+  revokeScimToken(orgId: string, tokenId: string): Promise<void>;
   connectedApps(): Promise<ConnectedApp[]>;
   revokeApp(clientId: string): Promise<void>;
   exportData(): Promise<Record<string, unknown>>;
@@ -156,6 +161,9 @@ export function createApi(baseUrl: string, auth: AuthLike, doFetch: typeof fetch
     acceptInvitation: (id) => call('POST', `/api/invitations/${enc(id)}/accept`, {}),
     acceptInvitationToken: (token) => call('POST', '/api/invitations/accept', { token }),
     declineInvitation: async (id) => { await call('POST', `/api/invitations/${enc(id)}/decline`, {}); },
+    scimTokens: async (id) => (await call<{ tokens: ScimToken[] }>('GET', `/api/orgs/${enc(id)}/scim-tokens`)).tokens,
+    createScimToken: (id, label) => call('POST', `/api/orgs/${enc(id)}/scim-tokens`, { label }),
+    revokeScimToken: async (id, tid) => { await call('DELETE', `/api/orgs/${enc(id)}/scim-tokens/${enc(tid)}`); },
     connectedApps: async () => (await call<{ apps: ConnectedApp[] }>('GET', '/api/connected-apps')).apps,
     revokeApp: async (id) => { await call('DELETE', `/api/connected-apps/${enc(id)}`); },
     exportData: () => call('GET', '/api/account/export'),

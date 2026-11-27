@@ -51,7 +51,7 @@ Real providers are wired in a dedicated pre-launch pass, staging first. Mock ada
 | Email (verification code; org invitations if chosen) | Verification UI built 27 Nov 2026 (Passport Security > E-mail card, `apps/passport-ui/src/pages/Email.tsx`) over the mock channel (dev inbox, template `kx_email_verify`); org invitations stay phone-only | Provider (SES), sender domain, approved AR/EN wording for the code message (`apps/dev-idp/src/email.ts` body is an English placeholder), template names |
 
 ## Known engineering gaps (not decisions)
-- **SCIM provisioning** (KA-11 second half) is built (`Docs/SCIM.md`); open: which customers use it, Passport UI for token management, production hosting.
+- **SCIM provisioning** (KA-11 second half) is built (`Docs/SCIM.md`); the Passport UI for token management is built (Organisations > Manage members > Directory sync tokens, 27 Nov 2026); open: which customers use it, production hosting.
 - The dev IdP does not **deliver** identity events (`guardian.link.changed`, `membership.changed`, `account.merged`) to products: they are written to `event_outbox` / `GET /dev/events`. Production transport to be decided with the Kiorex API (back-channel-style push vs. polling). Only `session.revoked`/`subject.deleted` are pushed today.
 - Products cannot yet query "is this guardian link still active?" between token issuance and expiry (acting-as tokens are <= 10 min and sid-bound; link revocation is not pushed to products).
 - Dependants: no flow for a dependant to claim their own Passport at majority; no guardian re-verification; no dependant deletion/export endpoint.

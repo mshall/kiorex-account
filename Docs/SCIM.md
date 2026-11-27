@@ -44,13 +44,12 @@ still decide permissions.
 
 ## Connecting an IdP
 
-1. An organisation owner/admin creates a SCIM token (API above; the Passport UI button is a follow-up).
+1. An organisation owner/admin creates a SCIM token (API above, or Passport > Organisations > Manage members > Directory sync tokens: the token is shown once).
 2. Entra ID: Enterprise application -> Provisioning -> tenant URL = base URL, secret token = the token; map `userName`, `externalId`,
    `displayName`, `phoneNumbers[type eq "mobile"].value`, `active`. Okta: SCIM 2.0 app with the same unique identifier field `userName`.
 3. Assign the groups `role-doctor`, `role-nurse`, ... (or set `roleHint`) to the users.
 
 ## Not done / needs a human
 
-- Passport UI screen for token management (API only).
 - Production hosting of the SCIM routes next to the managed IdP (AWS) follows the same deploy decision as the rest of Passport (FD-17).
 - SCIM bulk, sort and ETag are intentionally unsupported. Rate limiting per token is a hardening follow-up.
