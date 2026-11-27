@@ -15,6 +15,7 @@ npm run check:bundle -w @kiorex/kiorly-home        # no dev panel, no localhost 
 npx vitest run apps/kiorly-home                    # unit tests
 npm run test:e2e -w @kiorex/kiorly-home            # Playwright (system Chrome), throwaway IdP on :4455, Home on :5194
 ```
+Hosted build (kx-test and later environments): `apps/kiorly-home/scripts/build-for-env.sh test [outDir]` takes every origin from the URL registry (KX_ENV=dev tier, https only, no localhost, no dev panel), then `npm run check:bundle -w @kiorex/kiorly-home`; upload to the site bucket and invalidate the CDN (`infra/tofu/docs/DEPLOY_LOG_kx-test.md`, last section). The CDN needs `idp_proxy = true` for the host (same-origin `/idp/*` to Passport, prefix removed).
 The Passport client is registered in `config/idp.json`; restart the dev IdP once to pick it up (`e2e/scripts/up.sh --restart --only=passport`).
 
 ## Demo data
