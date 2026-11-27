@@ -53,16 +53,16 @@ const circ = (x: number, y: number, rad: number, fill: string, stroke?: string) 
 const ln = (x1: number, y1: number, x2: number, y2: number, stroke = C.line, sw = 1, dash = '') => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"${dash ? ` stroke-dasharray="${dash}"` : ''}/>`;
 const skeleton = (x: number, y: number, w: number, fill = C.line, h = 5) => r(x, y, w, h, h / 2, fill);
 
-function frame(w: number, h: number, l: Lang, graphics: string, labels: Label[], alt: string, id: string): string {
+function frame(w: number, h: number, l: Lang, graphics: string, labels: Label[], alt: string, id: string, cls = 'art'): string {
   const rtl = l === 'ar';
   const g = rtl ? `<g transform="translate(${w},0) scale(-1,1)">${graphics}</g>` : graphics;
   const font = rtl ? "'IBM Plex Sans Arabic','Jost',sans-serif" : "'Jost',sans-serif";
   const tx = labels.map((t) => {
     // SVG text-anchor start/end are relative to the text DIRECTION, so with direction=rtl set explicitly below `start` already means the right edge: mirror x only, never swap the anchor (swapping twice put Arabic labels on top of the node icons).
     const anchor = t.anchor ?? 'start'; const x = rtl ? w - t.x : t.x;
-    return `<text${t.id ? ` data-label="${t.id}"` : ''} x="${x}" y="${t.y}" text-anchor="${anchor}" font-size="${t.size ?? 11}" font-weight="${t.weight ?? 500}" fill="${t.fill ?? C.ink}">${esc(t.s)}</text>`;
+    return `<text${t.id ? ` data-label="${t.id}"` : ''} x="${x}" y="${t.y}" text-anchor="${anchor}" font-size="${t.size ?? 11}" font-weight="${t.weight ?? 500}" fill="${t.fill ?? C.ink}">${t.s.split('\n').map((line, i) => (i === 0 ? esc(line) : `<tspan x="${x}" dy="1.25em">${esc(line)}</tspan>`)).join('')}</text>`;
   }).join('');
-  return `<svg class="art" direction="${rtl ? 'rtl' : 'ltr'}" viewBox="0 0 ${w} ${h}" role="img" aria-labelledby="${id}-t" font-family="${font}" xmlns="http://www.w3.org/2000/svg"><title id="${id}-t">${esc(alt)}</title>${g}${tx}</svg>`;
+  return `<svg class="${cls}" direction="${rtl ? 'rtl' : 'ltr'}" viewBox="0 0 ${w} ${h}" role="img" aria-labelledby="${id}-t" font-family="${font}" xmlns="http://www.w3.org/2000/svg"><title id="${id}-t">${esc(alt)}</title>${g}${tx}</svg>`;
 }
 const T = (en: string, ar: string, l: Lang) => (l === 'ar' ? ar : en);
 const win = (x: number, y: number, w: number, h: number, side = true) => r(x, y, w, h, 12, C.white, C.line) + r(x, y, w, 24, 12, C.ground, C.line) + r(x, y + 12, w, 12, 0, C.ground) + ln(x, y + 24, x + w, y + 24)
@@ -158,7 +158,31 @@ export function heroArt(l: Lang, alt: string): string {
   return frame(600, 500, l, g, L, alt, 'hero');
 }
 
-export function connectionDiagram(l: Lang, alt: string): string {
+/** Both diagrams are in the page; CSS shows the portrait one on phones (the wide one would render its text at about 4px). */
+export const connectionDiagram = (l: Lang, alt: string): string => connectionWide(l, alt) + connectionTall(l, alt);
+
+function connectionTall(l: Lang, alt: string): string {
+  const W = 360, H = 492; let g = r(0, 0, W, H, 18, C.ground);
+  const node = (id: string, x: number, y: number, w: number, h: number, col: string) => `<g data-node="${id}">${r(x, y, w, h, 16, C.white, col, 2)}${r(x, y, w, 8, 4, col)}</g>`;
+  g += node('patient', 40, 8, 280, 84, C.ocean) + node('kiorex', 40, 164, 280, 100, C.indigo);
+  g += circ(86, 52, 22, tint(C.ocean, 0.16)) + circ(86, 46, 8, C.ocean) + r(72, 56, 28, 14, 7, C.ocean) + skeleton(220, 46, 70, C.line, 6) + skeleton(236, 60, 40, C.line, 5);
+  g += `<g fill="none" stroke="${C.indigo}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="152,206 136,224 152,242"/><polyline points="208,206 224,224 208,242" stroke="${C.peri}"/></g><path d="M130 224 H160 L164 220 L168 230 L173 214 L178 228 L181 224 H230" fill="none" stroke="${C.coral}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const cols: Array<[string, number, string]> = [['clinic', 10, C.teal], ['pharmacy', 126, C.green], ['lab', 242, C.violet]];
+  cols.forEach(([id, x, col]) => { g += node(id, x, 328, 108, 84, col) + `<g data-dot="${id}">${circ(x + 54, 355, 12, tint(col, 0.18))}${circ(x + 54, 355, 5, col)}</g>`; });
+  const arrow = (id: string, x1: number, y1: number, x2: number, y2: number, col: string, dash = '') => `<g data-arrow="${id}">` + ln(x1, y1, x2, y2, col, 2.600, dash) + `<path d="M${x2} ${y2} l-8 -5 v10 z" fill="${col}" transform="rotate(${(Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI} ${x2} ${y2})"/></g>`;
+  g += arrow('search', 64, 94, 64, 162, C.ocean) + arrow('confirm', 296, 162, 296, 94, C.ocean, '6 6');
+  g += arrow('to-clinic', 50, 266, 50, 326, C.teal) + arrow('to-pharmacy', 166, 266, 166, 326, C.green) + arrow('to-lab', 282, 266, 282, 326, C.violet) + arrow('com-clinic', 70, 326, 70, 268, C.coral, '6 6') + arrow('com-pharmacy', 186, 326, 186, 268, C.coral, '6 6');
+  g += ln(30, 432, 330, 432, tint(C.coral, 0.5), 2, '2 7');
+  const L: Label[] = [
+    { id: 'patient', x: 110, y: 56, s: T('Patient', 'المريض', l), size: 15, weight: 700 }, { id: 'kiorex', x: 180, y: 192, s: T('Kiorex', 'كيوريكس', l), size: 15, weight: 700, fill: C.indigo, anchor: 'middle' }, { id: 'market', x: 180, y: 256, s: T('marketplace', 'السوق', l), size: 12, fill: C.muted, anchor: 'middle' },
+    { id: 'search', x: 76, y: 132, s: T('search and book', 'بحث وحجز', l), size: 12, weight: 600, fill: '#075985' }, { id: 'confirm', x: 284, y: 132, s: T('confirmation', 'تأكيد', l), size: 12, weight: 600, fill: '#075985', anchor: 'end' },
+    { id: 'clinic', x: 64, y: 388, s: T('Kiorly\nClinic', 'كيورلي\nكلينيك', l), size: 12.500, weight: 700, fill: '#0F766E', anchor: 'middle' }, { id: 'pharmacy', x: 180, y: 388, s: T('Kiorly\nPharmacy', 'كيورلي\nفارماسي', l), size: 12.500, weight: 700, fill: '#15803D', anchor: 'middle' }, { id: 'lab', x: 296, y: 388, s: T('Kiorly\nLab', 'كيورلي\nلاب', l), size: 12.500, weight: 700, fill: '#6D28D9', anchor: 'middle' },
+    { id: 'commission', x: 180, y: 454, s: T('Commission and settlement:\nthe same numbers, visible to both sides', 'العمولة والتسوية:\nالأرقام نفسها ظاهرة للطرفين', l), size: 12.500, weight: 700, fill: '#8F4944', anchor: 'middle' },
+  ];
+  return frame(W, H, l, g, L, alt, 'conn-m', 'art art-tall');
+}
+
+function connectionWide(l: Lang, alt: string): string {
   const W = 800, H = 330; let g = r(0, 0, W, H, 18, C.ground);
   const node = (id: string, x: number, y: number, w: number, h: number, col: string) => `<g data-node="${id}">${r(x, y, w, h, 16, C.white, col, 2)}${r(x, y, w, 8, 4, col)}</g>`;
   g += node('patient', 24, 96, 168, 138, C.ocean) + node('kiorex', 316, 62, 168, 206, C.indigo) + node('clinic', 608, 40, 168, 70, C.teal) + node('pharmacy', 608, 130, 168, 70, C.green) + node('lab', 608, 220, 168, 70, C.violet);
@@ -174,7 +198,7 @@ export function connectionDiagram(l: Lang, alt: string): string {
     { id: 'commission', x: 400, y: 304, s: T('Commission and settlement: the same numbers, visible to both sides', 'العمولة والتسوية: الأرقام نفسها ظاهرة للطرفين', l), size: 11.500, weight: 700, fill: '#8F4944', anchor: 'middle' },
   ];
   g += ln(60, 290, 740, 290, tint(C.coral, 0.5), 2, '2 7');
-  return frame(W, H, l, g, L, alt, 'conn');
+  return frame(W, H, l, g, L, alt, 'conn', 'art art-wide');
 }
 
 /** Decorative coral pulse used as a section divider (graphics only). */
