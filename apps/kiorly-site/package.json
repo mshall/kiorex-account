@@ -1,0 +1,14 @@
+{
+  "name": "@kiorex/kiorly-site",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Kiorly public marketing site (bilingual AR/EN, static). Builds to dist/ for S3 + CloudFront at the registry service kiorly.marketing (test.kiorly.com, later kiorly.com). No framework: a build script renders the pages, esbuild bundles one small client script.",
+  "scripts": {
+    "build": "tsx src/build-cli.ts",
+    "env:emit": "tsx src/emit-env.ts",
+    "preview": "tsx src/preview-cli.ts",
+    "test:e2e": "playwright test -c e2e/playwright.config.ts"
+  },
+  "devDependencies": { "esbuild": "^0.28.2" }
+}

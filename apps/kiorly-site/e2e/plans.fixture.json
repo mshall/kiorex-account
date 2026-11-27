@@ -1,0 +1,4 @@
+{ "plans": [
+  { "id": "starter", "name": { "ar": "باقة أولى", "en": "First plan" }, "summary": { "ar": "ملخص الباقة الأولى", "en": "Summary of the first plan" }, "features": { "ar": ["ميزة أ", "ميزة ب"], "en": ["Feature A", "Feature B"] } },
+  { "id": "growth", "name": { "ar": "باقة ثانية", "en": "Second plan" }, "summary": { "ar": "ملخص الباقة الثانية", "en": "Summary of the second plan" }, "features": { "ar": [], "en": [] } }
+] }

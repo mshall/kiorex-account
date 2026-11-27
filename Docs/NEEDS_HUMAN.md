@@ -30,6 +30,16 @@ Everything below needs a founder/legal/ops decision or credentials. Nothing here
 | 23 | **nurse.kiorly.com OIDC URIs (Rev 2.3, KX-04 / KX-23 KNED01)**: DONE in config (23 Nov 2026): `config/idp.json` clients[kiorly-clinic] staging and production carry the `nurse.(staging.)kiorly.com/auth/kiorex/callback` redirect and post-logout URIs (same client, aud=kiorly-clinic, hosts from `config/domains.json`). Still human: confirm the host and callback path are what the Clinic web serves; see "Staging and production Passport clients" below | Founder / infra | Before Nurse GA |
 | 24 | **Nurse role-hint and edition wording (AR + EN)**: draft labels for physiotherapist, dispatcher, assistant, front desk, "Kiorly Nurse" / "كيورلي نيرس" and the note that profession/licence stay in Kiorly (`org.hint.*`, `org.edition.*` in `i18n.tsx`). Arabic Nurse brand name is ambiguous in the KX extraction (CHANGES_2.2_to_2.3.md) | Brand / legal | Before Nurse GA |
 
+## Kiorly marketing site (`apps/kiorly-site`, built 27 Nov 2026; nothing deployed)
+| # | Item | Who | Evidence it is done |
+|---|---|---|---|
+| M1 | **Site copy review (AR + EN)**: all wording in `apps/kiorly-site/src/content.ts` is functional draft copy (no price, fee, legal or performance claim). Needs a native-Arabic and brand pass; the preview strip stays on every non-production build until then | founder / brand | copy approved, then production build |
+| M2 | **Lead consent wording**: the checkbox text is neutral and shown as "Draft wording, pending legal review" (`ONBOARDING.consent`, `CONSENT_TEXT_VERSION = draft-1`). Counsel writes the final text and privacy notice; bump the version | counsel | final text in `content.ts`, version bumped |
+| M3 | **Public lead intake endpoint** (`KIORLY_LEAD_ENDPOINT`): the site cannot sign requests, so a public unsigned intake is needed (rate limit, bot check, CORS for the site origin, storage in the platform partner-leads table) | engineering decision + counsel (retention) | endpoint URL set in the build environment; `pilot` and `prod` builds refuse to run without it |
+| M4 | Plans listed on `/plans/`: write the plans file (`KIORLY_PLANS_FILE`: names, summaries, features only). Pricing is set in Ops and is never shown by this site | founder | file in the build pipeline |
+| M5 | Hosting: S3 bucket + CloudFront (OAC), the index-rewrite function in `apps/kiorly-site/deploy`, certificate and DNS for registry service `kiorly.marketing` (`test.kiorly.com`, later `kiorly.com`), response-headers policy, 404 mapping | founder / platform admin | `curl -I https://test.kiorly.com/en/` |
+| M6 | Legal pages (privacy notice, terms) and a contact address (`KIORLY_CONTACT_EMAIL`): none are invented by code; add links once counsel provides the texts | counsel | pages linked in the footer |
+
 ## Provider go-live (CLAUDE.md: all third-party providers are MOCKED for now)
 Real providers are wired in a dedicated pre-launch pass, staging first. Mock adapters exercise the same code paths and write to the DB dev inbox.
 
