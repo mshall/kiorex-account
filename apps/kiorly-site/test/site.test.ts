@@ -9,19 +9,19 @@ import { SECTIONS } from '../src/render';
 import { FAQ, MODULES, MODULE_ORDER } from '../src/content';
 
 const ENV = { KIORLY_SITE_ENV: 'test', KIORLY_SITE_ORIGIN: 'https://site.example', KIORLY_HOME_URL: 'https://home.example' };
-const PLANS = { plans: [{ id: 'one', name: { ar: 'باقة أولى', en: 'First plan' }, summary: { ar: 'ملخص', en: 'Summary of the first plan' }, features: { ar: ['ميزة أ'], en: ['Feature A'] } }] };
+const PLANS_URL = 'https://api.example/api/v1/public/plans';
 const walk = (d: string): string[] => readdirSync(d).flatMap((n) => (statSync(path.join(d, n)).isDirectory() ? walk(path.join(d, n)) : [path.join(d, n)]));
 const read = (root: string, rel: string) => readFileSync(path.join(root, rel), 'utf8');
 const tmp: string[] = [];
 async function make(env: Record<string, string>) {
-  const cfg: SiteConfig = resolveConfig(env, () => JSON.stringify(PLANS));
+  const cfg: SiteConfig = resolveConfig(env);
   const out = mkdtempSync(path.join(os.tmpdir(), 'kiorly-site-')); tmp.push(out);
   await buildSite(cfg, out);
   return { cfg, out };
 }
 afterAll(() => { for (const t of tmp) rmSync(t, { recursive: true, force: true }); });
 
-describe('built site (test environment, mock leads, no plans)', () => {
+describe('built site (test environment, mock leads, plans not wired)', () => {
   let out = ''; let cfg: SiteConfig;
   beforeAll(async () => { ({ out, cfg } = await make(ENV)); });
 
@@ -60,8 +60,9 @@ describe('built site (test environment, mock leads, no plans)', () => {
     expect(read(out, 'robots.txt')).toBe('User-agent: *\nDisallow: /\n'); expect(existsSync(path.join(out, 'sitemap.xml'))).toBe(false);
     expect(cfg.previewBanner).toBe(true); expect(read(out, 'en/index.html')).toContain('class="preview"');
   });
-  it('plans: clearly marked placeholders with TODO_NEEDS_HUMAN, never a price or a plan name of our own', () => {
-    for (const l of ['ar', 'en']) { const h = read(out, `${l}/index.html`); expect(h).toContain('data-plan-placeholder'); expect(h).toContain('data-needs-human'); expect(h).toContain('TODO_NEEDS_HUMAN'); }
+  it('plans: only the neutral fallback text, no endpoint, never a price, a figure or a plan name of our own', () => {
+    for (const l of ['ar', 'en']) { const h = read(out, `${l}/index.html`); expect(h).toContain('data-plans-fallback'); expect(h).not.toContain('data-plans-live'); expect(h).not.toContain('data-plan-placeholder'); expect(h).not.toContain('data-endpoint="https://api.example/api/v1/public/plans"'); }
+    expect(read(out, 'en/index.html')).toContain('Plans are being finalised');
     for (const f of ['ar/index.html', 'en/index.html']) expect(read(out, f)).not.toMatch(/\b(EGP|USD|E£)\b|ج\.م|جنيه|\$\s?\d|\d\s?(EGP|جنيه)|\d+\s?%/);
   });
   it('the consent text is a draft marked TODO_NEEDS_HUMAN in the form script, with a version', () => {
@@ -110,27 +111,32 @@ describe('built site (test environment, mock leads, no plans)', () => {
   it('the script stays small', () => { const js = readdirSync(path.join(out, 'assets')).find((n) => /^site\..*\.js$/.test(n))!; expect(statSync(path.join(out, 'assets', js)).size).toBeLessThan(80_000); });
 });
 
-describe('built site (production, live lead endpoint, plans from config)', () => {
+describe('built site (production, live lead endpoint, live plans endpoint)', () => {
   let out = '';
-  beforeAll(async () => { ({ out } = await make({ ...ENV, KIORLY_SITE_ENV: 'prod', KIORLY_LEAD_ENDPOINT: 'https://api.example/api/v1/public/leads', KIORLY_PLANS_FILE: 'plans.json', KIORLY_CONTACT_EMAIL: 'hello@site.example' })); });
+  beforeAll(async () => { ({ out } = await make({ ...ENV, KIORLY_SITE_ENV: 'prod', KIORLY_LEAD_ENDPOINT: 'https://api.example/api/v1/public/leads', KIORLY_PLANS_ENDPOINT: PLANS_URL, KIORLY_CONTACT_EMAIL: 'hello@site.example' })); });
   it('is indexable: robots allows, sitemap lists both languages with alternates, no preview strip, 404 not indexable', () => {
     expect(read(out, 'robots.txt')).toContain('Sitemap: https://site.example/sitemap.xml');
     const x = read(out, 'sitemap.xml'); expect((x.match(/<url>/g) ?? []).length).toBe(2); expect(x).toContain('hreflang="en" href="https://site.example/en/"');
     expect(read(out, 'en/index.html')).toContain('<meta name="robots" content="index,follow">'); expect(read(out, 'en/index.html')).not.toContain('class="preview"'); expect(read(out, '404.html')).toContain('noindex');
   });
-  it('lists configured plans with the pricing note and no price; the TODO markers and placeholders are gone', () => {
-    const h = read(out, 'en/index.html');
-    expect(h).toContain('First plan'); expect(h).toContain('Feature A'); expect(h).toContain('data-pricing-note'); expect(h).not.toContain('data-plan-placeholder'); expect(h).not.toContain('data-needs-human'); expect(h).not.toContain('TODO_NEEDS_HUMAN');
-    expect(read(out, 'ar/index.html')).toContain('باقة أولى');
+  it('the plans section ships the fallback text and a hidden live area; the page reads the platform at load; the build holds no plan, no price and no TODO marker', () => {
+    for (const l of ['en', 'ar']) {
+      const h = read(out, `${l}/index.html`);
+      expect(h).toContain(`data-endpoint="${PLANS_URL}"`); expect(h).toContain('data-plans-fallback'); expect(h).toMatch(/data-plans-live hidden/);
+      expect(h).not.toContain('data-needs-human'); expect(h).not.toContain('TODO_NEEDS_HUMAN');
+      const labels = JSON.parse(/data-labels="([^"]+)"/.exec(h)![1]!.replace(/&quot;/g, '"').replace(/&amp;/g, '&')); expect(labels.tbd).toBeTruthy(); expect(Object.keys(labels.modules).sort()).toEqual(['clinic', 'lab', 'pharmacy']);
+      expect(h).not.toMatch(/\b(EGP|USD)\b|\d\s?(EGP|جنيه)/);
+    }
+    expect(read(out, 'ar/index.html')).toContain('الأسعار تعلن قريبا');
   });
   it('the form posts to the configured endpoint, which is the only extra CSP connect origin; no mock banner; footer shows the contact', () => {
     const h = read(out, 'en/index.html'); expect(h).toContain('data-endpoint="https://api.example/api/v1/public/leads"'); expect(h).toContain("connect-src 'self' https://api.example;"); expect(h).not.toContain('data-mock-banner'); expect(h).toContain('mailto:hello@site.example');
   });
 });
 
-describe('built site (production without plans)', () => {
-  it('shows a neutral note instead of placeholders', async () => {
+describe('built site (production without a plans endpoint)', () => {
+  it('shows the neutral note and fetches nothing', async () => {
     const { out } = await (async () => { const cfg = resolveConfig({ ...ENV, KIORLY_SITE_ENV: 'prod', KIORLY_ALLOW_MOCK_LEADS: 'true' }); const o = mkdtempSync(path.join(os.tmpdir(), 'kiorly-site-')); tmp.push(o); await buildSite(cfg, o); return { out: o }; })();
-    const h = read(out, 'en/index.html'); expect(h).toContain('Plans are being prepared'); expect(h).not.toContain('data-plan-placeholder'); expect(h).not.toContain('TODO_NEEDS_HUMAN');
+    const h = read(out, 'en/index.html'); expect(h).toContain('Plans are being finalised'); expect(h).not.toContain('data-plan-placeholder'); expect(h).not.toContain('data-plans-live'); expect(h).not.toMatch(/data-plans data-endpoint=/); expect(h).not.toContain('TODO_NEEDS_HUMAN');
   });
 });

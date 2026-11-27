@@ -5,6 +5,7 @@ const MOCK = Number(process.env.KIORLY_SITE_E2E_PORT ?? 5496);
 const LIVE = MOCK + 1;
 const LEAD_ENDPOINT = `http://127.0.0.1:${MOCK + 20}/leads`;
 const LIVE_URL = `http://127.0.0.1:${LIVE}`;
+const PLANS_ENDPOINT = `http://127.0.0.1:${MOCK + 30}/plans`;
 
 async function pick(page: Page, mode: 'STANDALONE' | 'CONNECTED', type: string) {
   await page.locator(`input[name=mode][value=${mode}]`).check({ force: true });
@@ -247,5 +248,75 @@ test.describe('join form (live endpoint intercepted)', () => {
     await page.goto(`${LIVE_URL}/en/`); await settle(page); await fillAll(page);
     await page.locator('#jf-website').evaluate((e) => { (e as HTMLInputElement).value = 'x'; e.dispatchEvent(new Event('input', { bubbles: true })); });
     await page.locator('[data-submit]').click(); await expect(page.locator('[data-done-title]')).toBeVisible(); expect(seen.filter((s) => s.method === 'POST')).toHaveLength(0);
+  });
+});
+
+const planBody = {
+  contract: 'kiorly.public-plans.v1', generatedAt: '2026-11-28T10:00:00.000Z', market: { code: 'EG', currency: 'EGP' },
+  modules: [
+    { id: 'clinic', status: 'OK', plans: [
+      { id: 'lite', name: { en: 'Lite', ar: 'لايت' }, summary: null, limits: { en: ['Up to 2 clinicians'], ar: ['حتى 2 من الأطباء'] }, features: { en: ['Video visits'], ar: ['زيارات بالفيديو'] }, priceStatus: 'SET', prices: [{ interval: 'MONTHLY', unit: 'PER_TENANT', amount: '777', currency: 'EGP', includedClinicians: 1, extraClinicianAmount: null }] },
+      { id: 'pro', name: { en: 'Pro', ar: 'برو' }, summary: null, limits: { en: [], ar: [] }, features: { en: ['Reports'], ar: ['التقارير'] }, priceStatus: 'TO_BE_ANNOUNCED', prices: [] },
+    ] },
+    { id: 'pharmacy', status: 'OK', plans: [{ id: 'lite', name: { en: 'Lite', ar: 'لايت' }, summary: { en: 'For one pharmacy', ar: 'لصيدلية واحدة' }, limits: { en: ['1 branch'], ar: ['فرع واحد'] }, features: { en: ['Kiorex orders'], ar: ['طلبات كيوريكس'] }, priceStatus: 'TO_BE_ANNOUNCED', prices: [] }] },
+    { id: 'lab', status: 'OK', plans: [] },
+  ],
+};
+
+test.describe('live plans (platform endpoint intercepted)', () => {
+  const cors = { 'access-control-allow-origin': LIVE_URL, vary: 'Origin' };
+  async function serve(page: Page, mode: 'ok' | '503' | 'garbage' | 'hang' = 'ok', body: unknown = planBody) {
+    await page.route(PLANS_ENDPOINT, (r: Route) => {
+      if (mode === '503') return r.fulfill({ status: 503, headers: cors, body: '' });
+      if (mode === 'garbage') return r.fulfill({ status: 200, headers: { ...cors, 'content-type': 'application/json' }, body: '{"contract":"other"}' });
+      if (mode === 'hang') return; // never answers: the page times out and keeps its text
+      return r.fulfill({ status: 200, headers: { ...cors, 'content-type': 'application/json', 'cache-control': 'public, max-age=60' }, body: JSON.stringify(body) });
+    });
+  }
+  test('the page asks only for the plans endpoint, with no credentials and no referrer', async ({ page }) => {
+    let headers: Record<string, string> = {}; await serve(page); page.on('request', (rq) => { if (rq.url() === PLANS_ENDPOINT) headers = rq.headers(); });
+    await page.goto(`${LIVE_URL}/en/`); await expect(page.locator('[data-plans]')).toHaveAttribute('data-state', 'live');
+    expect(headers.cookie).toBeUndefined(); expect(headers.referer).toBeUndefined(); expect(headers.authorization).toBeUndefined();
+  });
+  test('English: tabs per product, a price only where one is set, "Pricing to be announced" otherwise', async ({ page }) => {
+    await serve(page); await page.goto(`${LIVE_URL}/en/`); await settle(page);
+    const live = page.locator('[data-plans-live]'); await expect(live).toBeVisible(); await expect(page.locator('[data-plans-fallback]')).toBeHidden();
+    await expect(live.getByRole('tab')).toHaveText(['Clinic', 'Pharmacy']);
+    await expect(live.locator('[data-plan="clinic-lite"] .plan-price')).toContainText('777'); await expect(live.locator('[data-plan="clinic-lite"] .plan-price')).toContainText('per clinic / month');
+    await expect(live.locator('[data-plan="clinic-pro"] [data-price-status=tbd]')).toHaveText('Pricing to be announced');
+    await live.getByRole('tab', { name: 'Pharmacy' }).click(); await expect(live.locator('[data-plan="pharmacy-lite"]')).toBeVisible(); await expect(live.locator('[data-plan="pharmacy-lite"] [data-price-status=tbd]')).toBeVisible();
+    await expect(live.locator('#ppanel-clinic')).toBeHidden();
+    await live.getByRole('tab', { name: 'Pharmacy' }).press('ArrowRight'); await expect(live.getByRole('tab', { name: 'Clinic' })).toHaveAttribute('aria-selected', 'true');
+  });
+  test('Arabic: right to left, Arabic names, Arabic digits and words', async ({ page }) => {
+    await serve(page); await page.goto(`${LIVE_URL}/ar/`); await settle(page);
+    const live = page.locator('[data-plans-live]'); await expect(live.getByRole('tab')).toHaveText(['العيادة', 'الصيدلية']);
+    await expect(live.locator('[data-plan="clinic-lite"] .plan-price')).toContainText('٧٧٧'); await expect(live.locator('[data-plan="clinic-pro"] [data-price-status=tbd]')).toHaveText('الأسعار تعلن قريبا');
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector('[data-plans-live]')!).direction)).toBe('rtl');
+  });
+  test('a failing, malformed or silent platform leaves the "being finalised" text, with no price and no error shown', async ({ page }) => {
+    for (const mode of ['503', 'garbage', 'hang'] as const) {
+      await page.unroute(PLANS_ENDPOINT).catch(() => undefined); await serve(page, mode);
+      await page.goto(`${LIVE_URL}/en/`);
+      await expect(page.locator('[data-plans]')).toHaveAttribute('data-state', 'fallback', { timeout: mode === 'hang' ? 15_000 : 5_000 });
+      await expect(page.locator('[data-plans-fallback]')).toBeVisible(); await expect(page.locator('[data-plans-fallback]')).toContainText('Plans are being finalised'); await expect(page.locator('[data-plans-live]')).toBeHidden();
+      expect(await page.locator('#plans').innerText()).not.toMatch(/\d{2,}|EGP/);
+    }
+  });
+  test('"Ask about this plan" opens the join form for that product', async ({ page }) => {
+    await serve(page); await page.route(`${LEAD_ENDPOINT}/config`, (r: Route) => r.fulfill({ status: 404, headers: { 'access-control-allow-origin': LIVE_URL }, body: '' }));
+    await page.goto(`${LIVE_URL}/en/`); await settle(page);
+    await page.locator('[data-plans-live]').getByRole('tab', { name: 'Pharmacy' }).click();
+    await page.locator('[data-plan="pharmacy-lite"] a.btn').click();
+    await expect(page.locator('input[name=providerType][value=PHARMACY]')).toBeChecked();
+  });
+  test('accessible (axe), no horizontal scroll at 375px, in both languages', async ({ page }) => {
+    for (const lang of ['en', 'ar']) {
+      await serve(page); await page.setViewportSize({ width: 375, height: 800 }); await page.goto(`${LIVE_URL}/${lang}/`); await settle(page);
+      await expect(page.locator('[data-plans-live]')).toBeVisible(); await page.waitForTimeout(900); // the reveal transition must have ended before axe measures contrast
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      const r = await new AxeBuilder({ page }).include('#plans').analyze(); expect(r.violations.map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
+      await page.unroute(PLANS_ENDPOINT);
+    }
   });
 });

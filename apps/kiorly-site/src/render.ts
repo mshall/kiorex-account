@@ -1,6 +1,7 @@
 /** Static HTML rendering of the Kiorly page (one single-page experience per language) and its 404. Pure functions: config in, strings out (the build script writes the files). */
 import { LANGS, type Lang, type SiteConfig } from './config';
 import { ACCENT, connectionDiagram, heroArt, icon, mockup, pulseDivider, sprite } from './art';
+import type { PlansLabels } from './plans';
 import { COMMON, CONNECTED, FAQ, FLOWS, FOOT, HERO, JOIN, MODES, MODULES, MODULES_LEAD, MODULES_TITLE, MODULE_ORDER, MODULE_UI, NAV, PLANS, SECURITY, BRAND } from './content';
 
 export const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -21,7 +22,7 @@ function head(cfg: SiteConfig, l: Lang, title: string, description: string, a: A
   const canonical = `${cfg.origin}${urlPath(l)}`;
   const alts = LANGS.map((x) => `<link rel="alternate" hreflang="${x}" href="${cfg.origin}${urlPath(x)}">`).join('') + `<link rel="alternate" hreflang="x-default" href="${cfg.origin}/">`;
   const robots = cfg.indexable && !noindex ? 'index,follow' : 'noindex,nofollow';
-  const connect = ["'self'", ...(cfg.leadEndpoint ? [new URL(cfg.leadEndpoint).origin] : [])].join(' ');
+  const connect = ["'self'", ...new Set([cfg.leadEndpoint, cfg.plansEndpoint].filter((u): u is string => !!u).map((u) => new URL(u).origin))].join(' ');
   const csp = `default-src 'none'; img-src 'self' data:; font-src 'self'; style-src 'self'; script-src 'self'; connect-src ${connect}; base-uri 'none'; form-action 'none'; manifest-src 'none'`;
   const faq = FAQ.items[l].map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: clean(cfg, f.a) } }));
   const ld = JSON.stringify([{ '@context': 'https://schema.org', '@type': 'Organization', name: 'Kiorly', url: cfg.origin, logo: `${cfg.origin}/assets/brand/kiorly-mark.svg`, parentOrganization: { '@type': 'Organization', name: 'Kiorex' } }, { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq }]).replace(/</g, '\\u003c');
@@ -97,13 +98,16 @@ function security(cfg: SiteConfig, l: Lang): string {
   return `<section class="sec alt" id="security" aria-labelledby="security-h"><div class="wrap">${sectionHead('security', NAV.security[l], SECURITY.title[l], SECURITY.lead[l])}<ul class="cards three">${SECURITY.items[l].map((it) => `<li class="card reveal"><span class="ico">${icon(it.k)}</span><h3>${esc(it.title)}</h3><p>${esc(it.text)}</p></li>`).join('')}</ul>${cfg.previewBanner ? `<p class="nh reveal" data-needs-human>${esc(SECURITY.note[l])}</p>` : ''}</div></section>`;
 }
 
-/** Plans come only from configuration. Without it the page shows clearly marked placeholders and never a price or a plan name of its own. */
+/**
+ * Plans are never typed on this page. The section ships only the neutral 'being finalised' text; when the page loads, the browser reads the platform's public plans
+ * (`data-endpoint`) and replaces that text with what the Kiorly super admin and ops keep in the Kiorly admin. If the platform cannot be reached the text stays.
+ */
 function plans(cfg: SiteConfig, l: Lang): string {
-  let list: string;
-  if (cfg.plans) list = `<ul class="plans">${cfg.plans.map((p) => `<li class="plan reveal" id="plan-${esc(p.id)}"><h3>${esc(p.name[l])}</h3><p>${esc(p.summary[l])}</p>${p.features[l].length ? `<p class="muted">${esc(PLANS.includes[l])}</p><ul class="ticks">${p.features[l].map((f) => `<li>${icon('check')}<span>${esc(f)}</span></li>`).join('')}</ul>` : ''}<p class="muted" data-pricing-note>${esc(PLANS.pricing[l])}</p><p><a class="btn ghost" href="#join" data-join-mode="">${esc(PLANS.contact[l])}</a></p></li>`).join('')}</ul>`;
-  else if (cfg.previewBanner) list = `<ul class="plans placeholder">${[1, 2, 3].map(() => `<li class="plan is-placeholder reveal" data-plan-placeholder><h3>${esc(PLANS.placeholder[l])}</h3><ul>${PLANS.placeholderItems[l].map((x) => `<li>${esc(x)}</li>`).join('')}</ul><p class="muted">${esc(PLANS.pricing[l])}</p></li>`).join('')}</ul>${needsHuman(cfg, PLANS.needsHuman[l])}`;
-  else list = `<div class="note-box reveal"><p>${esc(PLANS.prodNote[l])}</p><p><a class="btn" href="#join" data-join-mode="">${esc(PLANS.contact[l])}</a></p></div>`;
-  return `<section class="sec" id="plans" aria-labelledby="plans-h"><div class="wrap">${sectionHead('plans', NAV.plans[l], PLANS.title[l], PLANS.lead[l])}${list}</div></section>`;
+  const labels: PlansLabels = { tabs: PLANS.tabs[l], modules: PLANS.modules[l], tbd: PLANS.tbd[l], ask: PLANS.ask[l], includes: PLANS.includes[l], free: PLANS.free[l], unavailable: PLANS.unavailable[l], marketNote: PLANS.marketNote[l], perMonth: PLANS.perMonth[l], perYear: PLANS.perYear[l], perClinic: PLANS.perClinic[l], perClinician: PLANS.perClinician[l], included: PLANS.included[l], extra: PLANS.extra[l], noPlans: PLANS.noPlans[l] };
+  const fb = `<div class="note-box" data-plans-fallback><p>${esc(PLANS.fallback[l])}</p><p><a class="btn" href="#join" data-join-mode="">${esc(PLANS.contact[l])}</a></p></div>`;
+  const live = cfg.plansEndpoint ? `<div class="plans-live tabs" data-plans-live hidden aria-live="polite"></div>` : '';
+  const attrs = cfg.plansEndpoint ? ` data-endpoint="${esc(cfg.plansEndpoint)}" data-lang="${l}" data-labels="${esc(JSON.stringify(labels))}"` : '';
+  return `<section class="sec" id="plans" aria-labelledby="plans-h"><div class="wrap">${sectionHead('plans', NAV.plans[l], PLANS.title[l], PLANS.lead[l])}<div class="reveal" data-plans${attrs}>${fb}${live}</div></div></section>`;
 }
 
 function faq(cfg: SiteConfig, l: Lang): string {

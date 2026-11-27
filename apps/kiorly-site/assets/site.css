@@ -135,3 +135,10 @@ html:not(.js) [role=tabpanel][hidden]{display:block}html:not(.js) [role=tablist]
 @media (max-width:62rem){.mtabs{display:grid;grid-template-columns:repeat(3,1fr);overflow:visible}.mtab{min-width:0}}@media (max-width:40rem){.mtabs{grid-template-columns:1fr 1fr}.mtab{padding-inline:.7rem}}
 @media (max-width:30rem){.review dl div{grid-template-columns:1fr}}
 @media print{.top,.hero-art,.join,.preview{display:none}}
+/* live plans */
+.plans-live{margin-top:.25rem}.plans-live .ftabs{margin-bottom:1.25rem}.plans-live [role=tabpanel]:focus-visible{outline:2px solid var(--brand);outline-offset:4px;border-radius:var(--radius)}
+.plan h3{margin:0 0 .35rem}.plan-sum{margin:0 0 .75rem;color:var(--muted)}
+.plan-price{list-style:none;margin:.25rem 0 1rem;padding:0;display:grid;gap:.35rem}.plan-price li{display:flex;flex-wrap:wrap;align-items:baseline;gap:.35rem .5rem}.plan-price .amt{font-size:1.5rem;font-weight:700;color:var(--ink)}.plan-price .per{color:var(--muted);font-size:.9rem}.plan-price small{flex-basis:100%;color:var(--muted)}
+.plan-price.tbd{font-weight:600;color:var(--brand)}
+.plan-limits{list-style:none;margin:0 0 .75rem;padding:0;display:flex;flex-wrap:wrap;gap:.4rem}.plan-limits li{background:#EEF0FB;color:var(--ink);border-radius:999px;padding:.2rem .7rem;font-size:.85rem}
+.plans-market{margin-top:1rem}

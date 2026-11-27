@@ -16,5 +16,5 @@ try {
   if (id) { const fromRegistry = await loadRegistryEnv(id, val('--registry')); for (const [k, v] of Object.entries({ KIORLY_SITE_ENV: id, ...fromRegistry })) env[k] ??= v; }
   const cfg = resolveConfig(env);
   await buildSite(cfg, val('--out') ? path.resolve(val('--out')!) : undefined);
-  console.log(`kiorly-site built (env ${cfg.env}, origin ${cfg.origin}, indexable ${cfg.indexable}, lead form ${cfg.leadEndpoint ? 'live' : 'MOCK'}, plans ${cfg.plans ? cfg.plans.length : 'none'})`);
+  console.log(`kiorly-site built (env ${cfg.env}, origin ${cfg.origin}, indexable ${cfg.indexable}, lead form ${cfg.leadEndpoint ? 'live' : 'MOCK'}, plans ${cfg.plansEndpoint ? 'live' : 'fallback text only'})`);
 } catch (e) { console.error(`kiorly-site build failed: ${(e as Error).message}`); process.exit(1); }

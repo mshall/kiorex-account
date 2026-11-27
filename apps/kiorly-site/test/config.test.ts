@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { parsePlans, resolveConfig } from '../src/config';
+import { resolveConfig } from '../src/config';
 
 const base = { KIORLY_SITE_ENV: 'test', KIORLY_SITE_ORIGIN: 'https://site.example', KIORLY_HOME_URL: 'https://home.example' };
-const plan = { id: 'Basic Plan', name: { ar: 'أساسية', en: 'Basic' }, summary: { ar: 'ملخص', en: 'Summary' }, features: { ar: ['ميزة'], en: ['Feature'] } };
 
 describe('site config', () => {
   it('requires the environment, the site origin and the Home origin (no host is typed in code)', () => {
@@ -30,22 +29,17 @@ describe('site config', () => {
     expect(resolveConfig({ ...base, KIORLY_SITE_ENV: 'prod', KIORLY_ALLOW_MOCK_LEADS: 'true' }).leadEndpoint).toBeNull();
     expect(() => resolveConfig({ ...base, KIORLY_LEAD_ENDPOINT: 'http://api.example/leads' })).toThrow(/https/);
   });
-  it('reads plans from the configured file', () => {
-    const c = resolveConfig({ ...base, KIORLY_PLANS_FILE: 'plans.json' }, () => JSON.stringify({ plans: [plan] }));
-    expect(c.plans?.[0]?.id).toBe('basic-plan');
+  it('the plans endpoint is optional, https only (http for the local tier) and carries no query', () => {
+    expect(resolveConfig(base).plansEndpoint).toBeNull();
+    expect(resolveConfig({ ...base, KIORLY_PLANS_ENDPOINT: 'https://api.example/api/v1/public/plans' }).plansEndpoint).toBe('https://api.example/api/v1/public/plans');
+    expect(() => resolveConfig({ ...base, KIORLY_PLANS_ENDPOINT: 'http://api.example/plans' })).toThrow(/https/);
+    expect(() => resolveConfig({ ...base, KIORLY_PLANS_ENDPOINT: 'not a url' })).toThrow(/absolute URL/);
+    expect(() => resolveConfig({ ...base, KIORLY_PLANS_ENDPOINT: 'https://api.example/plans?market=EG' })).toThrow(/query/);
+    expect(resolveConfig({ ...base, KIORLY_SITE_ENV: 'local', KIORLY_SITE_ORIGIN: 'http://127.0.0.1:1', KIORLY_HOME_URL: 'http://127.0.0.1:2', KIORLY_PLANS_ENDPOINT: 'http://127.0.0.1:3/plans' }).plansEndpoint).toBe('http://127.0.0.1:3/plans');
   });
-});
-
-describe('plans config never carries prices', () => {
-  it('accepts names, summaries and features', () => { expect(parsePlans({ plans: [plan] })).toHaveLength(1); });
-  for (const key of ['price', 'pricing', 'amount', 'monthlyFee', 'cost', 'currency', 'egp', 'discount', 'vat']) {
-    it(`rejects a "${key}" key anywhere`, () => {
-      expect(() => parsePlans({ plans: [{ ...plan, [key]: 1 }] })).toThrow(/pricing|Prices/i);
-      expect(() => parsePlans({ plans: [{ ...plan, name: { ...plan.name, [key]: 1 } }] })).toThrow();
-    });
-  }
-  it('rejects an empty or malformed file', () => {
-    expect(() => parsePlans({})).toThrow(/at least one plan/);
-    expect(() => parsePlans({ plans: [{ ...plan, name: { ar: '', en: 'x' } }] })).toThrow(/name.ar/);
+  it('the site config has no way to carry a plan of its own any more (the platform is the only source)', () => {
+    expect(Object.keys(resolveConfig(base))).not.toContain('plans');
+    expect(() => resolveConfig({ ...base, KIORLY_PLANS_FILE: 'plans.json' })).not.toThrow(); // ignored, never read
+    expect((resolveConfig({ ...base, KIORLY_PLANS_FILE: 'plans.json' }) as unknown as Record<string, unknown>).plans).toBeUndefined();
   });
 });

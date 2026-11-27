@@ -1,5 +1,5 @@
 /**
- * Derives the registry-backed values of the site build (this site = service `kiorly.marketing`, sign-in = `kiorly.app`, join requests = `kiorex.api` /api/v1/public/leads) from the service URL registry
+ * Derives the registry-backed values of the site build (this site = service `kiorly.marketing`, sign-in = `kiorly.app`, join requests and plans = `kiorex.api` /api/v1/public/leads and /api/v1/public/plans) from the service URL registry
  * (ADR-059), using the registry's own validator module. Nothing is typed here: the hosts exist only in _docs/registry/service-url-registry.yaml.
  */
 import { existsSync } from 'node:fs';
@@ -24,5 +24,5 @@ export async function loadRegistryEnv(envId: string, registryFile = defaultRegis
   const site = mod.hostOf(reg, SITE_SERVICE, envId); const home = mod.hostOf(reg, HOME_SERVICE, envId);
   if (!site || !home) throw new Error(`the registry has no host for ${SITE_SERVICE} or ${HOME_SERVICE} in ${envId}`);
   const api = mod.hostOf(reg, API_SERVICE, envId);
-  return { KIORLY_SITE_ORIGIN: `https://${site}`, KIORLY_HOME_URL: `https://${home}`, ...(api ? { KIORLY_LEAD_ENDPOINT: `https://${api}/api/v1/public/leads` } : {}) };
+  return { KIORLY_SITE_ORIGIN: `https://${site}`, KIORLY_HOME_URL: `https://${home}`, ...(api ? { KIORLY_LEAD_ENDPOINT: `https://${api}/api/v1/public/leads`, KIORLY_PLANS_ENDPOINT: `https://${api}/api/v1/public/plans` } : {}) };
 }

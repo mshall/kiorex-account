@@ -15,6 +15,6 @@ export default defineConfig({
     { command: `npx tsx apps/kiorly-site/src/build-cli.ts --out apps/kiorly-site/dist-e2e-mock && npx tsx apps/kiorly-site/src/preview-cli.ts`, cwd, url: `http://127.0.0.1:${MOCK}/en/`, reuseExistingServer: false, timeout: 60_000, stdout: 'pipe',
       env: { ...common, KIORLY_SITE_ORIGIN: `http://127.0.0.1:${MOCK}`, KIORLY_SITE_PORT: String(MOCK), KIORLY_SITE_DIST: 'apps/kiorly-site/dist-e2e-mock' } },
     { command: `npx tsx apps/kiorly-site/src/build-cli.ts --out apps/kiorly-site/dist-e2e-live && npx tsx apps/kiorly-site/src/preview-cli.ts`, cwd, url: `http://127.0.0.1:${LIVE}/en/`, reuseExistingServer: false, timeout: 60_000, stdout: 'pipe',
-      env: { ...common, KIORLY_SITE_ORIGIN: `http://127.0.0.1:${LIVE}`, KIORLY_SITE_PORT: String(LIVE), KIORLY_SITE_DIST: 'apps/kiorly-site/dist-e2e-live', KIORLY_LEAD_ENDPOINT: `http://127.0.0.1:${MOCK + 20}/leads`, KIORLY_PLANS_FILE: 'apps/kiorly-site/e2e/plans.fixture.json' } },
+      env: { ...common, KIORLY_SITE_ORIGIN: `http://127.0.0.1:${LIVE}`, KIORLY_SITE_PORT: String(LIVE), KIORLY_SITE_DIST: 'apps/kiorly-site/dist-e2e-live', KIORLY_LEAD_ENDPOINT: `http://127.0.0.1:${MOCK + 20}/leads`, KIORLY_PLANS_ENDPOINT: `http://127.0.0.1:${MOCK + 30}/plans` } },
   ],
 });

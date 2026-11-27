@@ -182,14 +182,21 @@ export const SECURITY = {
 
 export const PLANS = {
   title: t('الباقات', 'Plans'),
-  lead: t('الباقات والأسعار يحددها فريق كيورلي ولا تُعرض على هذه الصفحة.', 'Plans and prices are set by the Kiorly team and are not published on this page.'),
-  placeholder: t('اسم الباقة قيد التحديد', 'Plan name to be set'),
-  placeholderItems: t(['المنتجات المشمولة: قيد التحديد', 'عدد المستخدمين والفروع: قيد التحديد', 'ميزات التطبيق: قيد التحديد'], ['Included products: to be set', 'Users and branches: to be set', 'App features: to be set']),
-  includes: t('تشمل', 'Includes'),
-  pricing: t('السعر يحدده فريق كيورلي ولا يُنشر هنا.', 'Pricing is set by the Kiorly team and is not published here.'),
-  needsHuman: t('TODO_NEEDS_HUMAN: أسماء الباقات وميزاتها وأسعارها يحددها المؤسس. لا تُنشر أرقام قبل ذلك.', 'TODO_NEEDS_HUMAN: plan names, features and prices are set by the founder. No figures are published before then.'),
+  lead: t('باقات كل منتج من منتجات كيورلي كما يحددها فريق كيورلي. ما لم يُحدد له سعر بعد نقول ذلك صراحة.', 'The plans of each Kiorly product, as set by the Kiorly team. Where a price is not set yet, we say so.'),
+  /** shown until the live plans arrive, and kept when they cannot be read */
+  fallback: t('الباقات قيد الإعداد. انضم إلينا وسيشرح فريقنا الخيارات المتاحة.', 'Plans are being finalised. Join us and our team will explain the options.'),
   contact: t('اسأل عن الباقة المناسبة', 'Ask about the right plan'),
-  prodNote: t('الباقات قيد الإعداد. انضم إلينا وسيشرح فريقنا الخيارات المتاحة.', 'Plans are being prepared. Join us and our team will explain the options.'),
+  ask: t('اسأل عن هذه الباقة', 'Ask about this plan'),
+  tabs: t('منتجات الباقات', 'Products'),
+  modules: t({ clinic: 'العيادة', pharmacy: 'الصيدلية', lab: 'المعمل' }, { clinic: 'Clinic', pharmacy: 'Pharmacy', lab: 'Lab' }),
+  tbd: t('الأسعار تعلن قريبا', 'Pricing to be announced'),
+  includes: t('تشمل', 'Includes'),
+  free: t('مجانا', 'Free'),
+  unavailable: t('باقات هذا المنتج قيد الإعداد.', 'The plans of this product are being finalised.'),
+  noPlans: t('لا توجد باقات معروضة لهذا المنتج الآن.', 'No plans are listed for this product right now.'),
+  marketNote: t('الأسعار بعملة {currency} لسوق {market}.', 'Prices are in {currency} for the {market} market.'),
+  perMonth: t('شهريا', 'month'), perYear: t('سنويا', 'year'), perClinic: t('لكل عيادة', 'per clinic'), perClinician: t('لكل طبيب', 'per clinician'),
+  included: t('الأطباء المشمولون', 'Clinicians included'), extra: t('طبيب إضافي', 'Extra clinician'),
 };
 
 export const FAQ = {

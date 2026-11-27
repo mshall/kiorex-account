@@ -1,6 +1,8 @@
 /** Browser behaviour of the Kiorly page: menu, scroll state, tabs, reveal animations, language memory and the join form. No framework, no network except the lead endpoint. */
 import defaults from './form-defaults.json';
 import { mountJoinForm } from './form';
+import { mountPlans, type PlansLabels } from './plans';
+import { bindTabs } from './tabs';
 import type { FormConfig } from './lead';
 
 const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -20,22 +22,8 @@ if (toggle && nav) {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') { set(false); toggle.focus(); } });
 }
 
-// accessible tabs (module selector and journeys): arrow keys, Home and End, roving tabindex
-for (const list of document.querySelectorAll<HTMLElement>('[role=tablist]')) {
-  const tabs = [...list.querySelectorAll<HTMLButtonElement>('[role=tab]')];
-  const select = (t: HTMLButtonElement, focus = false) => {
-    for (const x of tabs) { const on = x === t; x.setAttribute('aria-selected', String(on)); x.tabIndex = on ? 0 : -1; const p = document.getElementById(x.getAttribute('aria-controls') ?? ''); if (p) p.hidden = !on; }
-    if (focus) t.focus();
-  };
-  tabs.forEach((t, i) => {
-    t.addEventListener('click', () => select(t));
-    t.addEventListener('keydown', (e) => {
-      const rtl = document.documentElement.dir === 'rtl'; const next = (e.key === 'ArrowRight') !== rtl ? 1 : -1;
-      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); select(tabs[(i + next + tabs.length) % tabs.length]!, true); }
-      else if (e.key === 'Home') { e.preventDefault(); select(tabs[0]!, true); } else if (e.key === 'End') { e.preventDefault(); select(tabs[tabs.length - 1]!, true); }
-    });
-  });
-}
+// accessible tabs (module selector and journeys)
+for (const list of document.querySelectorAll<HTMLElement>('[role=tablist]')) bindTabs(list);
 
 // reveal on scroll (skipped entirely when the visitor prefers reduced motion or the browser has no IntersectionObserver)
 const reveals = [...document.querySelectorAll<HTMLElement>('.reveal')];
@@ -61,6 +49,16 @@ if (host) {
   join = mountJoinForm(host, { lang: host.dataset.lang === 'ar' ? 'ar' : 'en', env: host.dataset.env ?? '', endpoint: host.dataset.endpoint || null, defaults: defaults as unknown as FormConfig });
   host.dataset.ready = 'true';
 }
-for (const b of document.querySelectorAll<HTMLElement>('[data-join-mode],[data-join-module]')) {
-  b.addEventListener('click', () => { join?.prefill({ mode: b.dataset.joinMode, module: b.dataset.joinModule, type: b.dataset.joinType }); });
+// one delegated listener: it also serves buttons that are added later (the live plans)
+document.addEventListener('click', (e) => {
+  const b = (e.target as Element | null)?.closest<HTMLElement>('[data-join-mode],[data-join-module]');
+  if (b) join?.prefill({ mode: b.dataset.joinMode, module: b.dataset.joinModule, type: b.dataset.joinType });
+});
+
+// the live plans: read from the platform when the page loads; the static text stays when that fails
+const plansHost = document.querySelector<HTMLElement>('[data-plans]');
+if (plansHost?.dataset.endpoint) {
+  let labels: PlansLabels | null = null;
+  try { labels = JSON.parse(plansHost.dataset.labels ?? 'null') as PlansLabels | null; } catch { labels = null; }
+  if (labels) void mountPlans(plansHost, { endpoint: plansHost.dataset.endpoint, lang: plansHost.dataset.lang === 'ar' ? 'ar' : 'en', labels, bind: bindTabs });
 }
