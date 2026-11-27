@@ -30,7 +30,7 @@ describe('tile and method defaults', () => {
   it('Passport is the default method; only an explicit password choice flips it', () => {
     expect(parseMethod(null)).toBe('passport'); expect(parseMethod('junk')).toBe('passport'); expect(parseMethod('password')).toBe('password'); expect(parseMethod('passport')).toBe('passport');
   });
-  it('only Lab asks for an organisation (no password)', () => expect(CARD_KEYS.filter(needsOrg)).toEqual(['lab']));
+  it('only Lab shows the optional organisation field', () => expect(CARD_KEYS.filter(needsOrg)).toEqual(['lab']));
 });
 
 describe('handoffRedirect (password handoff answer -> where the browser goes)', () => {

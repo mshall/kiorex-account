@@ -201,7 +201,7 @@ function Shell({ lang, setLang, theme, setTheme, dark }: { lang: Lang; setLang: 
 
   const wide = useMedia('(min-width: 768px)');
   const lab = needsOrg(tile);
-  const valid = email.includes('@') && (lab ? org.trim().length > 1 : password.length > 0);
+  const valid = email.includes('@') && password.length > 0;
   const submit = async (e: FormEvent) => {
     e.preventDefault(); if (!valid || busy) return;
     setError(null); setBusy(true);
@@ -247,9 +247,8 @@ function Shell({ lang, setLang, theme, setTheme, dark }: { lang: Lang; setLang: 
               ) : (
                 <form role="tabpanel" id="panel-password" aria-labelledby="tab-password" className="panel-body" data-testid="signin-password-panel" onSubmit={(e) => void submit(e)} noValidate>
                   <label className="field"><span>{t.email}</span><input ref={emailRef} type="email" name="email" inputMode="email" enterKeyHint="next" autoComplete="username" autoCapitalize="none" spellCheck={false} required aria-invalid={error ? true : undefined} aria-describedby={error ? 'signin-err' : undefined} value={email} onChange={(e) => setEmail(e.target.value)} data-testid="signin-email" /></label>
-                  {lab
-                    ? <label className="field"><span>{t.org}</span><input type="text" name="organization" enterKeyHint="go" autoComplete="organization" autoCapitalize="none" spellCheck={false} required aria-invalid={error ? true : undefined} aria-describedby={error ? 'signin-err' : undefined} placeholder={t.orgHint} value={org} onChange={(e) => setOrg(e.target.value)} data-testid="signin-org" /></label>
-                    : <label className="field"><span>{t.password}</span><input type="password" name="password" enterKeyHint="go" autoComplete="current-password" required aria-invalid={error ? true : undefined} aria-describedby={error ? 'signin-err' : undefined} value={password} onChange={(e) => setPassword(e.target.value)} data-testid="signin-password" /></label>}
+                  <label className="field"><span>{t.password}</span><input type="password" name="password" enterKeyHint="go" autoComplete="current-password" required aria-invalid={error ? true : undefined} aria-describedby={error ? 'signin-err' : undefined} value={password} onChange={(e) => setPassword(e.target.value)} data-testid="signin-password" /></label>
+                  {lab ? <label className="field"><span>{t.org}</span><input type="text" name="organization" enterKeyHint="go" autoComplete="organization" autoCapitalize="none" spellCheck={false} required aria-invalid={error ? true : undefined} aria-describedby={error ? 'signin-err' : undefined} placeholder={t.orgHint} value={org} onChange={(e) => setOrg(e.target.value)} data-testid="signin-org" /></label> : null}
                   <button type="submit" className="btn primary lg" disabled={!valid || busy} data-testid="signin-submit">{busy ? t.submitting : t.submit}</button>
                 </form>
               )}

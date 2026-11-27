@@ -32,7 +32,7 @@ describe('handoffLogin (what Home sends to the product API)', () => {
     await handoffLogin('lab', { email: 'tech@demo-lab.test', password: 'ignored', org: ' demo-lab ' }, f);
     const [url, init] = (f as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
     expect(url).toBe('http://localhost:3200/api/v1/auth/handoff/login');
-    expect(JSON.parse(String(init.body))).toEqual({ orgSlug: 'demo-lab', email: 'tech@demo-lab.test' });
+    expect(JSON.parse(String(init.body))).toEqual({ email: 'tech@demo-lab.test', password: 'ignored', orgSlug: 'demo-lab' });
   });
   it('network failure is a network error (never a silent success)', async () => {
     const f = vi.fn(async () => { throw new TypeError('failed'); }) as unknown as typeof fetch;

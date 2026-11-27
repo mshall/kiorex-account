@@ -53,7 +53,7 @@ export function initialTile(to: CardKey | null, last: unknown): CardKey { return
 export type SignInMethod = 'passport' | 'password';
 export const parseMethod = (v: unknown): SignInMethod => (v === 'password' ? 'password' : 'passport');
 
-/** Lab has no passwords (dev sign-in = organisation slug + e-mail, same as the mobile screen); Clinic, Nurse and Pharmacy use e-mail + password. */
+/** Lab shows an OPTIONAL organisation field next to e-mail and password (only needed when the e-mail is used in more than one organisation). */
 export const needsOrg = (k: CardKey): boolean => k === 'lab';
 
 export type HandoffResult =
