@@ -2,7 +2,8 @@
  * Builds the value of KX_CLIENT_OVERRIDES_JSON (apps/dev-idp/src/config.ts) for one environment from the registry's redirect rows
  * (`validate-registry.mjs --emit redirects`, i.e. `redirectsFor`). Pure: no file, no network, no host typed here: every URI comes from the rows.
  *
- * Registry client id -> Passport client id:  kiorly-clinic and kiorly-clinic-nurse both register on `kiorly-clinic` (Nurse is an edition of Clinic, ADR-031);
+ * Registry client id -> Passport client id:  kiorly-clinic and kiorly-clinic-nurse both register on `kiorly-clinic` (Nurse is an edition of Clinic, ADR-031); kiorex-ops and kiorex-ops-kiorly
+ * both register on `kiorex-ops` (the same Ops console is served on the Kiorly admin host);
  * `passport-account` is skipped (the Passport SPA client always follows ISSUER and is not overridable by design). Native clients come from the registry
  * `native_clients` (kiorex -> kiorex-mobile, kiorly -> kiorly); non-production environments also register the `<scheme>-<env>` scheme so a test build
  * (kiorly-test) can sign in next to the production one.
@@ -17,7 +18,7 @@ export interface ClientOverride { redirectUris?: string[]; postLogoutRedirectUri
 export type ClientOverrides = Record<string, ClientOverride>;
 
 export const REGISTRY_TO_PASSPORT_CLIENT: Readonly<Record<string, string | null>> = {
-  'kiorex-web': 'kiorex-web', 'kiorex-ops': 'kiorex-ops', 'kiorex-widget': 'kiorex-widget', 'kiorly-home': 'kiorly-home',
+  'kiorex-web': 'kiorex-web', 'kiorex-ops': 'kiorex-ops', 'kiorex-ops-kiorly': 'kiorex-ops', 'kiorex-widget': 'kiorex-widget', 'kiorly-home': 'kiorly-home',
   'kiorly-clinic': 'kiorly-clinic', 'kiorly-clinic-nurse': 'kiorly-clinic', 'kiorly-pharmacy-web': 'kiorly-pharmacy-web', 'kiorly-lab-web': 'kiorly-lab-web',
   'passport-account': null,
 };

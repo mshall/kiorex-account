@@ -112,6 +112,14 @@ describe.skipIf(!hasRegistry)('against the real registry (workspace checkout)', 
     expect(out['kiorly-home'].redirectUris.every((u: string) => /^https:\/\/app\.test\./.test(u))).toBe(true);
     expect(out.kiorly.redirectUris).toContain('kiorly-test://auth/callback');
   });
+  it('the Kiorly admin host registers on the SAME kiorex-ops client as the Kiorex admin host (one Ops console, two host families)', async () => {
+    const { m, reg } = await load();
+    const out = JSON.parse(run(['--env', 'test']).stdout);
+    const kiorex = m.hostOf(reg, 'kiorex.admin', 'test'); const kiorly = m.hostOf(reg, 'kiorly.admin', 'test');
+    expect(out['kiorex-ops'].redirectUris).toEqual([`https://${kiorex}/auth/callback`, `https://${kiorly}/auth/callback`]);
+    expect(out['kiorex-ops'].postLogoutRedirectUris).toEqual([`https://${kiorex}/`, `https://${kiorly}/`]);
+    expect(Object.keys(out)).not.toContain('kiorex-ops-kiorly'); // no second Passport client
+  });
   it('pilot is served by the production IdP: both pilot and prod URIs, the prod back-channel, and no -pilot native scheme', async () => {
     const out = JSON.parse(run(['--env', 'pilot']).stdout);
     const uris: string[] = out['kiorly-home'].redirectUris;
