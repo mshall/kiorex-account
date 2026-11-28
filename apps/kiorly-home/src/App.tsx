@@ -176,6 +176,8 @@ function Shell({ lang, setLang, theme, setTheme, dark }: { lang: Lang; setLang: 
   const [focusEmail, setFocusEmail] = useState(() => parseMethod(read(METHOD)) === 'password');
   useEffect(() => { if (focusEmail && method === 'password' && view.s === 'form' && matchMedia('(min-width: 1024px) and (pointer: fine)').matches) emailRef.current?.focus(); setFocusEmail(false); }, [focusEmail, method, view.s]);
   useEffect(() => { if (view.s !== 'form') heading.current?.focus(); }, [view.s]);
+  // WCAG 2.4.2: the tab title names the current step (the visible h1) and follows the language.
+  useEffect(() => { const h = heading.current?.textContent?.replace(/\s+/g, ' ').trim(); document.title = h ? `${h} - ${t.appName}` : t.appName; }, [view.s, lang, t.appName, t.signInTitle]);
   const choose = (k: CardKey) => { setTile(k); setError(null); };
   const chooseMethod = (m: SignInMethod) => { setMethodState(m); setError(null); };
 
