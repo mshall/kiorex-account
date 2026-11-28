@@ -25,6 +25,19 @@ describe('built site (test environment, mock leads, plans not wired)', () => {
   let out = ''; let cfg: SiteConfig;
   beforeAll(async () => { ({ out, cfg } = await make(ENV)); });
 
+  it('link previews: every page has absolute Open Graph and Twitter tags, a 1200x630 image under 300 KB and PNG icons that exist', () => {
+    for (const page of ['index.html', 'en/index.html', 'ar/index.html']) {
+      const html = read(out, page);
+      for (const tag of ['og:title', 'og:description', 'og:url', 'og:image', 'og:image:alt']) expect(html, `${page} ${tag}`).toContain(`property="${tag}"`);
+      expect(html).toContain('property="og:image" content="https://site.example/assets/share/og-image.jpg"');
+      expect(html).toContain('property="og:image:width" content="1200"'); expect(html).toContain('property="og:image:height" content="630"');
+      expect(html).toContain('name="twitter:card" content="summary_large_image"'); expect(html).toContain('name="twitter:image" content="https://site.example/assets/share/og-image.jpg"');
+      expect(html).toContain('rel="apple-touch-icon" href="/assets/share/apple-touch-icon.png"'); expect(html).toContain('href="/assets/share/favicon-32.png"');
+    }
+    expect(statSync(path.join(out, 'assets/share/og-image.jpg')).size).toBeLessThan(300 * 1024);
+    for (const f of ['apple-touch-icon.png', 'favicon-32.png', 'icon-192.png', 'icon-512.png']) expect(existsSync(path.join(out, 'assets/share', f))).toBe(true);
+  });
+
   it('writes the home page in both languages plus the root chooser and the 404, and nothing else', () => {
     const pages = walk(out).filter((f) => f.endsWith('.html')).map((f) => path.relative(out, f)).sort();
     expect(pages).toEqual(['404.html', 'ar/index.html', 'en/index.html', 'index.html']);

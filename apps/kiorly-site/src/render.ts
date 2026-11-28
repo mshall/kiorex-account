@@ -18,6 +18,8 @@ const KIOREX_FULL = '/assets/brand/kiorex-logo-full.svg';
 /** The platform marks unresolved human decisions with TODO_NEEDS_HUMAN. Preview builds show them; a production build drops the marker and keeps the neutral sentence. */
 const clean = (cfg: SiteConfig, s: string): string => (cfg.previewBanner ? s : s.replace(/\s*\(TODO_NEEDS_HUMAN\)/g, '').replace(/^TODO_NEEDS_HUMAN:\s*/, ''));
 
+const SHARE_DESC = { en: 'Software for clinics, pharmacies and labs. Works on its own, or connected to Kiorex patients. Arabic and English.', ar: 'برنامج للعيادات والصيدليات والمعامل. يعمل وحده، أو متصلا بمرضى كيوريكس. بالعربية والإنجليزية.' } as const;
+const SHARE_ALT = { en: 'Kiorly: clinics, pharmacies and labs on one connected system', ar: 'كيورلي: عيادات وصيدليات ومعامل في نظام واحد متصل' } as const;
 function head(cfg: SiteConfig, l: Lang, title: string, description: string, a: Assets, noindex = false): string {
   const canonical = `${cfg.origin}${urlPath(l)}`;
   const alts = LANGS.map((x) => `<link rel="alternate" hreflang="${x}" href="${cfg.origin}${urlPath(x)}">`).join('') + `<link rel="alternate" hreflang="x-default" href="${cfg.origin}/">`;
@@ -29,8 +31,9 @@ function head(cfg: SiteConfig, l: Lang, title: string, description: string, a: A
   return `<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}"><meta name="robots" content="${robots}"><meta http-equiv="Content-Security-Policy" content="${csp}">
 <link rel="canonical" href="${canonical}">${alts}<meta name="color-scheme" content="light"><meta name="theme-color" content="#3730A3">
-<meta property="og:type" content="website"><meta property="og:site_name" content="Kiorly"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${canonical}"><meta property="og:locale" content="${l === 'ar' ? 'ar_EG' : 'en_US'}"><meta name="twitter:card" content="summary">
-<link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml"><link rel="preload" href="/assets/fonts/${l === 'ar' ? 'IBMPlexSansArabic_400Regular' : 'Jost_400Regular'}.ttf" as="font" type="font/ttf" crossorigin>
+<meta property="og:type" content="website"><meta property="og:site_name" content="Kiorly"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(SHARE_DESC[l])}"><meta property="og:url" content="${canonical}"><meta property="og:locale" content="${l === 'ar' ? 'ar_EG' : 'en_US'}"><meta property="og:image" content="${cfg.origin}/assets/share/og-image.jpg"><meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${esc(SHARE_ALT[l])}">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(SHARE_DESC[l])}"><meta name="twitter:image" content="${cfg.origin}/assets/share/og-image.jpg">
+<link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml"><link rel="icon" href="/assets/share/favicon-32.png" type="image/png" sizes="32x32"><link rel="apple-touch-icon" href="/assets/share/apple-touch-icon.png"><link rel="preload" href="/assets/fonts/${l === 'ar' ? 'IBMPlexSansArabic_400Regular' : 'Jost_400Regular'}.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="stylesheet" href="${a.css}"><script src="${a.bootJs}"></script><script type="application/ld+json">${ld}</script>`;
 }
 

@@ -14,6 +14,8 @@ const BRAND_DIR = path.resolve(APP_DIR, '../kiorly-home/public/brand');
 const BRAND_FILES = ['kiorly-lockup.svg', 'kiorly-lockup-inverse.svg', 'kiorly-lockup-ar.svg', 'kiorly-lockup-ar-inverse.svg', 'kiorly-mark.svg', 'kiorly-mark-inverse.svg', 'favicon.svg'];
 /** The Kiorex logo (founder spec v2, copied verbatim from _brand/ with a parity test) is used only in "Kiorly by Kiorex" places, at its minimum size of 120 px wide or more. */
 const KIOREX_FILES = ['kiorex-logo-full.svg', 'kiorex-mark.svg'];
+/** Link-preview image and PNG icons (WhatsApp and most chat apps cannot read an SVG icon); regenerate with scripts/make-share-images.mjs. */
+const SHARE_FILES = ['og-image.jpg', 'apple-touch-icon.png', 'favicon-32.png', 'icon-192.png', 'icon-512.png'];
 const FONT_FILES = ['Jost_400Regular.ttf', 'Jost_600SemiBold.ttf', 'IBMPlexSansArabic_400Regular.ttf', 'IBMPlexSansArabic_600SemiBold.ttf'];
 const VENDOR_DIR = path.resolve(APP_DIR, 'assets/vendor');
 
@@ -32,6 +34,7 @@ export async function buildSite(cfg: SiteConfig, outDir = path.join(APP_DIR, 'di
   put(assets.css.slice(1), css); put(assets.js.slice(1), js); put(assets.langJs.slice(1), langJs); put(assets.bootJs.slice(1), bootJs);
   for (const f of BRAND_FILES) { const src = path.join(BRAND_DIR, f); if (!existsSync(src)) throw new Error(`Kiorly brand file missing: ${src}`); put(`assets/brand/${f}`, readFileSync(src)); }
   for (const f of KIOREX_FILES) put(`assets/brand/${f}`, readFileSync(path.join(VENDOR_DIR, f)));
+  for (const f of SHARE_FILES) put(`assets/share/${f}`, readFileSync(path.join(APP_DIR, 'assets/share', f)));
   for (const f of FONT_FILES) put(`assets/fonts/${f}`, readFileSync(path.join(BRAND_DIR, 'fonts', f)));
   put('assets/fonts/PlusJakartaSans-SemiBold-latin.woff2', readFileSync(path.join(VENDOR_DIR, 'PlusJakartaSans-SemiBold-latin.woff2')));
   put('assets/fonts/OFL.txt', readFileSync(path.join(VENDOR_DIR, 'OFL.txt')));
