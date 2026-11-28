@@ -1,3 +1,4 @@
+import "./western-digits"; // Western digits 0-9 by default in Arabic (founder decision 28 Nov 2026)
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 import { App } from './App';

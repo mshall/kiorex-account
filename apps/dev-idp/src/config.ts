@@ -172,9 +172,8 @@ export function loadSeedUsers(file = path.join(REPO_ROOT, 'config/seed-users.jso
 /** Brand assets: tokens.css prefers ../_brand (workspace sibling, always fresh) and falls back to the committed copy (CI); everything else is the committed copy. */
 export const BRAND_FILES: Record<string, string> = {
   'tokens.css': 'text/css', 'fonts.css': 'text/css', 'kiorex-mark.svg': 'image/svg+xml', 'favicon.svg': 'image/svg+xml', 'favicon.ico': 'image/x-icon', 'apple-touch-icon.png': 'image/png',
-  'kiorex-logo-full.svg': 'image/svg+xml', 'kiorex-logo-full-dark.svg': 'image/svg+xml', 'fonts/PlusJakartaSans-SemiBold.woff2': 'font/woff2',
-  'fonts/Jost_400Regular.ttf': 'font/ttf', 'fonts/Jost_500Medium.ttf': 'font/ttf', 'fonts/Jost_600SemiBold.ttf': 'font/ttf',
-  'fonts/IBMPlexSansArabic_400Regular.ttf': 'font/ttf', 'fonts/IBMPlexSansArabic_600SemiBold.ttf': 'font/ttf',
+  'kiorex-logo-full.svg': 'image/svg+xml', 'kiorex-logo-full-dark.svg': 'image/svg+xml', 'fonts/PlusJakartaSans-400.woff2': 'font/woff2', 'fonts/PlusJakartaSans-500.woff2': 'font/woff2', 'fonts/PlusJakartaSans-600.woff2': 'font/woff2', 'fonts/PlusJakartaSans-700.woff2': 'font/woff2',
+  'fonts/IBMPlexSansArabic-400.woff2': 'font/woff2', 'fonts/IBMPlexSansArabic-500.woff2': 'font/woff2', 'fonts/IBMPlexSansArabic-600.woff2': 'font/woff2', 'fonts/IBMPlexSansArabic-700.woff2': 'font/woff2',
 };
 export function brandBytes(name: string): Buffer {
   const sibling = path.resolve(REPO_ROOT, '../_brand', name);
