@@ -27,7 +27,7 @@
     "phone_number_verified": { "source": "contact.phoneVerified", "cognito": "phone_number_verified" },
     "name": { "source": "subject.displayName", "cognito": "name" },
     "locale": { "source": "subject.locale", "cognito": "locale", "allowed": ["ar", "en"] },
-    "kx_roles": { "source": "membership.roleHints", "cognito": "custom:kx_roles", "type": "string[]", "allowed": ["patient", "ops_admin", "super_admin"] },
+    "kx_roles": { "source": "membership.roleHints", "cognito": "custom:kx_roles", "type": "string[]", "allowed": ["patient", "ops_admin", "super_admin", "finance", "growth_admin", "kiorly_ops", "kiorly_admin"], "note": "28 Nov 2026 (ADR-062): kiorly_ops and kiorly_admin are Kiorly-only roles, granted only by a super_admin in the Passport ops console, never together with Kiorex roles (a grant replaces patient). finance and growth_admin were already issued by the seed; they are listed so the schema matches the tokens." },
     "kx_orgs": { "source": "membership.activeOrgs", "cognito": "custom:kx_orgs", "type": "{org_id,role_hint}[]", "note": "KA-09. Only when scope kx_org is requested. Hints only; the product decides permissions (KX-04 section 03)." },
     "act": { "source": "guardian.actor", "note": "KA-06. RFC 8693 actor claim on guardian acting-as tokens: sub = dependant, act.sub = guardian." },
     "acr": { "source": "session.assurance", "note": "KA-10. urn:kiorex:acr:basic (phone OTP / federation) or urn:kiorex:acr:mfa (second factor or user-verifying passkey)." },
@@ -64,7 +64,7 @@
   },
   "mfaPolicy": {
     "$comment": "KA-03/KA-10: TOTP for privileged/ops/provider roles. The dev IdP enforces TOTP locally (otplib) at login for accounts holding any requiredForRoles role (a user-verifying passkey also satisfies it). Production: Cognito MFA = ON with software token for these groups via pre-auth/step-up.",
-    "requiredForRoles": ["ops_admin", "super_admin", "owner", "admin", "finance"],
+    "requiredForRoles": ["ops_admin", "super_admin", "owner", "admin", "finance", "kiorly_ops", "kiorly_admin"],
     "assignableRoles": ["branch_manager", "chain_ops", "lab_director", "authorized_signatory"],
     "policyNote": "27 Nov 2026: MFA is OPTIONAL for everybody except the baseline requiredForRoles above (Passport ROLES, unchanged). An ops_admin proposes and a second ops_admin or super_admin approves (a super_admin may apply directly, audited) a policy in the Passport ops console (Ops, MFA policy) that makes TOTP or a user-verifying passkey MANDATORY at sign-in for chosen roles (membership role hints and Passport roles; * = every member) everywhere, per organisation type (clinic, nurse, pharmacy, lab) or per organisation. Default OFF. It can only add requirements. assignableRoles are extra role names a policy may name (product staff roles that Passport memberships may carry).",
     "method": "totp",

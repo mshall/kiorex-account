@@ -9,7 +9,7 @@ Founder decision, 27 Nov 2026: two-step verification stays **optional by default
 | Policy OFF (default), owner has no authenticator | Phone code only. Passport issues a basic session (`acr` = basic). | **Works** (changed 28 Nov 2026, see "Pharmacy and Lab follow the policy" below): the product asks Passport and sees that the factor is not mandatory for the organisation type. |
 | Policy OFF, owner enrolled voluntarily (Passport, Security, Authenticator app) | Phone code, then Passport OFFERS the authenticator code with a "Skip for now" button. Entering it issues the MFA mark (`acr` = mfa, `amr` has `totp` and `mfa`). Skipping keeps the basic level. | Works either way. |
 | Policy ON and the owner matches a rule | Phone code, then the authenticator page. A person without an authenticator is walked through setting one up (setup key, 6-digit code) and cannot skip. A passkey with user verification also satisfies it. The MFA mark is always issued. | Works. |
-| Baseline roles (Passport roles `ops_admin`, `super_admin`, `owner`, `admin`, `finance`; `config/idp.json` `mfaPolicy.requiredForRoles`) | Always mandatory, as before. Not editable in the console. | n/a |
+| Baseline roles (Passport roles `ops_admin`, `super_admin`, `owner`, `admin`, `finance`, and since 28 Nov 2026 the Kiorly-only roles `kiorly_ops` and `kiorly_admin`; `config/idp.json` `mfaPolicy.requiredForRoles`) | Always mandatory, as before. Not editable in the console. | n/a |
 
 The policy applies at the NEXT sign-in of each person; an already signed-in session is not interrupted. Turning the policy off makes the factor optional again for everybody who is not in the baseline; people who enrolled keep their authenticator and are offered it (skippable) at sign-in.
 
@@ -48,3 +48,13 @@ Any person can enrol at Passport, **Security**, **Authenticator app** (setup key
 ## Tests
 
 Unit (`apps/dev-idp/test/mfa-policy.test.ts`: matching, public coverage and the endpoint, maker-checker, mandatory enrolment, skip rules, validation), UI (`apps/passport-ui/test/mfa-policy.test.tsx`), Playwright (`apps/passport-ui/e2e/09-mfa-policy.spec.ts`: maker proposes, checker approves, owner is walked through enrolment, switching off), kx-test live (`e2e/kx-test/08-mfa-policy.spec.ts`).
+
+
+## Kiorly-only roles (28 Nov 2026, ADR-062)
+
+`kiorly_ops` (read, review, onboarding actions in the Kiorly admin) and `kiorly_admin` (changes within the Kiorly scope) are Passport roles for people who work only on the Kiorly side. Two-step verification is **mandatory for both, exactly like `ops_admin`** (they are in the baseline `requiredForRoles`, not editable in the console, and a person without an authenticator is walked through setting one up at the first sign-in; there is no skip).
+
+- **Who grants:** only a `super_admin` (with a fresh MFA step-up) at Passport, **Ops, Kiorly roles** (`/account/ops/kiorly-roles`): the person's phone number, the role, and a reason of 3 to 300 characters. API: `GET /api/ops/kiorly-roles`, `POST /api/ops/kiorly-roles` (`{ phone | sub, role, note }`), `POST /api/ops/kiorly-roles/:sub/revoke` (`{ note }`). Every grant and revoke is written to the hash-chained audit log (`kiorly.role.granted`, `kiorly.role.revoked`, with target, role, previous roles and the reason) and every session of the person ends at once.
+- **Separate accounts:** the same sign-in never holds Kiorex roles and Kiorly roles. A grant is refused (`409 mixed_roles`) when the account holds any role other than `patient`; the grant replaces `patient` with the Kiorly role and a revoke puts `patient` back. Nobody grants themselves (`409 cannot_grant_self`). One Kiorly role per account (granting the other level switches it). The person must have signed in to Passport once (`404 account_not_found`).
+- **Tokens:** `kx_roles` carries only the Kiorly role. The platform API refuses a token that mixes a Kiorly role with any other role (`403 FORBIDDEN_MIXED_ROLES`) and is deny-by-default for these roles (explicit allow-list, see the platform `Docs/KIORLY_ADMIN.md`).
+- Tests: `apps/dev-idp/test/kiorly-roles.test.ts` (pure rules, super admin only, audit and reason, sessions ended, mandatory enrolment and claim, mixed roles refused, level switch, list and revoke).

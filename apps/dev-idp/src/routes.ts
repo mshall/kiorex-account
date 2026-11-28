@@ -6,6 +6,7 @@ import type { ApiDeps, Caller } from './api.js';
 import { HttpError } from './services.js';
 import { readBody, send, clientIp } from './http.js';
 import { signAccessToken } from './tokens.js';
+import { KiorlyRoles, KIORLY_ROLES } from './kiorly-roles.js';
 
 const seg = (p: string) => p.split('/').filter(Boolean);
 
@@ -224,6 +225,17 @@ export async function handleExtended(d: ApiDeps, caller: Caller, req: IncomingMe
       if (s[5] === 'reject') return ok(200, await sl.reject(actor, s[4]!, b.note));
       if (s[5] === 'withdraw') return ok(200, await sl.withdraw(actor, s[4]!));
     }
+    throw new HttpError(404, 'not_found');
+  }
+
+  // ---------------- Kiorly-only roles (kiorly_ops, kiorly_admin): granted and revoked by a super_admin only, audited, separate accounts (ADR-062) ----------------
+  if (s[0] === 'api' && s[1] === 'ops' && s[2] === 'kiorly-roles') {
+    const actor = await opsReviewer(d, caller);
+    if (!actor.roles.includes('super_admin')) throw new HttpError(403, 'super_admin_required');
+    const kr = new KiorlyRoles(d.ctx);
+    if (s.length === 3 && m === 'GET') return ok(200, { ...(await kr.list()), roles: KIORLY_ROLES, me: { sub: actor.sub } });
+    if (s.length === 3 && m === 'POST') return ok(201, await kr.grant(actor, await json(req)));
+    if (s.length === 5 && s[4] === 'revoke' && m === 'POST') return ok(200, await kr.revoke(actor, s[3]!, await json(req)));
     throw new HttpError(404, 'not_found');
   }
 

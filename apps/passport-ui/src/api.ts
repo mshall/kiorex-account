@@ -5,6 +5,9 @@ export class ApiError extends Error {
 }
 
 export interface Account { sub: string; name: string | null; phone: string | null; phone_verified: boolean; locale: 'ar' | 'en'; roles: string[]; kind: string; mfa_required: boolean; mfa_required_by?: 'role' | 'policy' | null; totp_enrolled: boolean; acr: string | null; amr: string[]; auth_time: number | null }
+export interface KiorlyRoleHolder { sub: string; name: string | null; phone: string | null; role: string; test: boolean }
+export interface KiorlyRoleEvent { at: string; type: string; actor: string | null; actor_name: string | null; target: string | null; target_name: string | null; role: string | null; note: string | null }
+export interface KiorlyRolesState { holders: KiorlyRoleHolder[]; history: KiorlyRoleEvent[]; roles: string[]; me: { sub: string } }
 export interface SigninLimitsDoc { maxSendsPerPhonePerHour: number; maxSendsPerIpPerHour: number; maxAttemptsPerChallenge: number; ttlSeconds: number; lockoutMinutesAfterExhaustedChallenge: number }
 export interface SigninLimitsChange { id: string; proposed_by: string; proposed_by_name: string | null; limits: Partial<SigninLimitsDoc>; note: string | null; status: 'pending' | 'applied' | 'rejected' | 'withdrawn'; decided_by_name: string | null; decided_by: string | null; decided_at: string | null; applied_directly: boolean; created_at: string }
 export interface SigninLimitsState { defaults: SigninLimitsDoc; stored: Partial<SigninLimitsDoc>; effective: SigninLimitsDoc; ranges: Record<keyof SigninLimitsDoc, [number, number]>; version: number; updated_by_name: string | null; updated_at: string | null; pending: SigninLimitsChange[]; changes: SigninLimitsChange[]; me: { sub: string; can_apply_directly: boolean } }
@@ -77,6 +80,9 @@ export interface Api {
   requestLink(phone: string): Promise<{ link_id: string; status: string }>;
   verifyLink(id: string, code: string): Promise<LinkView>;
   cancelLink(id: string): Promise<void>;
+  opsKiorlyRoles(): Promise<KiorlyRolesState>;
+  opsKiorlyRoleGrant(b: { phone: string; role: string; note: string }): Promise<{ sub: string; role: string }>;
+  opsKiorlyRoleRevoke(sub: string, note: string): Promise<{ sub: string }>;
   opsSigninLimits(): Promise<SigninLimitsState>;
   opsSigninLimitsPropose(limits: Partial<SigninLimitsDoc>, note: string, apply: boolean): Promise<SigninLimitsChange>;
   opsSigninLimitsDecide(id: string, action: 'approve' | 'reject' | 'withdraw', note?: string): Promise<SigninLimitsChange>;
@@ -167,6 +173,9 @@ export function createApi(baseUrl: string, auth: AuthLike, doFetch: typeof fetch
     requestLink: (phone) => call('POST', '/api/links', { phone }),
     verifyLink: (id, code) => call('POST', `/api/links/${enc(id)}/verify`, { code }),
     cancelLink: async (id) => { await call('DELETE', `/api/links/${enc(id)}`); },
+    opsKiorlyRoles: () => call('GET', '/api/ops/kiorly-roles'),
+    opsKiorlyRoleGrant: (b) => call('POST', '/api/ops/kiorly-roles', b),
+    opsKiorlyRoleRevoke: (sub, note) => call('POST', `/api/ops/kiorly-roles/${enc(sub)}/revoke`, { note }),
     opsSigninLimits: () => call('GET', '/api/ops/signin-limits'),
     opsSigninLimitsPropose: (limits, note, apply) => call('POST', '/api/ops/signin-limits/changes', { limits, ...(note.trim() ? { note: note.trim() } : {}), ...(apply ? { apply: true } : {}) }),
     opsSigninLimitsDecide: (id, action, note) => call('POST', `/api/ops/signin-limits/changes/${enc(id)}/${action}`, note ? { note } : {}),
