@@ -73,6 +73,8 @@ export function createProvider(deps: ProviderDeps): Provider {
     scopes: cfg.scopes.map((s) => s.name),
     conformIdTokenClaims: false,
     pkce: { required: () => true },
+    // `intent=register|login` (which tab the Passport opens on) and `return_to` (where Go back returns to; validated against the client's registered URIs when used)
+    extraParams: ['intent', 'return_to'],
     ttl: {
       AccessToken: L.accessTokenSeconds,
       IdToken: L.idTokenSeconds,

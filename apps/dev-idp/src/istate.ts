@@ -1,7 +1,7 @@
 import type { Pool } from './db.js';
 
 /** Server-side state attached to one login interaction (second-factor done, passkey login, federation pending). */
-export type StateKind = 'totp' | 'passkey_login' | 'fed_login' | 'fed_pending' | 'totp_skip';
+export type StateKind = 'totp' | 'passkey_login' | 'fed_login' | 'fed_pending' | 'totp_skip' | 'signup' | 'signup_ack';
 
 export async function setState(pool: Pool, uid: string, kind: StateKind, sub: string, data: Record<string, unknown> = {}): Promise<void> {
   await pool.query(
@@ -14,4 +14,7 @@ export async function getState(pool: Pool, uid: string, kind: StateKind): Promis
 }
 export async function clearStates(pool: Pool, uid: string): Promise<void> {
   await pool.query(`DELETE FROM interaction_state WHERE uid=$1`, [uid]);
+}
+export async function delState(pool: Pool, uid: string, ...kinds: StateKind[]): Promise<void> {
+  if (kinds.length) await pool.query(`DELETE FROM interaction_state WHERE uid=$1 AND kind = ANY($2)`, [uid, kinds]);
 }

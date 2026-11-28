@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { ISSUER, randomPhone, signIn, lastCode, resetRateLimits } from './helpers';
+import { ISSUER, randomPhone, signIn, lastCode, resetRateLimits, acceptCreateOrContinue } from './helpers';
 
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
@@ -111,6 +111,9 @@ test('IdP sign-in pages (server-rendered): phone, code, passkey offer, TOTP: RTL
     await axe(page, `idp code error ${lang}/${scheme}`);
     await page.locator('#code').fill(await lastCode(phone));
     await page.locator('form[action$="/verify"] button[type=submit]').first().click();
+    await expect(page.locator('#create-account')).toBeVisible(); // a new number on the Sign-in tab is offered to create the account
+    await axe(page, `idp create notice ${lang}/${scheme}`);
+    await acceptCreateOrContinue(page);
     await expect(page.locator('#pk-add')).toBeVisible(); // passkey offer
     await axe(page, `idp passkey ${lang}/${scheme}`);
     await ctx.close();

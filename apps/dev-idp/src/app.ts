@@ -28,6 +28,7 @@ import { Federation } from './federation.js';
 import { Scim } from './scim.js';
 import { FakeUpstreamIdp } from './fake-upstream.js';
 import type { Ctx } from './services.js';
+import { configureViews } from './views.js';
 import { send, redirect, readBody, setNativeFormActionSchemes } from './http.js';
 import { HttpError } from './services.js';
 import { purgeExpired } from './adapter.js';
@@ -84,6 +85,7 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
   // ADR-038: Kiorly Home is a server-less SPA too and calls GET /api/workspaces with its own access token, which needs the `sid` claim.
   const homeClient = cfg.clients.find((c) => c.clientId === 'kiorly-home');
   if (homeClient) homeClient.environments.local.backchannelLogoutUri ??= `${rt.issuer}/account/backchannel-logout`;
+  configureViews({ hosted: rt.publicMode === true, termsUrl: (o.env ?? process.env).KX_TERMS_URL ?? '', privacyUrl: (o.env ?? process.env).KX_PRIVACY_URL ?? '' });
   setNativeFormActionSchemes(cfg.clients.flatMap((c) => [...c.environments.local.redirectUris, ...c.environments.local.postLogoutRedirectUris]));
   const seedUsers = o.seedUsers ?? loadSeedUsers(undefined, { totp: rt.publicMode ? 'none' : 'local' });
   const seedNumbers = seedUsers.map((u) => u.phone);

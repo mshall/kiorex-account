@@ -7,14 +7,14 @@ import type { Passkeys } from './passkeys.js';
 import type { Audit } from './audit.js';
 import { maskPhone } from '@kiorex/otp-sender';
 import { clientIp, readBody, readForm, redirect, send } from './http.js';
-import { codePage, errorText, passkeyPage, phonePage, totpPage, page, t, t2, esc, type Lang } from './views.js';
+import { codePage, errorText, expiredPage, noticePage, passkeyPage, phonePage, productFor, totpPage, t, t2, esc, type Ctx, type Lang, type Mode } from './views.js';
 import type { Pool } from './db.js';
 import type { IdpConfig } from './config.js';
 import type { Totp } from './totp.js';
 import type { MfaPolicy } from './mfa-policy.js';
 import type { Federation, FederatedResult } from './federation.js';
 import { HttpError } from './services.js';
-import { clearStates, getState, setState } from './istate.js';
+import { clearStates, delState, getState, setState } from './istate.js';
 
 export interface InteractionDeps {
   provider: Provider; accounts: Accounts; otp: OtpService; passkeys: Passkeys; audit: Audit;
@@ -29,6 +29,32 @@ function pickLang(req: IncomingMessage, url: URL, form: Record<string, string>, 
   return String(req.headers['accept-language'] ?? '').toLowerCase().startsWith('ar') ? 'ar' : 'en';
 }
 
+/** Arabic-Indic and Persian digits typed on a phone keypad become 0-9 (Western digits everywhere). */
+const westernDigits = (v: string): string => v.replace(/[\u0660-\u0669]/g, (c) => String(c.charCodeAt(0) - 0x660)).replace(/[\u06F0-\u06F9]/g, (c) => String(c.charCodeAt(0) - 0x6f0));
+const CONSENT_VERSION = 'draft-1';
+/** Where the product's home is, derived ONLY from its registered URIs (never from the request). The widget popup and native apps get the OAuth access_denied answer instead. */
+const HOME_PATH: Record<string, string | null> = { 'kiorex-passport-web': '/account', 'kiorex-widget': null };
+
+/** Go back to the app: the validated `return_to` (same origin as one of the client's registered redirect or post-logout URIs, http(s) only), else the product home (origin of a registered http(s) redirect URI). Undefined: answer the app with access_denied. */
+export function backTarget(clientId: string, registered: { redirectUris: string[]; postLogoutRedirectUris: string[] }, returnTo: unknown, requestRedirectUri?: string): string | undefined {
+  // a native app (custom-scheme redirect URI) is answered with the OAuth access_denied error: a web page cannot take the person back into it
+  const reqOrigin = (() => { try { const o = new URL(requestRedirectUri ?? registered.redirectUris[0] ?? ''); return o.protocol === 'http:' || o.protocol === 'https:' ? o.origin : undefined; } catch { return undefined; } })();
+  if (!reqOrigin) return undefined;
+  const origins = new Map<string, string>();
+  for (const u of [...registered.redirectUris, ...registered.postLogoutRedirectUris]) {
+    try { const o = new URL(u); if (o.protocol === 'http:' || o.protocol === 'https:') origins.set(o.origin, o.origin); } catch { /* native scheme */ }
+  }
+  if (typeof returnTo === 'string' && returnTo.length > 0 && returnTo.length <= 2048) {
+    try {
+      const r = new URL(returnTo);
+      if ((r.protocol === 'http:' || r.protocol === 'https:') && !r.username && !r.password && origins.has(r.origin)) return r.toString();
+    } catch { /* not a URL: ignore */ }
+  }
+  const home = HOME_PATH[clientId];
+  if (home === null) return undefined;
+  return `${reqOrigin}${home ?? '/'}`;
+}
+
 /** The first factor that is currently satisfied for an interaction. */
 interface FirstFactor { account: Account; method: 'otp' | 'passkey' | 'fed'; amr: string[]; mfa: boolean; fedPending?: FederatedResult }
 
@@ -40,7 +66,7 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
   try {
     details = await d.provider.interactionDetails(req, res);
   } catch {
-    return send(res, 400, page('en', 'Session expired', '<h1>Session expired</h1><p>Start again from the app.</p>'));
+    return send(res, 400, expiredPage(pickLang(req, url, {}, undefined)));
   }
   if (details.uid !== uid) return send(res, 400, { error: 'interaction_mismatch' });
 
@@ -52,10 +78,41 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
   const back = () => redirect(res, `/interaction/${uid}?lang=${lang}`);
   const acrCfg = d.cfg.stepUp.acr;
 
+  const clientId = String(details.params.client_id ?? '');
+  const product = productFor(clientId, lang);
+  const allowRegister = product.audience !== 'ops'; // operations staff are provisioned by administrators, never self-registered
+  const modeOf = (v: unknown): Mode | undefined => (v === 'register' && allowRegister ? 'register' : v === 'login' || v === 'register' ? 'login' : undefined);
+  const intentMode: Mode = modeOf(String(url.searchParams.get('intent') ?? details.params.intent ?? '').toLowerCase()) ?? 'login';
+  const ctxOf = (mode: Mode): Ctx => ({ product: product.name, audience: product.audience, mode });
+
+  /**
+   * The sign-in / create-account tab chosen on the phone page ('signup' state). After the code is verified (so nothing is revealed to someone who does not hold the number):
+   * create-account for a number that already has an account asks "sign in instead" ('dup'); sign-in for a number without an account asks to create one ('new').
+   * No tab chosen (older clients, API tests): the former behaviour, the account is created on the first verified number.
+   */
+  const gate = async (): Promise<'dup' | 'new' | undefined> => {
+    const ch = await d.otp.latest(uid);
+    if (!ch?.verified_at || ch.consumed_at || ch.locked) return undefined;
+    const sg = await getState(d.pool, uid, 'signup');
+    if (!sg || (await getState(d.pool, uid, 'signup_ack'))) return undefined;
+    const exists = !!(await d.accounts.findByPhone(ch.phone));
+    if (sg.data.mode === 'register' && exists) return 'dup';
+    if (sg.data.mode === 'login' && !exists) return 'new';
+    return undefined;
+  };
+
   const otpAccount = async (): Promise<Account | undefined> => {
     const ch = await d.otp.latest(uid);
     if (!ch?.verified_at || ch.consumed_at || ch.locked) return undefined;
-    return (await d.accounts.findByPhone(ch.phone)) ?? (await d.accounts.create(ch.phone, ch.locale, ch.name));
+    if (await gate()) return undefined;
+    const found = await d.accounts.findByPhone(ch.phone);
+    if (found) return found;
+    const sg = await getState(d.pool, uid, 'signup');
+    const name = typeof sg?.data.name === 'string' && sg.data.name ? sg.data.name : ch.name;
+    const created = await d.accounts.create(ch.phone, ch.locale, name);
+    if (sg) await setState(d.pool, uid, 'signup_ack', '', {}); // the account exists now because of THIS registration: later steps must not call it a duplicate
+    if (sg) await d.audit.record('account.registered', created.sub, { client: clientId, consent: 'terms+privacy', consent_version: sg.data.consent_version ?? CONSENT_VERSION });
+    return created;
   };
 
   const firstFactor = async (): Promise<FirstFactor | undefined> => {
@@ -122,9 +179,26 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
     return send(res, o.status ?? 200, codePage(lang, uid, maskPhone(phone), { error: o.error }), o.headers ?? {});
   };
 
-  const phoneView = async (o: { error?: string; phone?: string; name?: string } = {}, status = 200) => {
+  const phoneView = async (o: { error?: string; phone?: string; name?: string; mode?: Mode } = {}, status = 200) => {
     const fedPending = await getState(d.pool, uid, 'fed_pending');
-    return send(res, status, phonePage(lang, uid, { ...o, passkeyLogin: d.passkeysEnabled, federation: d.federation.available(), fedLinkNotice: !!fedPending }));
+    const { mode, ...rest } = o;
+    return send(res, status, phonePage(lang, uid, { ...rest, passkeyLogin: d.passkeysEnabled, federation: d.federation.available(), fedLinkNotice: !!fedPending, ctx: ctxOf(mode ?? intentMode), allowRegister }));
+  };
+
+  const noticeView = async (kind: 'dup' | 'new', o: { error?: string; name?: string; status?: number } = {}) => {
+    const ch = await d.otp.latest(uid);
+    if (!ch) return phoneView();
+    return send(res, o.status ?? 200, noticePage(lang, uid, kind, maskPhone(ch.phone), { error: o.error, name: o.name ?? ch.name ?? undefined }));
+  };
+
+  /** Go back from the first step: the app that sent the person (validated return_to, else the product home, else the OAuth access_denied answer). Nothing typed here is carried along. */
+  const cancelToApp = async () => {
+    await d.otp.abandon(uid).catch(() => undefined);
+    await clearStates(d.pool, uid);
+    const client = await d.provider.Client.find(clientId);
+    const target = client ? backTarget(clientId, { redirectUris: [...(client.redirectUris ?? [])], postLogoutRedirectUris: [...(client.postLogoutRedirectUris ?? [])] }, details.params.return_to, String(details.params.redirect_uri ?? '')) : undefined;
+    if (target) return redirect(res, target);
+    return void (await d.provider.interactionFinished(req, res, { error: 'access_denied', error_description: 'The user went back before signing in.' }, { mergeWithLastSubmission: false }));
   };
 
   // ---- consent: first-party clients, auto-grant requested scopes/claims/resources ----
@@ -147,6 +221,8 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
 
   // ---- GET: render step by state ----
   if (!isPost && action === '') {
+    const g = await gate();
+    if (g) return noticeView(g);
     const ff = await firstFactor();
     if (ff) return afterFactors(ff);
     const ch = await d.otp.latest(uid);
@@ -181,15 +257,19 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
   }
 
   if (isPost && action === 'phone') {
-    const phone = (form.phone ?? '').replace(/[\s-]/g, '');
+    const phone = westernDigits(form.phone ?? '').replace(/[\s-]/g, '');
+    const mode = modeOf(form.mode);
+    if (mode === 'register' && form.consent !== '1') return phoneView({ error: errorText(lang, 'consent_required'), phone, name: form.name, mode }, 400);
     const r = await d.otp.send({ interactionUid: uid, phone, ip, locale: lang, name: form.name });
     if (!r.ok) {
       await d.audit.record('otp.send.denied', null, { reason: r.reason, phone: maskPhone(phone) });
       const status = r.reason === 'invalid_phone' ? 400 : r.reason === 'send_failed' ? 502 : 429;
       if (r.retryAfterSeconds) res.setHeader('retry-after', String(r.retryAfterSeconds));
-      return phoneView({ error: errorText(lang, r.reason), phone, name: form.name }, status);
+      return phoneView({ error: errorText(lang, r.reason), phone, name: form.name, mode }, status);
     }
     await d.audit.record('otp.sent', null, { phone: maskPhone(phone) });
+    await delState(d.pool, uid, 'signup', 'signup_ack');
+    if (mode) await setState(d.pool, uid, 'signup', '', { mode, consent: mode === 'register', consent_version: CONSENT_VERSION, name: (form.name ?? '').trim().slice(0, 80) || null });
     return codeView(phone);
   }
 
@@ -204,12 +284,50 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
   }
 
   if (isPost && action === 'change') {
-    await d.otp.consume(uid).catch(() => undefined);
-    return phoneView();
+    await d.otp.abandon(uid).catch(() => undefined);
+    await delState(d.pool, uid, 'totp', 'totp_skip', 'signup_ack', 'passkey_login', 'fed_login');
+    const sg = await getState(d.pool, uid, 'signup');
+    return phoneView({ mode: sg?.data.mode === 'register' ? 'register' : undefined });
+  }
+
+  // Go back: one step at a time (phone <- code <- second factor), from the first step to the app. Decided from the server state, never from what the page claims.
+  if (isPost && (action === 'back' || action === 'cancel')) {
+    const ch = await d.otp.latest(uid);
+    const live = !!ch && !ch.consumed_at && !ch.locked && ch.expires_at.getTime() > Date.now();
+    const sg = await getState(d.pool, uid, 'signup');
+    const hasFactorState = !!(await getState(d.pool, uid, 'passkey_login')) || !!(await getState(d.pool, uid, 'fed_login'));
+    if (action === 'cancel' || (!live && !hasFactorState)) return cancelToApp();
+    if (live && ch!.verified_at) { // second factor, notice or passkey offer -> the code step
+      await delState(d.pool, uid, 'totp', 'totp_skip', 'signup_ack', 'passkey_login', 'fed_login');
+      await d.otp.unverify(uid);
+      return codeView(ch!.phone);
+    }
+    // code step (or a factor that has no code) -> the phone step, nothing typed is kept
+    await d.otp.abandon(uid).catch(() => undefined);
+    await delState(d.pool, uid, 'totp', 'totp_skip', 'signup_ack', 'passkey_login', 'fed_login');
+    return phoneView({ mode: sg?.data.mode === 'register' ? 'register' : undefined });
+  }
+
+  // after a verified code: "you already have an account, sign in" / "no account yet, create one"
+  if (isPost && action === 'continue') {
+    if ((await gate()) !== 'dup') return back();
+    await setState(d.pool, uid, 'signup_ack', '', {});
+    const ff = await firstFactor();
+    if (!ff) return back();
+    return afterFactors(ff);
+  }
+  if (isPost && action === 'create') {
+    if ((await gate()) !== 'new') return back();
+    if (form.consent !== '1') return noticeView('new', { error: errorText(lang, 'consent_required'), name: form.name, status: 400 });
+    await setState(d.pool, uid, 'signup', '', { mode: 'register', consent: true, consent_version: CONSENT_VERSION, name: (form.name ?? '').trim().slice(0, 80) || null });
+    await setState(d.pool, uid, 'signup_ack', '', {});
+    const ff = await firstFactor();
+    if (!ff) return back();
+    return afterFactors(ff);
   }
 
   if (isPost && action === 'verify') {
-    const r = await d.otp.verify(uid, form.code ?? '');
+    const r = await d.otp.verify(uid, westernDigits(form.code ?? ''));
     const ch = await d.otp.latest(uid);
     if (!r.ok) {
       const status = r.reason === 'locked' ? 429 : 400;
@@ -217,6 +335,8 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
       if (!ch || r.reason === 'no_challenge') return phoneView({ error: errorText(lang, 'no_challenge') }, 400);
       return codeView(ch.phone, { error: errorText(lang, r.reason, r.attemptsLeft), status });
     }
+    const g = await gate();
+    if (g) return noticeView(g);
     const ff = await firstFactor(); // creates the account on first verified phone
     if (!ff) return back();
     return afterFactors(ff);
@@ -229,7 +349,7 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
     const enrolledAlready = await d.totp.isEnrolled(ff.account.sub);
     if (!(await needsMfa(ff)) && !enrolledAlready) return back(); // optional factors are enrolled in the account page, not in the sign-in
     const enrolled = await d.totp.isEnrolled(ff.account.sub);
-    const r = await d.totp.verify(ff.account.sub, form.totp ?? '', { confirm: !enrolled });
+    const r = await d.totp.verify(ff.account.sub, westernDigits(form.totp ?? ''), { confirm: !enrolled });
     if (!r.ok) {
       await d.audit.record('totp.failed', ff.account.sub, { reason: r.reason });
       const y = t2(lang).totpErr;

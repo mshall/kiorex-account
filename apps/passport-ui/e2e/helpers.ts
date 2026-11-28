@@ -39,6 +39,17 @@ export const totpNow = (secret: string, offsetSeconds = 0) => generateSync({ sec
 
 export const resetRateLimits = () => fetch(`${ISSUER}/dev/reset-rate-limits`, { method: 'POST' });
 
+/**
+ * After the code is verified: a number without an account is asked to create one (terms and privacy consent), and a number that already has one on the Create-account tab is asked to sign in.
+ * Waits until the page shows whichever step comes next, so it is safe for every sign-in.
+ */
+export async function acceptCreateOrContinue(page: Page) {
+  const create = page.locator('#create-account'); const dup = page.locator('#dup-signin');
+  await create.or(dup).or(page.locator('#pk-add, #totp')).or(page.locator('.error')).first().waitFor({ timeout: 15_000 }).catch(() => undefined);
+  if (await create.isVisible().catch(() => false)) { await page.locator('#consent').check(); await create.click(); }
+  else if (await dup.isVisible().catch(() => false)) await dup.click();
+}
+
 /** Drives the real sign-in: Passport -> IdP phone page -> OTP (read from the mock dev inbox) -> [TOTP] -> back to /account. */
 export async function signIn(page: Page, phone: string, o: { name?: string; totpSecret?: string; passkeyLogin?: boolean; path?: string } = {}) {
   await resetRateLimits(); // the whole suite signs in from one IP (20 sends/IP/h is a safety control in the real IdP)
@@ -48,12 +59,17 @@ export async function signIn(page: Page, phone: string, o: { name?: string; totp
   if (o.passkeyLogin) {
     await page.getByRole('button', { name: /passkey|مفتاح مرور/i }).click();
   } else {
+    if (o.name) { // a name is asked on the Create-account tab only
+      await page.getByRole('link', { name: /^(Create account|إنشاء حساب)$/ }).click();
+      await page.locator('#name').fill(o.name);
+      await page.locator('#consent').check();
+    }
     await page.locator('#phone').fill(phone);
-    if (o.name) await page.locator('#name').fill(o.name);
     await page.locator('form[action$="/phone"] button[type=submit]').click();
     const code = await lastCode(phone);
     await page.locator('#code').fill(code);
     await page.locator('form[action$="/verify"] button[type=submit]').first().click();
+    await acceptCreateOrContinue(page);
     if (o.totpSecret) {
       await page.locator('#totp').fill(totpNow(o.totpSecret));
       await page.locator('form[action$="/totp"] button[type=submit]').click();

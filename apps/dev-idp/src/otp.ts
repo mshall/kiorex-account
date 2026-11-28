@@ -111,6 +111,16 @@ export class OtpService {
     return { ok: false, reason: 'wrong', attemptsLeft: p.maxAttemptsPerChallenge - attempts };
   }
 
+  /** Going back or changing the number: the pending (or verified, unused) challenge of this interaction is dead; its code can never be used again. */
+  async abandon(interactionUid: string): Promise<void> {
+    await this.pool.query(`UPDATE otp_challenges SET consumed_at=now() WHERE interaction_uid=$1 AND consumed_at IS NULL`, [interactionUid]);
+  }
+
+  /** Going back from a step that follows the code (second factor, notice): the same, still valid code may be entered again (attempt limits and lockouts are unchanged). */
+  async unverify(interactionUid: string): Promise<void> {
+    await this.pool.query(`UPDATE otp_challenges SET verified_at=NULL WHERE id = (SELECT id FROM otp_challenges WHERE interaction_uid=$1 ORDER BY created_at DESC LIMIT 1) AND consumed_at IS NULL AND NOT locked`, [interactionUid]);
+  }
+
   /** Marks a verified challenge consumed so the interaction can finish only once. */
   async consume(interactionUid: string): Promise<{ phone: string; name: string | null; locale: OtpLocale } | undefined> {
     const r = await this.pool.query(

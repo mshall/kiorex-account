@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { loadSeedUsers } from '../../dev-idp/src/config.js';
-import { OPS, ISSUER, lastCode, nav, randomPhone, resetRateLimits, signIn, totpNow, useEnglish } from './helpers';
+import { OPS, ISSUER, lastCode, nav, randomPhone, resetRateLimits, signIn, acceptCreateOrContinue, totpNow, useEnglish } from './helpers';
 
 const OPS_B = loadSeedUsers().find((u) => u.phone === '+201000009001')!; // plain ops_admin (the maker); the super admin is the checker
 
@@ -15,6 +15,7 @@ async function signInToSecondFactor(page: Page, phone: string) {
   await page.locator('form[action$="/phone"] button[type=submit]').click();
   await page.locator('#code').fill(await lastCode(phone));
   await page.locator('form[action$="/verify"] button[type=submit]').first().click();
+  await acceptCreateOrContinue(page);
 }
 const landed = (page: Page) => page.waitForURL(new RegExp(`${ISSUER.replace(/[/.]/g, '\\$&')}/account(?!/callback)`), { timeout: 20_000 });
 

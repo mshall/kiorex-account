@@ -104,7 +104,8 @@ describe('phone OTP login: every registered client', () => {
     expect(html).toContain('lang="ar"');
     expect(html).toContain('#3730A3');
     expect(html).toContain('#E8735E');
-    expect(html).toContain('/static/brand/kiorex-logo-full.svg');
+    expect(html).toContain('class="mk-pulse"'); // the inline Kiorex mark (geometry from the logo spec), drawn on load
+    expect(html).toContain('KIORE<b>X</b>');
     const en = await (await a.b.req(`${h.issuer}/interaction/${uid}?lang=en`)).text();
     expect(en).toContain('dir="ltr"');
     expect(en).toContain('Sign in with Kiorex Passport');
