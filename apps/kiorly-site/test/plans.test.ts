@@ -4,7 +4,7 @@ import { formatMoney, mountPlans, parsePlans, renderPlans, type PlansLabels } fr
 import { bindTabs } from '../src/tabs';
 import { PLANS } from '../src/content';
 
-const L = (lang: 'ar' | 'en'): PlansLabels => ({ tabs: PLANS.tabs[lang], modules: PLANS.modules[lang], tbd: PLANS.tbd[lang], ask: PLANS.ask[lang], includes: PLANS.includes[lang], free: PLANS.free[lang], unavailable: PLANS.unavailable[lang], marketNote: PLANS.marketNote[lang], perMonth: PLANS.perMonth[lang], perYear: PLANS.perYear[lang], perClinic: PLANS.perClinic[lang], perClinician: PLANS.perClinician[lang], included: PLANS.included[lang], extra: PLANS.extra[lang], noPlans: PLANS.noPlans[lang], more: PLANS.more[lang] });
+const L = (lang: 'ar' | 'en'): PlansLabels => ({ tabs: PLANS.tabs[lang], modules: PLANS.modules[lang], tbd: PLANS.tbd[lang], ask: PLANS.ask[lang], includes: PLANS.includes[lang], free: PLANS.free[lang], unavailable: PLANS.unavailable[lang], marketNote: PLANS.marketNote[lang], perMonth: PLANS.perMonth[lang], perYear: PLANS.perYear[lang], perClinic: PLANS.perClinic[lang], perClinician: PLANS.perClinician[lang], perPharmacy: PLANS.perPharmacy[lang], perLab: PLANS.perLab[lang], included: PLANS.included[lang], extra: PLANS.extra[lang], noPlans: PLANS.noPlans[lang], more: PLANS.more[lang] });
 const loc = (en: string, ar = `ع ${en}`) => ({ en, ar });
 const lines = (en: string[]) => ({ en, ar: en.map((x) => `ع ${x}`) });
 const plan = (id: string, o: Record<string, unknown> = {}) => ({ id, name: loc(id.toUpperCase()), summary: null, limits: lines([]), features: lines(['Video visits']), priceStatus: 'TO_BE_ANNOUNCED', prices: [], ...o });
@@ -43,6 +43,12 @@ describe('plans rendering', () => {
     const pro = html.slice(html.indexOf('data-plan="clinic-pro"'), html.indexOf('id="ppanel-pharmacy"'));
     expect(pro).toContain('data-price-status="set"'); expect(pro).toMatch(/1,299/); expect(pro).toMatch(/9,990\.50/); expect(pro).toContain('per clinician / month'); expect(pro).toContain('Extra clinician');
     expect(html).toContain('Prices are in EGP for the EG market');
+  });
+  it('a Pharmacy or Lab price is per organisation of that product, never "per clinic"', () => {
+    const m = parsePlans(body({ modules: [{ id: 'pharmacy', status: 'OK', plans: [plan('pro', { prices: [price({ amount: '250' })] })] }, { id: 'lab', status: 'OK', plans: [plan('pro', { prices: [price({ amount: '300', interval: 'ANNUAL' })] })] }] }), 'en')!;
+    const html = renderPlans(m, 'en', L('en'))!;
+    expect(html).toContain('per pharmacy / month'); expect(html).toContain('per lab / year'); expect(html).not.toContain('per clinic');
+    expect(renderPlans(m, 'ar', L('ar'))!).toContain('لكل صيدلية');
   });
   it('has a tab per product that has plans, in order, with the first selected; an empty product has no tab', () => {
     const html = renderPlans(parsePlans(body(), 'en')!, 'en', L('en'))!;

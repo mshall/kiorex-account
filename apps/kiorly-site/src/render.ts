@@ -103,7 +103,7 @@ function security(cfg: SiteConfig, l: Lang): string {
  * (`data-endpoint`) and replaces that text with what the Kiorly super admin and ops keep in the Kiorly admin. If the platform cannot be reached the text stays.
  */
 function plans(cfg: SiteConfig, l: Lang): string {
-  const labels: PlansLabels = { tabs: PLANS.tabs[l], modules: PLANS.modules[l], tbd: PLANS.tbd[l], ask: PLANS.ask[l], includes: PLANS.includes[l], free: PLANS.free[l], unavailable: PLANS.unavailable[l], marketNote: PLANS.marketNote[l], perMonth: PLANS.perMonth[l], perYear: PLANS.perYear[l], perClinic: PLANS.perClinic[l], perClinician: PLANS.perClinician[l], included: PLANS.included[l], extra: PLANS.extra[l], noPlans: PLANS.noPlans[l], more: PLANS.more[l] };
+  const labels: PlansLabels = { tabs: PLANS.tabs[l], modules: PLANS.modules[l], tbd: PLANS.tbd[l], ask: PLANS.ask[l], includes: PLANS.includes[l], free: PLANS.free[l], unavailable: PLANS.unavailable[l], marketNote: PLANS.marketNote[l], perMonth: PLANS.perMonth[l], perYear: PLANS.perYear[l], perClinic: PLANS.perClinic[l], perClinician: PLANS.perClinician[l], perPharmacy: PLANS.perPharmacy[l], perLab: PLANS.perLab[l], included: PLANS.included[l], extra: PLANS.extra[l], noPlans: PLANS.noPlans[l], more: PLANS.more[l] };
   const fb = `<div class="note-box" data-plans-fallback><p>${esc(PLANS.fallback[l])}</p><p><a class="btn" href="#join" data-join-mode="">${esc(PLANS.contact[l])}</a></p></div>`;
   const live = cfg.plansEndpoint ? `<div class="plans-live tabs" data-plans-live hidden aria-live="polite"></div>` : '';
   const attrs = cfg.plansEndpoint ? ` data-endpoint="${esc(cfg.plansEndpoint)}" data-lang="${l}" data-labels="${esc(JSON.stringify(labels))}"` : '';

@@ -196,7 +196,7 @@ export const PLANS = {
   noPlans: t('لا توجد باقات معروضة لهذا المنتج الآن.', 'No plans are listed for this product right now.'),
   more: t('عرض {n} ميزة أخرى', 'Show {n} more features'),
   marketNote: t('الأسعار بعملة {currency} لسوق {market}.', 'Prices are in {currency} for the {market} market.'),
-  perMonth: t('شهريا', 'month'), perYear: t('سنويا', 'year'), perClinic: t('لكل عيادة', 'per clinic'), perClinician: t('لكل طبيب', 'per clinician'),
+  perMonth: t('شهريا', 'month'), perYear: t('سنويا', 'year'), perClinic: t('لكل عيادة', 'per clinic'), perClinician: t('لكل طبيب', 'per clinician'), perPharmacy: t('لكل صيدلية', 'per pharmacy'), perLab: t('لكل معمل', 'per lab'),
   included: t('الأطباء المشمولون', 'Clinicians included'), extra: t('طبيب إضافي', 'Extra clinician'),
 };
 
