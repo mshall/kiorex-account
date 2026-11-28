@@ -80,7 +80,9 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
   const acrCfg = d.cfg.stepUp.acr;
 
   const clientId = String(details.params.client_id ?? '');
-  const product = productFor(clientId, lang);
+  let product = productFor(clientId, lang);
+  // The Kiorly admin is the Ops console build on a Kiorly host (same client, one more redirect URI): it gets its own name on the page.
+  try { if (clientId === 'kiorex-ops' && /(^|\.)kiorly\.(com|link)$/.test(new URL(String(details.params.redirect_uri ?? '')).hostname)) product = { name: lang === 'ar' ? 'إدارة كيورلي' : 'Kiorly Admin', audience: 'ops' }; } catch { /* no redirect uri: keep the client name */ }
   const allowRegister = product.audience !== 'ops'; // operations staff are provisioned by administrators, never self-registered
   const modeOf = (v: unknown): Mode | undefined => (v === 'register' && allowRegister ? 'register' : v === 'login' || v === 'register' ? 'login' : undefined);
   const intentMode: Mode = modeOf(String(url.searchParams.get('intent') ?? details.params.intent ?? '').toLowerCase()) ?? 'login';

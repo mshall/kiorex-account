@@ -333,7 +333,7 @@ export function page(lang: Lang, title: string, body: string, opts: PageOpts = {
   const themeSelect = `<label class="theme-sel" for="kx-theme-select"><span>${tx.theme}</span><select id="kx-theme-select" aria-label="${tx.theme}"><option value="light">${tx.themeL}</option><option value="dark">${tx.themeD}</option><option value="system">${tx.themeS}</option></select></label>`;
   const inFlow = !!opts.back && opts.back !== 'history' && opts.back.action === 'back';
   return `<!doctype html><html lang="${lang}" dir="${lang === 'ar' ? 'rtl' : 'ltr'}" data-theme="light"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>${esc(title)} - Kiorex Passport</title><script>${THEME_BOOT}</script>
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>${esc(title)} - ${opts.ctx?.audience === 'ops' && opts.ctx.product.includes('Kiorly') || opts.ctx?.product === 'إدارة كيورلي' ? esc(opts.ctx.product) : 'Kiorex Passport'}</title><script>${THEME_BOOT}</script>
 <link rel="icon" href="/static/brand/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png"><style>${css()}</style></head><body data-step="${inFlow ? 'in' : 'first'}">
 ${stage}
 <div class="main"><div class="bar">${back}<div class="end">${langLink}${themeSelect}</div></div>
