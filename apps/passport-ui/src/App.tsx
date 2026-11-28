@@ -71,6 +71,7 @@ function Shell({ children }: { children: ReactNode }) {
       <header className="topbar">
         <Link to="/account" className="brand-link" aria-label="Kiorex Passport"><Brand /></Link>
         <Toolbar />
+        <span className="kx-avatar" aria-hidden="true" title={account.name ?? undefined}>{(Array.from((account.name ?? '').trim())[0] ?? '·').toUpperCase()}</span>
         <Button variant="ghost" onClick={signOut}>{t('app.signOut')}</Button>
       </header>
       <nav className="tabs" aria-label={t('app.mainNav')}>
@@ -100,7 +101,7 @@ function Routes() {
     case '/account/ops/mfa': return <OpsMfaPage />;
     case '/account/ops/limits': return <OpsLimitsPage />;
     case '/account/ops/kiorly-roles': return <OpsKiorlyRolesPage />;
-    default: return <><h1>404</h1><p>{t('app.notFound')}</p><Link to="/account">{t('nav.home')}</Link></>;
+    default: return <div className="card hero-card kx-404"><div className="hero"><span aria-hidden="true"><PulseLine size={24} label="" /></span><h1>404</h1><p className="lead">{t('app.notFound')}</p><Link to="/account" className="btn btn-primary">{t('nav.home')}</Link></div></div>;
   }
 }
 
@@ -109,25 +110,37 @@ export function SignInPage({ notice, auth }: { notice?: 'expired' | 'failed' | '
   const { path, query } = useRoute();
   const invite = query.get('invite');
   const go = () => { const ret = path === '/account/callback' || query.get('deleted') ? '/account' : safeReturn(path) + (invite ? `?invite=${encodeURIComponent(invite)}` : ''); void auth.startLogin(ret, lang); };
+  const check = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>;
   return (
-    <>
-      <header className="topbar"><span className="brand-link"><Brand /></span><Toolbar /></header>
-      <main id="main" className="signin" tabIndex={-1}>
-        {notice === 'deleted' ? <Alert kind="success"><strong>{t('signin.deleted.title')}</strong> {t('signin.deleted.body')}</Alert> : null}
-        {notice === 'expired' ? <Alert kind="warning">{t('signin.expired')}</Alert> : null}
-        {notice === 'failed' ? <Alert kind="error">{t('signin.failed')}</Alert> : null}
-        <div className="card hero-card">
-          <div className="hero">
-            <span aria-hidden="true"><PulseLine size={24} label="" /></span>
-            <h1>{t('signin.title')}</h1>
-            <p className="lead">{t('signin.lead')}</p>
-            <Button onClick={go}>{t('signin.cta')}</Button>
-            <p className="secure"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg>{lang === 'ar' ? 'تسجيل دخول آمن برمز يُرسل إلى هاتفك' : 'Secure sign-in with a code sent to your phone'}</p>
-          </div>
+    <div className="kx-split">
+      <aside className="kx-stage" aria-label="Kiorex Passport">
+        <span className="kx-orb o1" aria-hidden="true" /><span className="kx-orb o2" aria-hidden="true" /><span className="kx-orb o3" aria-hidden="true" />
+        <span className="kx-stage-logo" dir="ltr"><KiorexLogo variant="full" height={64} onBrand theme="dark" title="Kiorex Passport" style={{ margin: '-13px -62px -13px -12px', maxWidth: 'none' }} /></span>
+        <div className="kx-stage-copy">
+          <h2>{t('signin.stage.title')}</h2>
+          <ul>{(['p1', 'p2', 'p3'] as const).map((k) => <li key={k}><i aria-hidden="true">{check}</i><span>{t(`signin.stage.${k}` as TKey)}</span></li>)}</ul>
         </div>
-      </main>
-      <footer className="foot"><span>{t('app.devNote')}</span></footer>
-    </>
+        <p className="kx-stage-note">{t('signin.stage.note')}</p>
+      </aside>
+      <div className="kx-split-main">
+        <header className="topbar"><span className="brand-link kx-brand-narrow"><Brand /></span><Toolbar /></header>
+        <main id="main" className="signin" tabIndex={-1}>
+          {notice === 'deleted' ? <Alert kind="success"><strong>{t('signin.deleted.title')}</strong> {t('signin.deleted.body')}</Alert> : null}
+          {notice === 'expired' ? <Alert kind="warning">{t('signin.expired')}</Alert> : null}
+          {notice === 'failed' ? <Alert kind="error">{t('signin.failed')}</Alert> : null}
+          <div className="card hero-card">
+            <div className="hero">
+              <span aria-hidden="true"><PulseLine size={24} label="" /></span>
+              <h1>{t('signin.title')}</h1>
+              <p className="lead">{t('signin.lead')}</p>
+              <Button onClick={go}>{t('signin.cta')}</Button>
+              <p className="secure"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg>{lang === 'ar' ? 'تسجيل دخول آمن برمز يُرسل إلى هاتفك' : 'Secure sign-in with a code sent to your phone'}</p>
+            </div>
+          </div>
+        </main>
+        <footer className="foot"><span>{t('app.devNote')}</span></footer>
+      </div>
+    </div>
   );
 }
 

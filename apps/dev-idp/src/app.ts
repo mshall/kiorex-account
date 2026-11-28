@@ -28,7 +28,7 @@ import { Federation } from './federation.js';
 import { Scim } from './scim.js';
 import { FakeUpstreamIdp } from './fake-upstream.js';
 import type { Ctx } from './services.js';
-import { configureViews } from './views.js';
+import { configureViews, notFoundPage } from './views.js';
 import { send, redirect, readBody, setNativeFormActionSchemes } from './http.js';
 import { HttpError } from './services.js';
 import { purgeExpired } from './adapter.js';
@@ -235,6 +235,21 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
         if (p.startsWith('/interaction/')) return await handleInteraction(iDeps, req, res, url);
         if (p === '/scim/v2' || p.startsWith('/scim/v2/')) return await scim.handle(req, res, url); // KA-11 SCIM 2.0 (org bearer token)
         if (p.startsWith('/api/')) return await handleApi(apiDeps, req, res, url);
+        if (p === '/' && (req.method === 'GET' || req.method === 'HEAD')) { res.writeHead(302, { location: '/account' }); return void res.end(); }
+        if (req.method === 'GET' && String(req.headers.accept ?? '').includes('text/html')) {
+          // the provider answers unknown paths with a bare "Not Found": swap it for the branded page (browser navigations only)
+          const origEnd = res.end.bind(res) as (...a: unknown[]) => unknown;
+          (res as { end: unknown }).end = (chunk?: unknown, ...rest: unknown[]) => {
+            if (res.statusCode === 404 && !res.headersSent && (chunk === undefined || String(chunk).trim() === 'Not Found')) {
+              const ck = /(?:^|;\s*)kx-lang=(ar|en)/.exec(String(req.headers.cookie ?? ''));
+              const lang = ck ? (ck[1] as 'ar' | 'en') : String(req.headers['accept-language'] ?? '').toLowerCase().startsWith('ar') ? 'ar' : 'en';
+              const html = notFoundPage(lang);
+              res.setHeader('content-type', 'text/html; charset=utf-8'); res.setHeader('content-length', Buffer.byteLength(html)); res.setHeader('cache-control', 'no-store');
+              return origEnd(html);
+            }
+            return origEnd(chunk, ...rest);
+          };
+        }
         return providerCb(req, res);
       } catch (e) {
         if (!o.quiet) console.error('[dev-idp] unhandled', e);

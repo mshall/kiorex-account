@@ -165,3 +165,96 @@ legend { font-weight: 600; padding-inline: .3rem; }
 .hint.block { margin-top: .15rem; }
 .hero .kx-pulse-draw { margin-inline: auto; }
 .hero svg[role="img"], .hero svg[aria-hidden] { display: block; margin: 0 auto .75rem; }
+
+/* ===== CDO redesign (28 Nov 2026): same language as the Passport sign-in page. transform/opacity motion only; reduced motion collapses all of it ===== */
+/* signed-out: split layout with the brand stage */
+.kx-split { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr); }
+.kx-split-main { display: flex; flex-direction: column; min-width: 0; }
+.kx-split-main main.signin { flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 520px; padding-block: 1.5rem; }
+.kx-stage { display: none; position: relative; overflow: hidden; color: #fff; background: linear-gradient(155deg, #17154f 0%, #2a2380 46%, #064974 100%); padding: 3rem 3.5rem; flex-direction: column; justify-content: space-between; gap: 2rem; }
+.kx-orb { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .5; pointer-events: none; will-change: transform; }
+.kx-orb.o1 { width: 420px; height: 420px; inset-inline-start: -120px; top: -140px; background: #4F46E5; animation: kx-drift 22s ease-in-out infinite alternate; }
+.kx-orb.o2 { width: 360px; height: 360px; inset-inline-end: -110px; bottom: -120px; background: #0369A1; animation: kx-drift 26s ease-in-out -8s infinite alternate-reverse; }
+.kx-orb.o3 { width: 220px; height: 220px; inset-inline-end: 18%; top: 32%; background: #E8735E; opacity: .22; animation: kx-drift 30s ease-in-out -14s infinite alternate; }
+@keyframes kx-drift { to { transform: translate3d(46px, 38px, 0) scale(1.12); } }
+.kx-stage > *:not(.kx-orb) { position: relative; z-index: 1; }
+.kx-stage-copy { max-width: 30rem; }
+.kx-stage-copy h2 { font-size: clamp(1.9rem, 3vw, 2.8rem); line-height: 1.12; letter-spacing: -.025em; margin: 0 0 1.75rem; font-weight: 700; text-wrap: balance; }
+html[lang="ar"] .kx-stage-copy h2 { line-height: 1.4; letter-spacing: 0; }
+.kx-stage-copy ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+.kx-stage-copy li { display: flex; gap: .75rem; align-items: flex-start; color: #E4E7FB; font-size: 1.02rem; opacity: 0; animation: kx-rise var(--kx-dur-slower) var(--kx-ease-decelerate) forwards; }
+.kx-stage-copy li:nth-child(1) { animation-delay: .5s; } .kx-stage-copy li:nth-child(2) { animation-delay: .65s; } .kx-stage-copy li:nth-child(3) { animation-delay: .8s; }
+.kx-stage-copy li i { flex: none; width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, .14); display: grid; place-items: center; margin-top: 1px; }
+.kx-stage-note { font-size: .8125rem; color: #D5D9F5; max-width: 30rem; margin: 0; }
+.kx-brand-narrow { display: inline-flex; }
+@media (min-width: 960px) {
+  .kx-split { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); }
+  .kx-stage { display: flex; position: sticky; top: 0; height: 100vh; height: 100dvh; }
+  .kx-split-main .brand-link.kx-brand-narrow { visibility: hidden; }
+}
+.signin .card.hero-card { border-radius: var(--kx-radius-xl); animation: kx-rise var(--kx-dur-slower) var(--kx-ease-decelerate) both; }
+
+/* signed-in shell */
+.kx-avatar { width: 36px; height: 36px; border-radius: 50%; display: inline-grid; place-items: center; font-weight: 700; font-size: .95rem; color: #fff; background: var(--kx-gradient); flex: none; }
+.topbar .toolbar { margin-inline-start: auto; }
+.tabs { gap: .35rem; padding-block: .5rem; scrollbar-width: none; mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%); }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { border-block-end: 0; border-radius: 999px; padding: .5rem 1rem; min-height: 44px; transition: background var(--kx-dur-fast) var(--kx-ease-standard), color var(--kx-dur-fast); }
+.tab:hover { background: var(--kx-primary-soft); }
+.tab.active { background: var(--kx-primary-soft); color: var(--kx-text); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--kx-primary) 30%, transparent); }
+main { max-width: 1040px; }
+.tabs { padding-inline: max(1rem, calc((100% - 1040px) / 2)); }
+.topbar { --gutter: max(1rem, calc((100% - 1040px) / 2)); }
+main > h1:first-child { font-size: 2rem; margin-block-end: 1rem; animation: kx-rise var(--kx-dur-slow) var(--kx-ease-decelerate) both; }
+html[lang="ar"] main > h1:first-child { line-height: 1.4; }
+
+/* cards: lift on hover, staggered entrance in grids */
+.card { border-radius: var(--kx-radius-lg); transition: box-shadow var(--kx-dur-base) var(--kx-ease-standard), border-color var(--kx-dur-base); }
+.grid > .card { margin-block: .5rem; }
+@media (hover: hover) { .grid > .card:hover { box-shadow: var(--kx-shadow-3); border-color: color-mix(in srgb, var(--kx-primary) 28%, var(--kx-border)); } }
+.grid > .card:nth-child(2) { animation-delay: 60ms; } .grid > .card:nth-child(3) { animation-delay: 120ms; } .grid > .card:nth-child(4) { animation-delay: 180ms; }
+.card h2 { font-size: 1.1rem; font-weight: 650; }
+.list > li { transition: background var(--kx-dur-fast); border-radius: 8px; padding-inline: .5rem; margin-inline: -.5rem; }
+@media (hover: hover) { .list > li:hover { background: color-mix(in srgb, var(--kx-primary) 5%, transparent); } }
+.shortcut { transition: transform var(--kx-dur-fast) var(--kx-ease-standard), border-color var(--kx-dur-fast), background var(--kx-dur-fast); }
+.shortcut:hover { border-color: var(--kx-primary); background: var(--kx-primary-soft); transform: translateY(-1px); }
+.rows > div:last-child { border-block-end: 0; }
+.badge { padding: .15rem .7rem; }
+
+/* skeleton loader (replaces the spinner line) */
+.skel { display: grid; gap: .6rem; width: 100%; padding-block: .5rem; }
+.skel i { display: block; height: 14px; border-radius: 7px; background: linear-gradient(90deg, var(--kx-bg-subtle) 25%, var(--kx-surface-raised) 50%, var(--kx-bg-subtle) 75%); background-size: 200% 100%; animation: kx-shimmer 1.6s linear infinite; }
+.loading { display: block; }
+
+/* empty / success / 404 */
+.empty { padding: 1rem; border: 1px dashed var(--kx-border-strong); border-radius: 12px; text-align: center; background: var(--kx-surface-sunken); }
+.kx-404 { max-width: 480px; margin-inline: auto; margin-block-start: 3rem; }
+.kx-404 h1 { font-size: 3.5rem; letter-spacing: -.04em; margin-block: .5rem; color: var(--kx-primary); }
+.toast { box-shadow: var(--kx-shadow-3); border-radius: 12px; }
+.alert { border-radius: 12px; }
+
+/* inputs: clearer hover, same focus ring as sign-in */
+input:hover:not(:focus), select:hover:not(:focus), textarea:hover:not(:focus) { border-color: var(--kx-border-strong); }
+
+@media (prefers-reduced-motion: reduce) {
+  .kx-orb, .skel i, .kx-stage-copy li, .signin .card.hero-card, main > h1:first-child { animation: none !important; opacity: 1 !important; }
+  .shortcut:hover { transform: none; }
+}
+@media (max-width: 640px) { main > h1:first-child { font-size: 1.6rem; } .tab { padding-inline: .8rem; } }
+.hero .secure svg { display: inline-block; margin: 0; flex: none; }
+.topbar { --gutter: max(1rem, calc((100% - 1008px) / 2)); }
+.tabs { padding-inline: max(1rem, calc((100% - 1008px) / 2)); }
+.grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); }
+.toolbar select#kx-theme { appearance: none; -webkit-appearance: none; min-height: 44px; padding: 0 1rem; border-radius: 999px; font-size: .8125rem; font-weight: 500; color: var(--kx-text-muted); border: 1px solid var(--kx-border); background: var(--kx-surface); cursor: pointer; text-align: center; }
+:root[data-theme="dark"] .btn-primary { background: linear-gradient(135deg, #818CF8, #38BDF8); color: #0F172A; }
+@media (prefers-color-scheme: dark) { :root[data-theme="auto"] .btn-primary { background: linear-gradient(135deg, #818CF8, #38BDF8); color: #0F172A; } }
+@media (max-width: 640px) {
+  .topbar { flex-wrap: nowrap; gap: .25rem; }
+  .topbar .kx-avatar { display: none; }
+  .topbar .toolbar { gap: .1rem; }
+  .toolbar select#kx-theme { padding-inline: .6rem; }
+  .topbar .btn { padding-inline: .6rem; min-width: 0; }
+  .brand { zoom: .8; }
+  .toolbar select#kx-theme { min-width: 0; width: 5.2rem; }
+  .topbar .btn-ghost { font-size: .875rem; }
+}

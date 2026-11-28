@@ -483,3 +483,8 @@ export function logoutPage(lang: Lang, formHtml: string, auto = false): string {
   return page(lang, x.logoutTitle, `<h1>${lang === 'ar' ? 'جارٍ تسجيل الخروج…' : 'Signing you out…'}</h1>${formHtml}<noscript>${buttons}</noscript>`, { back: 'history' }).replace('</body>', `<script>${script}</script></body>`);
 }
 export const loggedOutPage = (lang: Lang) => page(lang, t(lang).loggedOut, `<div class="center-t">${BADGE_OK}<h1>${t(lang).loggedOut}</h1></div><a class="btn secondary" href="/account">${t(lang).backToPassport}</a>`);
+
+/** Branded 404 for browser navigations (the OIDC provider answers a bare "Not Found" text for unknown paths). */
+export const notFoundPage = (lang: Lang) => page(lang, lang === 'ar' ? 'الصفحة غير موجودة' : 'Page not found',
+  `<div class="center-t"><h1>${lang === 'ar' ? 'لم نجد هذه الصفحة' : 'We could not find that page'}</h1><p>${lang === 'ar' ? 'قد يكون الرابط قديمًا. افتح حسابك على كيوريكس باسبورت من هنا.' : 'The link may be old. Open your Kiorex Passport account from here.'}</p></div><a class="btn" href="/account">${lang === 'ar' ? 'إلى حسابي' : 'Go to my account'}</a>`,
+  { langSwitchHref: undefined });

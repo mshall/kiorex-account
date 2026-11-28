@@ -49,10 +49,11 @@ export function Badge({ kind = 'neutral', children }: { kind?: 'neutral' | 'succ
 
 export function Loading({ label }: { label?: string }) {
   const { t } = useI18n();
+  // Skeleton blocks (shimmer) instead of a spinner: the layout does not jump when the data arrives; the label stays for screen readers.
   return (
     <div className="loading" role="status" aria-live="polite">
-      <span aria-hidden="true"><PulseLine size={16} loop label="" /></span>
-      <span>{label ?? t('app.loading')}</span>
+      <span className="sr-only">{label ?? t('app.loading')}</span>
+      <div className="skel" aria-hidden="true"><i style={{ width: '38%' }} /><i style={{ width: '92%' }} /><i style={{ width: '74%' }} /></div>
     </div>
   );
 }

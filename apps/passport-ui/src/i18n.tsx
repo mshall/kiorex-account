@@ -30,6 +30,8 @@ const en = {
   // sign-in
   'signin.title': 'Manage your Kiorex Passport', 'signin.lead': 'One account for Kiorex and Kiorly. Sign in with your mobile number, a passkey or an authenticator code.',
   'signin.cta': 'Sign in', 'signin.working': 'Signing you in', 'signin.failed': 'Sign-in could not be completed. Please try again.', 'signin.expired': 'Your session ended. Please sign in again.',
+  'signin.stage.title': 'One account. One secure sign-in.', 'signin.stage.p1': 'Sign in with your mobile number, no password to remember', 'signin.stage.p2': 'One account for Kiorex and Kiorly', 'signin.stage.p3': 'Passkey and two-step verification when you want more protection',
+  'signin.stage.note': 'Your number is only used to verify you. Apps see it only after you sign in to them.',
   'signin.deleted.title': 'Your account was deleted', 'signin.deleted.body': 'Your Kiorex Passport and its sign-in methods were removed. Products have been told to delete their link to you.',
 
   // home
@@ -364,6 +366,8 @@ const ar: Record<Key, string> = {
 
   'signin.title': 'إدارة كيوريكس باسبورت الخاص بك', 'signin.lead': 'حساب واحد لكيوريكس وكيورلي. سجّل الدخول برقم هاتفك أو بمفتاح مرور أو برمز من تطبيق المصادقة.',
   'signin.cta': 'تسجيل الدخول', 'signin.working': 'جارٍ تسجيل دخولك', 'signin.failed': 'تعذّر إكمال تسجيل الدخول. حاول مرة أخرى.', 'signin.expired': 'انتهت جلستك. سجّل الدخول مرة أخرى.',
+  'signin.stage.title': 'حساب واحد. دخول آمن واحد.', 'signin.stage.p1': 'ادخل برقم هاتفك المحمول دون كلمة مرور', 'signin.stage.p2': 'حساب واحد لكيوريكس وكيورلي', 'signin.stage.p3': 'مفتاح مرور وتحقق بخطوتين عندما تريد حماية أكبر',
+  'signin.stage.note': 'نستخدم رقمك للتحقق منك فقط. لا يراه أي تطبيق إلا بعد أن تسجّل الدخول إليه.',
   'signin.deleted.title': 'تم حذف حسابك', 'signin.deleted.body': 'تمت إزالة كيوريكس باسبورت وطرق الدخول الخاصة بك. أُبلغت المنتجات بحذف ارتباطها بك.',
 
   'home.title': 'حسابك', 'home.hello': 'مرحبًا، {name}', 'home.helloAnon': 'أهلًا بك',
