@@ -58,6 +58,27 @@ export function matchPolicy(
   return undefined;
 }
 
+export interface TypeCoverage { mandatory: string[]; partial: string[] }
+export interface PublicCoverage { enabled: boolean; version: number; types: Record<OrgType, TypeCoverage> }
+
+/**
+ * What a PRODUCT API may ask about the policy (no person, no organisation id): per organisation type, the role hints for which two-step verification is
+ * mandatory for the WHOLE type (`mandatory`, '*' = every member) and the ones only some organisations of that type are covered for (`partial`, org-scoped rules).
+ * Pure and unit tested. Baseline Passport roles are not part of it (they are not product roles).
+ */
+export function coverageByType(policy: MfaPolicyDoc, orgs: Array<{ org_id: string; types: OrgType[] }>, version = 0): PublicCoverage {
+  const out = Object.fromEntries(ORG_TYPES.map((t) => [t, { mandatory: new Set<string>(), partial: new Set<string>() }])) as Record<OrgType, { mandatory: Set<string>; partial: Set<string> }>;
+  if (policy.enabled) {
+    for (const rule of policy.rules) {
+      if (rule.scope === 'all') for (const t of ORG_TYPES) rule.roles.forEach((r) => out[t].mandatory.add(r));
+      else if (rule.scope === 'org_type' && (ORG_TYPES as readonly string[]).includes(rule.value ?? '')) rule.roles.forEach((r) => out[rule.value as OrgType].mandatory.add(r));
+      else if (rule.scope === 'org') for (const o of orgs.filter((x) => x.org_id === rule.value)) for (const t of o.types) rule.roles.forEach((r) => out[t].partial.add(r));
+    }
+  }
+  const lists = (x: { mandatory: Set<string>; partial: Set<string> }): TypeCoverage => ({ mandatory: [...x.mandatory].sort(), partial: [...x.partial].sort() });
+  return { enabled: policy.enabled, version, types: Object.fromEntries(ORG_TYPES.map((t) => [t, lists(out[t])])) as Record<OrgType, TypeCoverage> };
+}
+
 export class MfaPolicy {
   constructor(private readonly c: Ctx) {}
 
@@ -92,6 +113,13 @@ export class MfaPolicy {
       `SELECT m.org_id, m.role_hint, o.edition, o.product_refs FROM memberships m JOIN organizations o ON o.org_id = m.org_id
         WHERE m.sub = $1 AND m.status = 'active' AND o.status = 'active' AND m.effective_from <= $2 AND (m.expires_at IS NULL OR m.expires_at > $2)`, [sub, now]);
     return r.rows.map((x) => ({ org_id: x.org_id as string, role_hint: x.role_hint as string, types: orgTypesOf(x) }));
+  }
+
+  /** Unauthenticated coverage answer for product APIs (see coverageByType). */
+  async publicCoverage(): Promise<PublicCoverage> {
+    const { policy, version } = await this.current();
+    const orgs = policy.enabled && policy.rules.some((r) => r.scope === 'org') ? await this.orgOptions() : [];
+    return coverageByType(policy, orgs, version);
   }
 
   /** How many people a policy would cover, and how many of them have no authenticator yet (they would be walked through enrolment at their next sign-in). */

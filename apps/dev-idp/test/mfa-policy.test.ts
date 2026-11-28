@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { decodeJwt } from 'jose';
 import { startHarness, startAuth, login, call, randomPhone, totpCode, seedOps, opsLogin, type Harness } from './helpers.js';
 import { loadIdpConfig } from '../src/config.js';
-import { matchPolicy, orgTypesOf, type MfaPolicyDoc } from '../src/mfa-policy.js';
+import { coverageByType, matchPolicy, orgTypesOf, type MfaPolicyDoc } from '../src/mfa-policy.js';
 
 const cfg = loadIdpConfig();
 const MFA = cfg.stepUp.acr.mfa; const BASIC = cfg.stepUp.acr.basic;
@@ -31,6 +31,25 @@ describe('MFA policy: pure matching', () => {
     expect(orgTypesOf({ edition: 'CLINIC', product_refs: { kiorly_lab_tenant_id: 'x' } })).toEqual(['lab']);
     expect(orgTypesOf({ edition: 'NURSE', product_refs: {} })).toEqual(['nurse']);
     expect(orgTypesOf({ edition: 'CLINIC', product_refs: {} })).toEqual(['clinic']);
+  });
+});
+
+describe('MFA policy: public coverage for product APIs', () => {
+  const orgs = [{ org_id: 'o1', types: ['pharmacy' as const] }];
+  it('is empty when the policy is off or has no rules', () => {
+    expect(coverageByType({ enabled: false, rules: [{ scope: 'org_type', value: 'pharmacy', roles: ['*'] }] }, orgs).types.pharmacy).toEqual({ mandatory: [], partial: [] });
+    expect(coverageByType({ enabled: true, rules: [] }, orgs).enabled).toBe(true);
+  });
+  it('org_type rules cover the whole type; org rules are partial; all-scope rules cover every type', () => {
+    const c = coverageByType({ enabled: true, rules: [
+      { scope: 'org_type', value: 'lab', roles: ['owner', 'lab_director'] },
+      { scope: 'org', value: 'o1', roles: ['*'] },
+      { scope: 'all', roles: ['finance'] },
+    ] }, orgs, 7);
+    expect(c.version).toBe(7);
+    expect(c.types.lab.mandatory).toEqual(['finance', 'lab_director', 'owner']);
+    expect(c.types.pharmacy).toEqual({ mandatory: ['finance'], partial: ['*'] });
+    expect(c.types.clinic.partial).toEqual([]);
   });
 });
 
@@ -82,6 +101,9 @@ describe('MFA policy: optional by default, mandatory when ops turn it on (maker-
     const cur = await policyApi(await opsAdmin(), 'GET');
     expect(cur.status).toBe(200);
     expect(cur.json.policy).toEqual({ enabled: false, rules: [] });
+    const pub = await fetch(`${h.issuer}/.well-known/kiorex-mfa-policy`); // unauthenticated, no person or organisation in it
+    expect(pub.status).toBe(200);
+    expect(await pub.json()).toMatchObject({ enabled: false, types: { pharmacy: { mandatory: [], partial: [] }, lab: { mandatory: [], partial: [] } } });
     expect(cur.json.options.org_types).toEqual(['clinic', 'nurse', 'pharmacy', 'lab']);
     expect(cur.json.options.roles).toEqual(expect.arrayContaining(['owner', 'pharmacist', 'branch_manager']));
   });
@@ -111,6 +133,7 @@ describe('MFA policy: optional by default, mandatory when ops turn it on (maker-
     const cur = await policyApi(checker, 'GET');
     expect(cur.json.policy).toEqual({ enabled: true, rules: [{ scope: 'org_type', value: 'pharmacy', roles: ['owner', 'pharmacist'] }] });
     expect(cur.json.version).toBe(1);
+    expect(await (await fetch(`${h.issuer}/.well-known/kiorex-mfa-policy`)).json()).toMatchObject({ enabled: true, version: 1, types: { pharmacy: { mandatory: ['owner', 'pharmacist'] }, lab: { mandatory: [] } } });
     const audit = (await h.idp.pool.query(`SELECT type FROM audit_events WHERE type LIKE 'mfa.policy.%' ORDER BY seq`)).rows.map((r) => r.type);
     expect(audit).toEqual(expect.arrayContaining(['mfa.policy.proposed', 'mfa.policy.applied']));
     // a second approval or a stale proposal is refused

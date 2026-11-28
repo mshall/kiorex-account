@@ -179,6 +179,8 @@ export async function createApp(o: CreateAppOptions): Promise<DevIdp> {
       const p = url.pathname;
       try {
         if (p === '/healthz') return send(res, 200, { status: 'ok', env: 'dev-only', providers: { sms: providerEnv('SMS', env).mode, whatsapp: providerEnv('WHATSAPP', env).mode }, issuer: rt.issuer, upstream_issuer: [...upstreams.values()][0]?.issuer ?? null });
+        // what product APIs (Pharmacy, Lab) may know about the MFA policy: per organisation type and role hint only, no person or organisation
+        if (p === '/.well-known/kiorex-mfa-policy' && req.method === 'GET') return send(res, 200, await mfaPolicy.publicCoverage());
         // dev inbox / event outbox for E2E tests (mock messaging, CLAUDE.md founder decision); dev IdP never runs in production
         // provider delivery-status webhooks (SMS / WhatsApp): HMAC verified, idempotent, forward-only statuses; reachable in every mode
         if ((p === '/webhooks/sms' || p === '/webhooks/whatsapp') && req.method === 'POST') {
