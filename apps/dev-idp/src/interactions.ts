@@ -180,7 +180,7 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
     return send(res, o.status ?? 200, codePage(lang, uid, maskPhone(phone), { error: o.error }), o.headers ?? {});
   };
 
-  const phoneView = async (o: { error?: string; phone?: string; name?: string; mode?: Mode } = {}, status = 200) => {
+  const phoneView = async (o: { error?: string; phone?: string; name?: string; mode?: Mode; consent?: boolean } = {}, status = 200) => {
     const fedPending = await getState(d.pool, uid, 'fed_pending');
     const { mode, ...rest } = o;
     return send(res, status, phonePage(lang, uid, { ...rest, passkeyLogin: d.passkeysEnabled, federation: d.federation.available(), fedLinkNotice: !!fedPending, ctx: ctxOf(mode ?? intentMode), allowRegister }));
@@ -266,7 +266,7 @@ export async function handleInteraction(d: InteractionDeps, req: IncomingMessage
       await d.audit.record('otp.send.denied', null, { reason: r.reason, phone: maskPhone(phone) });
       const status = r.reason === 'invalid_phone' ? 400 : r.reason === 'send_failed' ? 502 : 429;
       if (r.retryAfterSeconds) res.setHeader('retry-after', String(r.retryAfterSeconds));
-      return phoneView({ error: errorText(lang, r.reason), phone, name: form.name, mode }, status);
+      return phoneView({ error: errorText(lang, r.reason), phone, name: form.name, mode, consent: form.consent === '1' }, status);
     }
     await d.audit.record('otp.sent', null, { phone: maskPhone(phone) });
     await delState(d.pool, uid, 'signup', 'signup_ack');

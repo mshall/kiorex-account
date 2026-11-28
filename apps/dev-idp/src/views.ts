@@ -370,7 +370,7 @@ export const t2 = (lang: Lang) => X2[lang];
 const langHref = (uid: string, lang: Lang, mode?: Mode) => `/interaction/${uid}?lang=${lang === 'ar' ? 'en' : 'ar'}${mode ? `&intent=${mode}` : ''}`;
 const cells = '<div class="cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>';
 
-export function phonePage(lang: Lang, uid: string, o: { error?: string; phone?: string; name?: string; passkeyLogin?: boolean; federation?: Array<{ id: string; name: string }>; fedLinkNotice?: boolean; ctx?: Ctx; allowRegister?: boolean } = {}): string {
+export function phonePage(lang: Lang, uid: string, o: { error?: string; phone?: string; name?: string; passkeyLogin?: boolean; federation?: Array<{ id: string; name: string }>; fedLinkNotice?: boolean; ctx?: Ctx; allowRegister?: boolean; consent?: boolean } = {}): string {
   const x = t(lang); const y = t2(lang);
   const ctx: Ctx = o.ctx ?? { product: x.stageTag, audience: 'patient', mode: 'login' };
   const reg = o.allowRegister !== false; const mode: Mode = reg ? ctx.mode : 'login';
@@ -390,7 +390,7 @@ document.getElementById('pk-login').addEventListener('click',async()=>{
   }catch(e){out.textContent=${JSON.stringify(y.pkFail)};out.className='error';}
 });` : undefined;
   const link = (url: string, label: string) => (url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a>` : `<strong>${esc(label)}</strong>`);
-  const consent = `<label class="check" data-only="register" for="consent"><input type="checkbox" id="consent" name="consent" value="1"${mode === 'register' ? ' required' : ''}><span>${x.consent(link(env.termsUrl, x.termsLabel), link(env.privacyUrl, x.privacyLabel))}</span></label>`;
+  const consent = `<label class="check" data-only="register" for="consent"><input type="checkbox" id="consent" name="consent" value="1"${o.consent ? ' checked' : ''}${mode === 'register' ? ' required' : ''}><span>${x.consent(link(env.termsUrl, x.termsLabel), link(env.privacyUrl, x.privacyLabel))}</span></label>`;
   const tabs = reg ? `<nav class="tabs" aria-label="${esc(x.tabs)}"><a href="/interaction/${esc(uid)}?intent=login&amp;lang=${lang}" data-mode="login"${mode === 'login' ? ' aria-current="page"' : ''}>${x.tabLogin}</a><a href="/interaction/${esc(uid)}?intent=register&amp;lang=${lang}" data-mode="register"${mode === 'register' ? ' aria-current="page"' : ''}>${x.tabRegister}</a></nav>` : '';
   const heads = reg
     ? `<div data-only="login"><h1>${x.loginTitle}</h1><p>${x.loginSub}</p></div><div data-only="register"><h1>${x.registerTitle}</h1><p>${x.registerSub}</p></div>`
