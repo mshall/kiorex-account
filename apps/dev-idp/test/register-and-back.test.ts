@@ -130,19 +130,21 @@ describe('Go back', () => {
     r = await s.post('finish');
     expect(r.headers.get('location') ?? '').not.toContain('localhost:5181'); // no authorization code: the interaction just starts over
   });
-  it('from the first step it returns to the app: the validated return_to, else the product home; a hostile return_to is never followed', async () => {
+  it('from the first step it returns to the app: the validated return_to, else the product home or the OAuth access_denied answer; a hostile return_to is never followed', async () => {
     let s = await start('kiorex-web', { return_to: 'http://localhost:5180/pharmacies?x=1' });
     let r = await s.post('cancel');
     expect(r.status).toBe(303);
     expect(r.headers.get('location')).toBe('http://localhost:5180/pharmacies?x=1');
+    const answered = async (x: Awaited<ReturnType<typeof start>>) => { const c = await x.post('cancel'); return x.b.req(new URL(c.headers.get('location')!, h.issuer).toString()); };
     for (const hostile of ['https://evil.example/steal', '//evil.example', 'javascript:alert(1)', 'http://localhost:5180.evil.example/', 'http://user:pw@localhost:5180/']) {
       s = await start('kiorex-web', { return_to: hostile });
-      r = await s.post('cancel');
-      expect(r.headers.get('location')).toBe('http://localhost:5180/'); // product home derived from the registered redirect URI
+      r = await answered(s); // kiorex-web is answered with the OAuth error (its documented entry contract), never sent to the attacker
+      expect(r.headers.get('location')).toMatch(/^http:\/\/localhost:5180\/auth\/callback\?.*error=access_denied/);
     }
+    s = await start('kiorex-ops', { return_to: 'https://evil.example/' }); // a product without its own cancel handling: the home of its registered origin
+    expect((await s.post('cancel')).headers.get('location')).toBe('http://localhost:5181/');
     s = await start('kiorly'); // native app: the OAuth answer, not a made-up URL
-    r = await s.post('cancel');
-    r = await s.b.req(new URL(r.headers.get('location')!, h.issuer).toString()); // the provider's resume step answers the app with the OAuth error
+    r = await answered(s);
     expect(r.headers.get('location')).toMatch(/^kiorly:\/\/auth\/callback\?.*error=access_denied/);
   });
   it('backTarget never returns a URL outside the registered origins', () => {

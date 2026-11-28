@@ -33,9 +33,10 @@ function pickLang(req: IncomingMessage, url: URL, form: Record<string, string>, 
 const westernDigits = (v: string): string => v.replace(/[\u0660-\u0669]/g, (c) => String(c.charCodeAt(0) - 0x660)).replace(/[\u06F0-\u06F9]/g, (c) => String(c.charCodeAt(0) - 0x6f0));
 const CONSENT_VERSION = 'draft-1';
 /** Where the product's home is, derived ONLY from its registered URIs (never from the request). The widget popup and native apps get the OAuth access_denied answer instead. */
-const HOME_PATH: Record<string, string | null> = { 'kiorex-passport-web': '/account', 'kiorex-widget': null };
+/** kiorex-web answers access_denied itself (PASSPORT_ENTRY_CONTRACT.md: it lands the person on its entry page with a calm "cancelled" message); the booking widget popup closes on it. */
+const HOME_PATH: Record<string, string | null> = { 'kiorex-passport-web': '/account', 'kiorex-widget': null, 'kiorex-web': null };
 
-/** Go back to the app: the validated `return_to` (same origin as one of the client's registered redirect or post-logout URIs, http(s) only), else the product home (origin of a registered http(s) redirect URI). Undefined: answer the app with access_denied. */
+/** Go back to the app: the validated `return_to` (same origin as one of the client's registered redirect or post-logout URIs, http(s) only), else the product home (origin of the request's http(s) redirect URI) for products that have no cancel handling of their own. Undefined: answer the app with the OAuth access_denied error. */
 export function backTarget(clientId: string, registered: { redirectUris: string[]; postLogoutRedirectUris: string[] }, returnTo: unknown, requestRedirectUri?: string): string | undefined {
   // a native app (custom-scheme redirect URI) is answered with the OAuth access_denied error: a web page cannot take the person back into it
   const reqOrigin = (() => { try { const o = new URL(requestRedirectUri ?? registered.redirectUris[0] ?? ''); return o.protocol === 'http:' || o.protocol === 'https:' ? o.origin : undefined; } catch { return undefined; } })();

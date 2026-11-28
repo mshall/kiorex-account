@@ -88,9 +88,9 @@ test('Go back: code -> phone (nothing kept), duplicate notice <- browser Back ->
   await page.getByRole('button', { name: 'Go back' }).click();
   await expect(page.locator('#phone')).toBeVisible(); await expect(page.locator('#phone')).toHaveValue('');
   expect(page.url()).not.toContain(phone.slice(-8));
-  // first step: back to the app (product home on the registered origin, never an open redirect)
-  const nav = page.waitForRequest((r) => r.url().startsWith('http://localhost:5180/'));
-  await page.getByRole('button', { name: 'Go back' }).click(); const req = await nav; expect(new URL(req.url()).origin).toBe('http://localhost:5180');
+  // first step: back to the app (the registered redirect URI with the OAuth cancel answer; never an open redirect)
+  const nav = page.waitForRequest((r) => r.url().startsWith('http://localhost:5180/auth/callback'));
+  await page.getByRole('button', { name: 'Go back' }).click(); const req = await nav; expect(new URL(req.url()).searchParams.get('error')).toBe('access_denied');
 });
 
 test('duplicate registration: the existing number is told after the code; the browser Back button returns to the code step', async ({ page }) => {
