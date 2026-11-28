@@ -143,3 +143,9 @@ html:not(.js) [role=tabpanel][hidden]{display:block}html:not(.js) [role=tablist]
 .plan-limits{list-style:none;margin:0 0 .75rem;padding:0;display:flex;flex-wrap:wrap;gap:.4rem}.plan-limits li{background:#EEF0FB;color:var(--ink);border-radius:999px;padding:.2rem .7rem;font-size:.85rem}
 .plans-market{margin-top:1rem}
 .plan .more{margin:-.4rem 0 1rem}.plan .more summary{cursor:pointer;color:var(--brand);font-weight:600;min-height:44px;display:flex;align-items:center}.plan .more[open] summary{margin-bottom:.25rem}
+/* Product accents as attribute rules: the CDN CSP is style-src 'self', so inline style attributes are blocked (CDO review 28 Nov 2026) */
+[data-acc=clinic]{--acc:#0D9488}[data-acc=pharmacy]{--acc:#16A34A}[data-acc=lab]{--acc:#7C3AED}[data-acc=nurse]{--acc:#E11D48}[data-acc=staff]{--acc:#3730A3}[data-acc=enterprise]{--acc:#0369A1}
+.sprite{position:absolute}
+/* Plans: the "Ask about this plan" button sits on one baseline across cards of different length; cards lift on hover (transform only) */
+.plan{display:flex;flex-direction:column;transition:transform .2s cubic-bezier(.2,0,0,1),box-shadow .2s}.plan>p:last-child{margin-top:auto;padding-top:1rem}
+@media (hover:hover) and (prefers-reduced-motion:no-preference){.plan:hover{transform:translateY(-3px)}}

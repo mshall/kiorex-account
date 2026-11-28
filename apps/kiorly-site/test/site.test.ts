@@ -140,3 +140,11 @@ describe('built site (production without a plans endpoint)', () => {
     const h = read(out, 'en/index.html'); expect(h).toContain('Plans are being finalised'); expect(h).not.toContain('data-plan-placeholder'); expect(h).not.toContain('data-plans-live'); expect(h).not.toMatch(/data-plans data-endpoint=/); expect(h).not.toContain('TODO_NEEDS_HUMAN');
   });
 });
+
+describe('CSP: no inline style attributes (CloudFront serves style-src self)', () => {
+  it('no rendered page carries a style="..." attribute', async () => {
+    const { out } = await make(ENV);
+    const bad = walk(out).filter((f) => f.endsWith('.html')).filter((f) => /\sstyle="/.test(readFileSync(f, 'utf8')));
+    expect(bad).toEqual([]);
+  });
+});

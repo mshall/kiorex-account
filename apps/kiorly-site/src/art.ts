@@ -43,7 +43,7 @@ const ICONS: Record<string, string> = {
 };
 export const ICON_NAMES = Object.keys(ICONS);
 /** Hidden sprite with every icon as a <symbol>; `<use href="#i-name">` anywhere on the page. */
-export const sprite = (): string => `<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>${ICON_NAMES.map((n) => `<symbol id="i-${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</symbol>`).join('')}</defs></svg>`;
+export const sprite = (): string => `<svg width="0" height="0" class="sprite" aria-hidden="true" focusable="false"><defs>${ICON_NAMES.map((n) => `<symbol id="i-${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</symbol>`).join('')}</defs></svg>`;
 export const icon = (name: string, cls = 'ic'): string => `<svg class="${cls}" aria-hidden="true" focusable="false"><use href="#i-${name}"/></svg>`;
 
 // ───────────────────────── drawing helpers ─────────────────────────

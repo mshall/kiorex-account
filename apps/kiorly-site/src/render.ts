@@ -61,10 +61,10 @@ function hero(cfg: SiteConfig, l: Lang): string {
 }
 
 function modules(cfg: SiteConfig, l: Lang): string {
-  const tabs = MODULE_ORDER.map((id, i) => { const m = MODULES[id][l]; return `<button type="button" role="tab" id="tab-${id}" aria-controls="panel-${id}" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}" class="mtab" style="--acc:${ACCENT[id]}">${icon(id === 'staff' ? 'staff' : id === 'enterprise' ? 'enterprise' : id)}<span><strong>${esc(m.name)}</strong><small>${esc(m.tag)}</small></span></button>`; }).join('');
+  const tabs = MODULE_ORDER.map((id, i) => { const m = MODULES[id][l]; return `<button type="button" role="tab" id="tab-${id}" aria-controls="panel-${id}" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}" class="mtab" data-acc="${id}">${icon(id === 'staff' ? 'staff' : id === 'enterprise' ? 'enterprise' : id)}<span><strong>${esc(m.name)}</strong><small>${esc(m.tag)}</small></span></button>`; }).join('');
   const panels = MODULE_ORDER.map((id, i) => {
     const m = MODULES[id][l];
-    return `<div role="tabpanel" id="panel-${id}" aria-labelledby="tab-${id}" class="mpanel" style="--acc:${ACCENT[id]}"${i === 0 ? '' : ' hidden'} tabindex="0"><div class="mgrid">
+    return `<div role="tabpanel" id="panel-${id}" aria-labelledby="tab-${id}" class="mpanel" data-acc="${id}"${i === 0 ? '' : ' hidden'} tabindex="0"><div class="mgrid">
 <figure class="mshot">${mockup(id, l, m.mock)}</figure>
 <div class="mtext"><h3>${esc(m.name)}</h3><p class="lead">${esc(m.pitch)}</p>
 <h4>${esc(MODULE_UI.benefits[l])}</h4><ul class="ticks">${m.benefits.map((b) => `<li>${icon('check')}<span>${esc(b)}</span></li>`).join('')}</ul>
